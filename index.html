@@ -1778,6 +1778,7 @@ html[data-layout="desktop"] #goals-list > .goal-acc:first-child, html[data-layou
         <div id="db-recent"></div>
       </div>
     </main>
+    <div id="db-compact" class="dc" aria-label="Dashboard ringkas"></div>
   </div>
 
   <!-- ============ WIDGET RINGKAS (buat shortcut layar utama) ============ -->
@@ -2489,6 +2490,20 @@ html[data-layout="desktop"] #goals-list > .goal-acc:first-child, html[data-layou
       <div style="font-size:11.5px; color:var(--text-2); margin-top:10px; line-height:1.5;">Porsi kamu otomatis tercatat sebagai pengeluaran. Porsi tiap peserta otomatis tercatat sebagai piutang yang bisa kamu tandai lunas di bawah.</div>
     </div>
     <div class="card"><h3><span class="dot"></span>Riwayat Split Bill</h3><div id="sb-list"></div></div>
+  </main></div>
+
+  <!-- ============ HALAMAN INSIGHT ============ -->
+  <div class="view" id="view-insight"><main>
+    <div class="back-row" data-goto="dashboard"><span data-icon="chevronLeft"></span><span>Kembali ke Home</span></div>
+    <div class="section-title"><span data-icon="sparkles"></span>Insight</div>
+    <div class="card" style="grid-column:1 / -1;"><div id="insight-page-body"></div></div>
+  </main></div>
+
+  <!-- ============ HALAMAN SALDO PER REKENING ============ -->
+  <div class="view" id="view-saldo-rekening"><main>
+    <div class="back-row" data-goto="dashboard"><span data-icon="chevronLeft"></span><span>Kembali ke Home</span></div>
+    <div class="section-title"><span data-icon="cash"></span>Saldo per Rekening</div>
+    <div class="card" style="grid-column:1 / -1;"><div id="sr-body"></div></div>
   </main></div>
 
   <!-- ============ KESEHATAN FINANSIAL ============ -->
@@ -3975,6 +3990,7 @@ function isHybridTabunganInvestasi(acc){
    ini -- nomor versi yang ditampilkan di halaman Pengaturan otomatis ikut ke-update,
    nggak perlu ubah HTML manual. */
 var CHANGELOG = [
+  { versi:"1.12.0", catatan:'Dashboard desktop dirombak jadi ringkas dan muat satu layar laptop: semua komponen (aksi cepat, pengeluaran dan pemasukan hari ini, kekayaan bersih, kesehatan finansial, perlu perhatian, stok, saldo per rekening, insight, transaksi terbaru) tampil sebagai kartu ringkas, dan kalau diklik membuka halaman detailnya. Halaman baru: Insight dan Saldo per Rekening. Tampilan HP tidak berubah.' },
   { versi:"1.11.7", catatan:'Perbaikan tampilan desktop: kartu "Perlu perhatian" dan "Stok perlu dibeli" tidak lagi berdesakan di kolom sempit. Daftar pengingat satu kolom (dua kolom hanya kalau kartunya lebar), dan kartu stok menyesuaikan lebar kolom.' },
   { versi:"1.11.6", catatan:'Kesehatan Finansial: saldo rekening yang minus sekarang dihitung sebagai hutang di pilar Rasio Hutang (muncul sebagai baris "Saldo rekening minus" di rinciannya). Aset bersih memakai saldo rekening positif saja supaya minus tidak terhitung dua kali.' },
   { versi:"1.11.5", catatan:'Tampilan baru kartu "Perlu perhatian" dan "Stok perlu dibeli" di Beranda: header seragam (ikon, judul, ringkasan), tiap pengingat jadi dua baris dengan ikon per jenis (saldo minus, hutang, piutang, tagihan, cicilan, titipan) sehingga nama rekening tidak terpotong lagi, nominal dan status rata kanan, serta warna mengikuti tingkat urgensi. Stok jadi kartu mini yang bisa digeser.' },
@@ -6453,7 +6469,7 @@ function go(tab){
     requestAnimationFrame(function(){ target.classList.add('in'); });
   }
 
-  var navMap = {dashboard:'dashboard', catat:'catat', transfer:'catat', masuk:'catat', keluar:'catat',
+  var navMap = {dashboard:'dashboard', insight:'dashboard', 'saldo-rekening':'dashboard', catat:'catat', transfer:'catat', masuk:'catat', keluar:'catat',
     piutang:'catat', hutang:'catat', titipan:'catat', belanja:'catat', 'investasi-beli':'catat', 'investasi-jual':'catat', tagihan:'catat',
     'atur-budget':'catat', goals:'catat', patungan:'catat', recurring:'catat', inventaris:'catat', 'inventaris-detail':'catat', asetbio:'catat', 'stok-barang':'catat', splitbill:'catat', 'untuk-orang':'catat', kesehatan:'catat', riwayat:'riwayat',
     laporan:'laporan', grafik:'laporan', pengaturan:'pengaturan', 'edit-saldo-awal':'pengaturan', rekonsiliasi:'pengaturan', sampah:'pengaturan', 'analisis-ai':'pengaturan', 'kelola-kategori':'pengaturan', coa:'pengaturan', 'riwayat-update':'pengaturan', widget:'dashboard', 'mutasi-rekening':'dashboard'};
@@ -6483,6 +6499,8 @@ function go(tab){
   if(tab==='splitbill') renderSplitBillList();
   if(tab==='untuk-orang') renderUntukOrang();
   if(tab==='kesehatan') renderKesehatan();
+  if(tab==='insight') renderInsightPage();
+  if(tab==='saldo-rekening') renderSaldoRekeningPage();
   if(tab==='inventaris'){ fillSelect('inv-kategori', DATA.kategoriInventaris); fillSelectWithBlank('inv-tempat-beli', DATA.tempatBeliInventaris, 'Belum diisi'); fillSelectWithBlank('inv-lokasi', DATA.lokasiInventaris, 'Belum diisi'); updateLokasiMapsPreview('inv-lokasi','inv-lokasi-maps-preview'); fillRekeningBlankSelect('inv-rekening-beli'); renderInventarisFilterKategori(); renderInventarisFilterTempatBeli(); renderInventarisFilterKondisi(); renderInventarisList(); }
   if(tab==='inventaris-detail') renderInventarisDetail();
   if(tab==='asetbio'){ fillSelectWithBlank('ab-lokasi', DATA.lokasiInventaris, 'Belum diisi'); updateLokasiMapsPreview('ab-lokasi','ab-lokasi-maps-preview'); fillRekeningBlankSelect('ab-rekening-beli'); fillSelectAccounts('ap-rekening', ACCOUNTS); if(!document.getElementById('ab-tanggal').value) document.getElementById('ab-tanggal').value = todayISO(); if(!document.getElementById('ap-tanggal').value) document.getElementById('ap-tanggal').value = todayISO(); onApJenisChange(); renderAsetBioList(); updateApAsetOptions(); renderAsetBioPanenList(); }
@@ -9232,6 +9250,7 @@ function renderDashboard(){
   } else {
     recentEl.innerHTML = renderTxnRows(all.slice(0,5));
   }
+  try{ renderDashCompact(); }catch(e){ console.error(e); }
 }
 
 /* ============ RINGKASAN HARI INI (dipakai Dashboard & Widget Cepat) ============ */
@@ -10756,9 +10775,10 @@ function insightWrapHtml(emoji, bodyHtml){
     '<span style="flex-shrink:0; width:30px; height:30px; border-radius:10px; background:var(--primary-dim); display:flex; align-items:center; justify-content:center; font-size:15px;">'+emoji+'</span>'+
     '<div style="flex:1; min-width:0; padding-top:3px;">'+bodyHtml+'</div></div>';
 }
-function renderInsight(currentTotal){
-  var card = document.getElementById('db-insight-card');
-  var el = document.getElementById('db-insight');
+function renderInsight(currentTotal, opt){
+  opt = opt || {};
+  var card = opt.el ? {style:{}} : document.getElementById('db-insight-card');
+  var el = opt.el || document.getElementById('db-insight');
   if(!card || !el) return;
 
   if(saldoHidden){
@@ -10813,7 +10833,7 @@ function renderInsight(currentTotal){
     cap = '';
   }
 
-  var h = '<div class="ins '+cls+(window._insOpen?' open':'')+'">';
+  var h = '<div class="ins '+cls+((opt.open||window._insOpen)?' open':'')+'">';
   /* hero */
   h += '<div class="ins-hero"><div class="ins-badge">'+ico+'</div><div class="ins-main">'+
        '<div class="ins-chip">'+chip+'</div>'+
@@ -10856,7 +10876,7 @@ function renderInsight(currentTotal){
     }
 
     /* 3 pos terbesar */
-    var tl = insightTopList(y, m, 3);
+    var tl = insightTopList(y, m, opt.open ? 8 : 3);
     if(tl && tl.items.length){
       h += '<div class="ins-tophd">'+L('Pos terbesar bulan ini','Top categories this month')+'</div><div class="ins-toplist">';
       tl.items.forEach(function(it, idx){
@@ -10871,7 +10891,7 @@ function renderInsight(currentTotal){
     }
   }
   if(st!=='empty'){
-    h += '</div><button type="button" class="ins-toggle" onclick="var i=this.closest(\'.ins\'); i.classList.toggle(\'open\'); window._insOpen=i.classList.contains(\'open\');"><span class="a">Lihat detail ▾</span><span class="b">Sembunyikan ▴</span></button>';
+    h += '</div>' + (opt.open ? '' : '<button type="button" class="ins-toggle" onclick="var i=this.closest(\'.ins\'); i.classList.toggle(\'open\'); window._insOpen=i.classList.contains(\'open\');"><span class="a">Lihat detail ▾</span><span class="b">Sembunyikan ▴</span></button>');
   }
   h += '<div class="ins-msg">'+msg+'</div></div>';
   el.innerHTML = h;
@@ -10950,6 +10970,7 @@ function renderStokDashboard(){
   if(!el) return;
   var list = [];
   try{ list = daftarBelanjaStok(); }catch(e){ list = []; }
+  window._stokList = list;
   if(!list.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
   list.sort(function(a,b){
     var ha = a.stok<=0 ? -1 : a.hariLagi, hb = b.stok<=0 ? -1 : b.hariLagi;
@@ -11024,6 +11045,7 @@ function renderReminders(){
   }catch(e){}
 
   renderStokDashboard();
+  window._remItems = items;
 
   if(items.length===0){ wrap.style.display = 'none'; el.innerHTML = ''; return; }
 
@@ -20495,7 +20517,7 @@ document.addEventListener('change', function(e){ if(e.target && e.target.id==='g
 /* Desktop: kelompokkan tiap halaman form+daftar jadi kolom kiri (form/filter) & kanan (daftar). Di HP wrapper "display:contents" jadi tidak mengubah tampilan. */
 (function(){
   'use strict';
-  var SKIP = {'view-dashboard':1,'view-riwayat':1,'view-catat':1,'view-laporan':1,'view-pengaturan':1,'view-kelola-kategori':1,'view-coa':1,'view-riwayat-update':1,'view-grafik':1,'view-kesehatan':1,'view-widget':1};
+  var SKIP = {'view-dashboard':1,'view-riwayat':1,'view-catat':1,'view-laporan':1,'view-pengaturan':1,'view-kelola-kategori':1,'view-coa':1,'view-riwayat-update':1,'view-grafik':1,'view-kesehatan':1,'view-widget':1,'view-insight':1,'view-saldo-rekening':1};
   var NARROW = {'view-inventaris':1,'view-asetbio':1};
   /* halaman tanpa kartu daftar: kiri = sampai elemen ini, kanan = sisanya */
   var SPLIT = {'view-atur-budget':'#set-budget', 'view-edit-saldo-awal':'#set-accounts', 'view-analisis-ai':':scope > .card'};
@@ -23083,6 +23105,74 @@ html[data-layout="desktop"] .sk-chip,html[data-layout="desktop"] .sk-more{width:
   .al-go{padding:6px 8px;}
 }
 </style>
+<style id="tk-dash-compact">
+/* Dashboard ringkas (desktop): semua komponen muat satu layar, detail dibuka di halaman masing-masing */
+#db-compact{display:none;}
+html[data-layout="desktop"] #view-dashboard > main{display:none !important;}
+html[data-layout="desktop"] #db-compact{display:grid; gap:12px; padding:14px; box-sizing:border-box;
+  grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:auto auto minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr);
+  height:calc(100vh - var(--dbc-top,170px) - var(--dbc-bot,0px)); min-height:380px;}
+.dc-qa{grid-column:1 / -1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px;}
+.dc-qa .qb{display:flex; align-items:center; justify-content:center; gap:10px; padding:6px 8px; border-radius:14px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); cursor:pointer; font-size:13px; font-weight:700; transition:border-color .15s, transform .12s;}
+.dc-qa .qb:hover{border-color:var(--primary);}
+.dc-qa .qb:active{transform:scale(.98);}
+.dc-qa .qi{width:26px; height:26px; border-radius:9px; background:var(--primary-dim); color:var(--primary); display:grid; place-items:center;}
+.dc-qa .qi svg{width:17px; height:17px;}
+.dc-t{margin:0 !important; padding:10px 12px !important; min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; cursor:pointer; border-radius:18px; transition:border-color .15s;}
+.dc-t:hover{border-color:var(--primary);}
+.dc-t.dc-static{cursor:default;}
+.dc-t.dc-static:hover{border-color:var(--line);}
+.dc-h{display:flex; align-items:center; gap:8px; margin-bottom:6px; min-width:0; flex-shrink:0;}
+.dc-ic{width:24px; height:24px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; color:var(--c); background:color-mix(in srgb,var(--c) 15%,transparent);}
+.dc-ic svg{width:14px; height:14px;}
+.dc-ttl{font-size:13.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;}
+.dc-pill{font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; color:var(--c); background:color-mix(in srgb,var(--c) 15%,transparent); white-space:nowrap;}
+.dc-tot{font-size:12.5px; font-weight:800; white-space:nowrap; font-family:ui-monospace,Menlo,monospace;}
+.dc-go{display:flex; color:var(--text-2); flex-shrink:0;}
+.dc-go svg{width:14px; height:14px;}
+.dc-stat{justify-content:center; gap:2px;}
+.dc-l{font-size:11.5px; font-weight:700; color:var(--text-2);}
+.dc-v{font-size:21px; font-weight:800; line-height:1.2; font-family:ui-monospace,Menlo,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.dc-s{font-size:11px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0;}
+.dc-list{flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:3px;}
+.dc-r{display:flex; align-items:center; gap:7px; padding:3px 8px 3px 9px; border-radius:9px; border-left:3px solid var(--c,var(--line)); background:color-mix(in srgb,var(--c,var(--text-2)) 7%,transparent); min-width:0; flex-shrink:0; font-size:12px;}
+.dc-rt{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;}
+.dc-rt em{font-style:normal; font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--c,var(--text-2)); margin-right:6px;}
+.dc-ra{font-family:ui-monospace,Menlo,monospace; font-size:12px; font-weight:700; white-space:nowrap;}
+.dc-ra.neg{color:var(--danger);}
+.dc-ra.pos{color:var(--pos);}
+.dc-rb{font-size:10.5px; font-weight:800; padding:1px 8px; border-radius:999px; color:var(--c); background:color-mix(in srgb,var(--c) 15%,transparent); white-space:nowrap;}
+.dc-rd{font-size:11px; color:var(--text-2); white-space:nowrap;}
+.dc-more{font-size:11.5px; font-weight:700; color:var(--primary); padding:1px 4px; flex-shrink:0;}
+.ins-more{display:flex; flex-direction:column; gap:10px;}
+.dc-ok{display:flex; align-items:center; gap:8px; color:var(--pos); font-weight:600; font-size:13px; margin:auto 0;}
+.dc-ok svg{width:18px; height:18px;}
+.dc-ib{flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-start; gap:6px;}
+.dc-big{font-size:26px; font-weight:800; line-height:1.1; font-family:ui-monospace,Menlo,monospace; flex-shrink:0;}
+.dc-mini{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; flex-shrink:0;}
+.dc-mini div{background:var(--primary-dim); border-radius:10px; padding:6px 8px; min-width:0;}
+.dc-mini span{display:block; font-size:10.5px; color:var(--text-2); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.dc-mini b{font-size:13px; font-family:ui-monospace,Menlo,monospace;}
+/* halaman Saldo per Rekening */
+.sr-sum{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px;}
+.sr-s{background:var(--primary-dim); border-radius:14px; padding:10px 12px;}
+.sr-s span{display:block; font-size:11.5px; color:var(--text-2); font-weight:600;}
+.sr-s b{font-size:17px; font-family:ui-monospace,Menlo,monospace;}
+.sr-chips{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 6px;}
+.sr-chip{border:1px solid var(--line); background:var(--surface); color:var(--text); border-radius:999px; padding:6px 12px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer;}
+.sr-chip.on{background:var(--primary); color:var(--on-primary); border-color:var(--primary);}
+.sr-gh{display:flex; justify-content:space-between; align-items:baseline; margin:16px 0 4px; font-weight:800; font-size:14px;}
+.sr-gh small{color:var(--text-2); font-weight:600; margin-left:6px; font-size:12px;}
+.sr-gh .mono{font-size:13px;}
+.sr-row{display:flex; align-items:center; gap:12px; padding:10px 8px; border-bottom:1px solid var(--line); cursor:pointer; border-radius:10px;}
+.sr-row:hover{background:var(--primary-dim);}
+.sr-mid{flex:1; min-width:0;}
+.sr-nm{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.sr-cap{font-size:11.5px; color:var(--text-2);}
+.sr-val{font-weight:800; white-space:nowrap;}
+.sr-val.neg{color:var(--danger);}
+.sr-hint{font-size:12px; color:var(--text-2); margin:10px 0 0;}
+</style>
 <style id="tk-light-v3">
 /* ============ TEMA TERANG v3: tidak lagi abu-abu polos, lebih segar & hidup (mode gelap tidak berubah) ============ */
 html[data-theme="light"]{
@@ -23855,5 +23945,208 @@ html, html[data-theme="dark"]{ --tk-motif: url("data:image/svg+xml,%3Csvg xmlns=
 html[data-theme="light"]{ --tk-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Cpath d='M20 0V20H0' fill='none' stroke='%230D0D0D' stroke-width='1' opacity='0.09'/%3E%3C/svg%3E"); }
 body::before, html[data-theme="light"] body::before, #screen-auth{ background-size:20px 20px !important; }
 </style>
+<script id="tk-dash-compact-js">
+/* ============ DASHBOARD RINGKAS (desktop) + halaman Insight & Saldo per Rekening ============ */
+var srFilter = 'all';
+function dcAccBadge(display){
+  var b = getAccountBadge(display);
+  if(b.img && b.shape==='chip') return '<span class="acc-badge img-chip"><img src="'+b.img+'" alt="'+escapeHtml(display)+'"></span>';
+  if(b.img) return '<span class="acc-badge img-square" style="background:'+b.bg+'"><img src="'+b.img+'" alt="'+escapeHtml(display)+'"></span>';
+  if(b.icon && ICONS[b.icon]) return '<span class="acc-badge" style="background:'+b.bg+';color:#fff;">'+ICONS[b.icon]+'</span>';
+  return '<span class="acc-badge" style="background:'+b.bg+'">'+b.initial+'</span>';
+}
+function dcRemBadge(x){
+  if(x.badge) return {t:x.badge, c:'var(--danger)'};
+  if(x.days<0) return {t:L('Telat ','Late ')+Math.abs(x.days)+L(' hari',' d'), c:'var(--danger)'};
+  if(x.days===0) return {t:L('Hari ini','Today'), c:'var(--danger)'};
+  if(x.days===1) return {t:L('Besok','Tomorrow'), c:'var(--warn)'};
+  return {t:x.days+L(' hari',' d'), c:'var(--warn)'};
+}
+function dcHead(icon, c, title, right){
+  return '<div class="dc-h"><span class="dc-ic" style="--c:'+c+';">'+(ICONS[icon]||'')+'</span><span class="dc-ttl">'+title+'</span>'+(right||'')+'<span class="dc-go">'+ICONS.chevronRight+'</span></div>';
+}
+function dcInsight(){
+  var now = new Date(), y = now.getFullYear(), m = now.getMonth()+1;
+  var prevM = m===1 ? 12 : m-1, prevY = m===1 ? y-1 : y;
+  var dHari = now.getDate(), dMonth = new Date(y, m, 0).getDate();
+  var dSama = Math.min(dHari, new Date(prevY, prevM, 0).getDate());
+  var thisM = bebanOperasional(firstDayStr(y, m), todayISO());
+  var lastSame = bebanOperasional(firstDayStr(prevY, prevM), prevY+'-'+String(prevM).padStart(2,'0')+'-'+String(dSama).padStart(2,'0'));
+  var avg = dHari>0 ? thisM/dHari : 0, pct = null;
+  if(lastSame>0){ var diff = thisM-lastSame; pct = Math.round(Math.abs(diff)/lastSame*100); if(pct<1) pct = 0; else if(diff<0) pct = -pct; }
+  return {thisM:thisM, avg:avg, proj:avg*dMonth, pct:pct, lastSame:lastSame};
+}
+function renderDashCompact(){
+  var el = document.getElementById('db-compact'); if(!el) return;
+  function qb(g, ic, lb){ return '<div class="qb" data-goto="'+g+'" role="button" tabindex="0"><span class="qi">'+(ICONS[ic]||'')+'</span><span>'+lb+'</span></div>'; }
+  function stat(attrs, label, value, sub, c){
+    return '<div class="card dc-t dc-stat" '+attrs+' role="button" tabindex="0"><div class="dc-l">'+label+'</div><div class="dc-v"'+(c?' style="color:'+c+';"':'')+'>'+value+'</div><div class="dc-s">'+(sub||'&nbsp;')+'</div></div>';
+  }
+  var h = '<div class="dc-qa">'+qb('transfer','transfer','Transfer')+qb('masuk','arrowDown',L('Masuk','Income'))+qb('keluar','arrowUp',L('Keluar','Expense'))+qb('catat','plus',L('Lainnya','More'))+'</div>';
+
+  /* baris 2: statistik ringkas */
+  var nb = todayNonBebanTotal();
+  h += stat('onclick="openTodayModal(\'keluar\')"', L('Keluar hari ini','Spent today'), maskOrFmt(todayPengeluaranTotal()), nb>0 ? '+ '+maskOrFmt(nb)+L(' jadi aset/stok',' to assets/stock') : '', 'var(--danger)');
+  h += stat('onclick="openTodayModal(\'masuk\')"', L('Masuk hari ini','Income today'), maskOrFmt(todayPemasukanTotal()), '', 'var(--pos)');
+  var nwTxt = '0', nwSub = '', nwCol = '';
+  try{
+    var now = new Date(), pm = now.getMonth()===0 ? 12 : now.getMonth(), py = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+    var cur = netWorthAt(todayISO()).net, prev = netWorthAt(lastDayStr(py, pm)).net, dl = cur-prev;
+    nwTxt = maskOrFmt(cur);
+    if(!saldoHidden){ nwSub = (dl===0 ? '' : (dl>0 ? '▲ ' : '▼ '))+(prev!==0 ? (Math.abs(dl/prev)*100).toFixed(1) : '0')+'% '+L('vs bulan lalu','vs last month'); nwCol = cur<0 ? 'var(--danger)' : ''; }
+  }catch(e){}
+  h += stat('data-goto="grafik" data-nwopen="1"', L('Kekayaan bersih','Net worth'), nwTxt, nwSub, nwCol);
+  var hs = null; try{ hs = computeHealthScore(); }catch(e){}
+  h += stat('data-goto="kesehatan"', L('Kesehatan finansial','Financial health'), hs && hs.hasData ? hs.score : '–', hs && hs.hasData ? hs.grade+(hs.provisional ? ' · '+L('sementara','provisional') : '') : L('Belum ada data','No data yet'), hs && hs.hasData ? hs.color : '');
+
+  /* baris 3: perlu perhatian + stok */
+  var rem = window._remItems || [];
+  if(!rem.length){
+    h += '<div class="card dc-t dc-static" style="grid-column:span 2;">'+dcHead('bell','var(--pos)',L('Jatuh tempo','Due soon'),'').replace('<span class="dc-go">'+ICONS.chevronRight+'</span>','')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Tidak ada yang jatuh tempo atau minus.','Nothing due or overdrawn.')+'</span></div></div>';
+  } else {
+    var urgent = rem.filter(function(x){ return x.days<=0 || x.badge; }).length;
+    var rc = urgent ? 'var(--danger)' : 'var(--warn)';
+    var maxR = 14, rows = rem.slice(0,maxR).map(function(x){
+      var b = dcRemBadge(x);
+      return '<div class="dc-r" data-goto="'+x.goto+'" style="--c:'+b.c+';"><span class="dc-rt"><em>'+escapeHtml(x.tipe)+'</em>'+escapeHtml(x.label)+'</span><span class="dc-ra">'+(x.neg ? '−' : '')+maskOrFmt(x.jumlah)+'</span><span class="dc-rb">'+b.t+'</span></div>';
+    }).join('');
+    h += '<div class="card dc-t" data-goto="'+rem[0].goto+'" style="grid-column:span 2;">'+
+      dcHead('bell',rc,L('Perlu perhatian','Needs attention'),'<span class="dc-pill" style="--c:'+rc+';">'+rem.length+(urgent ? ' · '+urgent+L(' mendesak',' urgent') : '')+'</span>')+
+      '<div class="dc-list" data-extra="'+Math.max(0,rem.length-maxR)+'">'+rows+'<div class="dc-more"></div></div></div>';
+  }
+  var sl = window._stokList || [];
+  var habis = sl.filter(function(x){ return x.stok<=0; }).length;
+  if(!sl.length){
+    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:span 2;">'+dcHead('box','var(--pos)',L('Stok barang','Item stock'),'')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Semua stok aman.','All stock is fine.')+'</span></div></div>';
+  } else {
+    var sc = habis ? 'var(--danger)' : 'var(--warn)', maxS = 14;
+    var sorted = sl.slice().sort(function(a,b){ return (a.stok<=0 ? -1 : (a.hariLagi==null ? 9999 : a.hariLagi)) - (b.stok<=0 ? -1 : (b.hariLagi==null ? 9999 : b.hariLagi)); });
+    var srows = sorted.slice(0,maxS).map(function(x){
+      var hb = x.stok<=0, c = hb ? 'var(--danger)' : 'var(--warn)';
+      return '<div class="dc-r" style="--c:'+c+';"><span class="dc-rt">'+escapeHtml(x.nama)+'</span><span class="dc-rb">'+(hb ? L('Habis','Out') : escapeHtml(x.stok+' '+x.satuan))+'</span></div>';
+    }).join('');
+    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:span 2;">'+
+      dcHead('box',sc,L('Stok perlu dibeli','Stock to buy'),'<span class="dc-pill" style="--c:'+sc+';">'+(habis ? habis+L(' habis',' out') : sl.length+L(' menipis',' low'))+'</span>')+
+      '<div class="dc-list" data-extra="'+Math.max(0,sorted.length-maxS)+'">'+srows+'<div class="dc-more"></div></div></div>';
+  }
+
+  /* baris 4: saldo per rekening + insight */
+  var accs = ACCOUNTS.filter(function(a){ return !isChildAccountEntry(a); }).map(function(a){ var d = activeAccountFor(a); return {n:d, v:saldoAkun(d)}; }).sort(function(a,b){ return b.v-a.v; });
+  var arows = accs.map(function(a){
+    return '<div class="dc-r" data-acc="'+escapeHtml(a.n)+'" style="--c:'+(a.v<0 ? 'var(--danger)' : 'var(--primary)')+';"><span class="dc-rt">'+escapeHtml(a.n)+'</span><span class="dc-ra'+(a.v<0 && !saldoHidden ? ' neg' : '')+'">'+maskOrFmt(a.v)+'</span></div>';
+  }).join('');
+  h += '<div class="card dc-t" data-goto="saldo-rekening" style="grid-column:span 2;">'+
+    dcHead('cash','var(--primary)',L('Saldo per rekening','Balance per account'),'<span class="dc-tot">'+maskOrFmt(totalSaldo())+'</span>')+
+    '<div class="dc-list" data-extra="0">'+(arows || '<div class="dc-s">'+L('Belum ada rekening.','No accounts yet.')+'</div>')+'<div class="dc-more"></div></div></div>';
+
+  var ins = dcInsight(), ib;
+  if(saldoHidden){
+    ib = '<div class="dc-s">'+L('Insight disembunyikan bareng saldo.','Insight is hidden together with balances.')+'</div>';
+  } else if(ins.thisM===0 && ins.lastSame===0){
+    ib = '<div class="dc-s">'+L('Belum ada pengeluaran tercatat bulan ini.','No spending recorded this month yet.')+'</div>';
+  } else {
+    var big = ins.pct===null ? fmt(ins.thisM) : (ins.pct>0 ? '+' : (ins.pct<0 ? '−' : '≈ '))+Math.abs(ins.pct)+'%';
+    var bc = ins.pct===null || ins.pct===0 ? '' : (ins.pct>0 ? 'var(--danger)' : 'var(--pos)');
+    var cap = ins.pct===null ? L('Pengeluaran bulan ini','Spending this month') : L('Pengeluaran dibanding periode sama bulan lalu','Spending vs same period last month');
+    ib = '<div class="dc-big"'+(bc ? ' style="color:'+bc+';"' : '')+'>'+big+'</div><div class="dc-s">'+cap+'</div>'+
+      '<div class="dc-mini"><div><span>'+L('Bulan ini','This month')+'</span><b>'+fmtShort(ins.thisM)+'</b></div><div><span>'+L('Rata-rata/hari','Avg / day')+'</span><b>'+fmtShort(ins.avg)+'</b></div><div><span>'+L('Proyeksi bln','Month est.')+'</span><b>'+fmtShort(ins.proj)+'</b></div></div>';
+  }
+  h += '<div class="card dc-t" data-goto="insight" style="grid-column:span 2;">'+dcHead('sparkles','var(--gold-text,var(--warn))','Insight','')+'<div class="dc-ib">'+ib+'</div></div>';
+
+  /* baris 5: transaksi terbaru */
+  var all = buildAllTransactions(), maxT = 12;
+  var trows = all.slice(0,maxT).map(function(t){
+    var sign = t.sign>0 ? '+' : (t.sign<0 ? '-' : '');
+    var title = String(t.label||'').split(' • ')[0] || t.tipe;
+    return '<div class="dc-r" style="--c:'+(t.sign<0 ? 'var(--danger)' : (t.sign>0 ? 'var(--pos)' : 'var(--text-2)'))+';"><span class="dc-rt"><em>'+escapeHtml(t.tipe)+'</em>'+escapeHtml(title)+'</span><span class="dc-rd">'+escapeHtml(fmtTglIndo(t.tanggal))+'</span><span class="dc-ra '+(t.sign<0 ? 'neg' : (t.sign>0 ? 'pos' : ''))+'">'+sign+maskOrFmt(t.jumlah)+'</span></div>';
+  }).join('');
+  h += '<div class="card dc-t" data-goto="riwayat" style="grid-column:1 / -1;">'+dcHead('clock','var(--info,var(--primary))',L('Transaksi terbaru','Recent transactions'),'')+
+    (all.length ? '<div class="dc-list" data-extra="0" data-always="1">'+trows+'<div class="dc-more"></div></div>' : '<div class="dc-s">'+L('Belum ada transaksi.','No transactions yet.')+'</div>')+'</div>';
+
+  el.innerHTML = h;
+  dcLayout();
+  requestAnimationFrame(function(){ dcLayout(); });
+  setTimeout(dcLayout, 400);
+}
+function dcFit(){
+  /* kartu Insight: kalau tinggi tidak cukup, sembunyikan statistik kecil dulu, lalu keterangan */
+  document.querySelectorAll('#db-compact .dc-ib').forEach(function(ib){
+    var mini = ib.querySelector('.dc-mini'), cap = ib.querySelector('.dc-big + .dc-s');
+    if(mini) mini.style.display = ''; if(cap) cap.style.display = '';
+    if(mini && ib.scrollHeight>ib.clientHeight+1) mini.style.display = 'none';
+    if(cap && ib.scrollHeight>ib.clientHeight+1) cap.style.display = 'none';
+  });
+  document.querySelectorAll('#db-compact .dc-list').forEach(function(l){
+    var rows = [].slice.call(l.querySelectorAll('.dc-r')), more = l.querySelector('.dc-more');
+    var extra = parseInt(l.getAttribute('data-extra')||'0',10), always = l.getAttribute('data-always')==='1', vis = rows.length;
+    function apply(){
+      rows.forEach(function(r,i){ r.style.display = i<vis ? '' : 'none'; });
+      if(!more) return;
+      var rest = (rows.length-vis)+extra;
+      if(always){ more.style.display = ''; more.textContent = L('Lihat semua riwayat','See all history')+' ›'; }
+      else { more.style.display = rest>0 ? '' : 'none'; more.textContent = '+'+rest+' '+L('lainnya','more'); }
+    }
+    apply();
+    while(vis>1 && l.scrollHeight>l.clientHeight+1){ vis--; apply(); }
+  });
+}
+function dcLayout(){
+  var el = document.getElementById('db-compact'), v = document.getElementById('view-dashboard');
+  if(!el || !v || !v.classList.contains('active') || document.documentElement.getAttribute('data-layout')!=='desktop') return;
+  var top = 0, n = el;
+  while(n){ top += n.offsetTop||0; n = n.offsetParent; }
+  document.documentElement.style.setProperty('--dbc-top', Math.round(top)+'px');
+  dcFit();
+}
+(function(){
+  var t = null;
+  window.addEventListener('resize', function(){ clearTimeout(t); t = setTimeout(dcLayout, 120); });
+})();
+
+/* ---- Halaman Insight ---- */
+function renderInsightPage(){
+  var b = document.getElementById('insight-page-body'); if(!b) return;
+  renderInsight(null, {el:b, open:true});
+}
+
+/* ---- Halaman Saldo per Rekening ---- */
+function srSetFilter(k){ srFilter = k; renderSaldoRekeningPage(); }
+function renderSaldoRekeningPage(){
+  var box = document.getElementById('sr-body'); if(!box) return;
+  var total = totalSaldo(), mengendap = totalSaldoMengendap(), minus = ksSaldoMinus();
+  var list = ACCOUNTS.filter(function(a){
+    if(isChildAccountEntry(a)) return false;
+    return srFilter==='all' || (ACCOUNT_CATEGORY[a]||'bank')===srFilter;
+  });
+  var sum = '<div class="sr-sum"><div class="sr-s"><span>'+L('Total saldo','Total balance')+'</span><b>'+maskOrFmt(total)+'</b></div>'+
+    (mengendap>0 ? '<div class="sr-s"><span>'+L('Bisa diambil','Available')+'</span><b>'+maskOrFmt(total-mengendap)+'</b></div>' : '')+
+    (minus>0 ? '<div class="sr-s"><span>'+L('Saldo minus','Overdrawn')+'</span><b style="color:var(--danger);">'+maskOrFmt(minus)+'</b></div>' : '')+
+    '<div class="sr-s"><span>'+L('Jumlah rekening','Accounts')+'</span><b>'+list.length+'</b></div></div>';
+  var chips = '<div class="sr-chips">'+['all','cash','ewallet','bank','investasi','pulsa'].map(function(k){
+    return '<button type="button" class="sr-chip'+(k===srFilter ? ' on' : '')+'" onclick="srSetFilter(\''+k+'\')">'+(k==='all' ? L('Semua','All') : escapeHtml(REK_KAT_LABEL[k]||k))+'</button>';
+  }).join('')+'</div>';
+  var order = ['cash','ewallet','bank','investasi','pulsa'], groups = {}, totals = {};
+  order.forEach(function(k){ groups[k] = []; totals[k] = 0; });
+  list.forEach(function(a){
+    var display = activeAccountFor(a), v = saldoAkun(display), k = ACCOUNT_CATEGORY[a] || 'bank';
+    if(!groups[k]){ groups[k] = []; totals[k] = 0; order.push(k); }
+    totals[k] += v;
+    var siblings = siblingAccountsOf(a).length, info = DATA.accountInfo[display] || {}, cap = '';
+    if(siblings>1) cap = info.label ? info.label : (display===a ? 'Rekening utama' : display);
+    if(ACCOUNT_CATEGORY[display]==='investasi') cap += (cap ? ' · ' : '')+'Freshmoney '+maskOrFmt(freshmoneyAkun(display));
+    else if(isHybridTabunganInvestasi(display)) cap += (cap ? ' · ' : '')+'Tabungan '+maskOrFmt(freshmoneyAkun(display));
+    groups[k].push('<div class="sr-row" data-acc="'+escapeHtml(display)+'">'+dcAccBadge(display)+
+      '<div class="sr-mid"><div class="sr-nm">'+escapeHtml(siblings>1 ? a : display)+'</div>'+(cap ? '<div class="sr-cap">'+escapeHtml(cap)+'</div>' : '')+'</div>'+
+      '<span class="sr-val mono'+(v<0 && !saldoHidden ? ' neg' : '')+'">'+maskOrFmt(v)+'</span></div>');
+  });
+  var body = '';
+  order.forEach(function(k){
+    if(!groups[k] || !groups[k].length) return;
+    body += '<div class="sr-gh"><span>'+escapeHtml(REK_KAT_LABEL[k]||k)+'<small>'+groups[k].length+' '+L('rekening','accounts')+'</small></span><span class="mono">'+maskOrFmt(totals[k])+'</span></div>'+groups[k].join('');
+  });
+  if(!body) body = '<div class="empty">'+L('Belum ada rekening di kategori ini.','No accounts in this category yet.')+'</div>';
+  box.innerHTML = sum+chips+body+'<p class="sr-hint">'+L('Ketuk rekening untuk melihat mutasinya.','Tap an account to see its transactions.')+'</p>';
+}
+</script>
 </body>
 </html>
