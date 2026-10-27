@@ -3658,6 +3658,23 @@ html[data-layout="desktop"] #goals-list > .goal-acc:first-child, html[data-layou
   </div>
 </div>
 
+<!-- ============ MODAL JADIKAN DANA TITIPAN JADI HUTANG ============ -->
+<div class="modal-overlay" id="tt-hutang-modal-overlay">
+  <div class="modal-box" style="max-width:340px; text-align:left;">
+    <h3 style="margin:0 0 4px; font-family:var(--font-disp); font-size:16px;">Jadikan Hutang</h3>
+    <div class="meta-sub" style="margin-bottom:12px;" id="tt-hutang-info"></div>
+    <div class="field"><label>Jumlah yang jadi hutang</label><input type="text" class="money-input" id="tt-hutang-jumlah" placeholder="0" inputmode="numeric"></div>
+    <div class="field"><label>Tanggal jadi hutang</label><input type="date" id="tt-hutang-tanggal"></div>
+    <div class="field"><label>Tanggal Jatuh Tempo (opsional)</label><input type="date" id="tt-hutang-jt"></div>
+    <div style="font-size:11.5px; color:var(--text-2); margin:0 0 12px; line-height:1.5;">Uangnya sudah ada di saldo, jadi saldo rekening tidak berubah dan kekayaan bersih tetap sama. Yang berpindah hanya pencatatannya: dari Dana Titipan ke Hutang. Kalau jumlahnya lebih kecil dari titipan, sisanya tetap jadi titipan aktif.</div>
+    <div id="tt-hutang-err" style="font-size:11.5px; color:var(--danger); min-height:16px; margin-bottom:6px;"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="tt-hutang-cancel">Batal</button>
+      <button class="confirm" id="tt-hutang-simpan" style="background:var(--primary);">Jadikan Hutang</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ MODAL JUAL SISA ASET RUSAK ============ -->
 <div class="modal-overlay" id="jual-rusak-modal-overlay">
   <div class="modal-box" style="max-width:340px; text-align:left;">
@@ -3990,6 +4007,7 @@ function isHybridTabunganInvestasi(acc){
    ini -- nomor versi yang ditampilkan di halaman Pengaturan otomatis ikut ke-update,
    nggak perlu ubah HTML manual. */
 var CHANGELOG = [
+  { versi:"1.12.1", catatan:'Dana Titipan bisa dijadikan Hutang. Di kartu titipan yang masih Aktif ada tombol "Jadikan hutang": pilih jumlahnya (semua atau sebagian), tanggal, dan jatuh tempo. Titipan berubah jadi "Dijadikan Hutang" dan otomatis tercatat di menu Hutang (bisa dicicil dan dilunasi seperti biasa). Saldo rekening dan kekayaan bersih tidak berubah, karena uangnya memang sudah ada di saldo. Kalau hutang hasil konversi dihapus, titipannya aktif lagi.' },
   { versi:"1.12.0", catatan:'Dashboard desktop dirombak jadi ringkas dan muat satu layar laptop: semua komponen (aksi cepat, pengeluaran dan pemasukan hari ini, kekayaan bersih, kesehatan finansial, perlu perhatian, stok, saldo per rekening, insight, transaksi terbaru) tampil sebagai kartu ringkas, dan kalau diklik membuka halaman detailnya. Halaman baru: Insight dan Saldo per Rekening. Tampilan HP tidak berubah.' },
   { versi:"1.11.7", catatan:'Perbaikan tampilan desktop: kartu "Perlu perhatian" dan "Stok perlu dibeli" tidak lagi berdesakan di kolom sempit. Daftar pengingat satu kolom (dua kolom hanya kalau kartunya lebar), dan kartu stok menyesuaikan lebar kolom.' },
   { versi:"1.11.6", catatan:'Kesehatan Finansial: saldo rekening yang minus sekarang dihitung sebagai hutang di pilar Rasio Hutang (muncul sebagai baris "Saldo rekening minus" di rinciannya). Aset bersih memakai saldo rekening positif saja supaya minus tidak terhitung dua kali.' },
@@ -7374,6 +7392,69 @@ document.addEventListener('click', function(e){
   var b = e.target.closest ? e.target.closest('[data-tt-pindah]') : null;
   if(b){ bukaPindahTitipan(parseInt(b.getAttribute('data-tt-pindah'),10)); }
 });
+/* ===== Jadikan dana titipan jadi hutang =====
+   Uang titipan sudah ada di saldo rekening. Saat dijadikan hutang, titipan ditandai "Dijadikan Hutang" (tetap menambah saldo, tidak lagi dihitung
+   sebagai titipan aktif) dan dibuat catatan Hutang bertanda tanpaSaldo supaya saldo tidak dobel. Kalau jumlahnya sebagian, titipan dipecah dua. */
+var TT_HUTANG_IDX = null;
+function titipanBisaJadiHutang(t){ return !!t && t.status==='Aktif' && !t.tanpaSaldo && (t.jumlah||0)>0; }
+function tandaiTitipanDikonversi(t, h){ t.status = 'Dijadikan Hutang'; t.hutangId = h.id; t.tanggalKonversi = h.tanggal; }
+function bukaKonversiTitipan(i){
+  var t = DATA.titipan[i]; if(!titipanBisaJadiHutang(t)) return;
+  TT_HUTANG_IDX = i;
+  document.getElementById('tt-hutang-info').textContent = (t.nama||'Titipan')+' • '+fmt(t.jumlah)+' • di '+accountOptionLabel(t.metode);
+  document.getElementById('tt-hutang-jumlah').value = formatMoneyValue(t.jumlah);
+  document.getElementById('tt-hutang-tanggal').value = todayISO();
+  document.getElementById('tt-hutang-jt').value = t.jatuhTempo || '';
+  document.getElementById('tt-hutang-err').textContent = '';
+  document.getElementById('tt-hutang-modal-overlay').classList.add('show');
+}
+function tutupKonversiTitipan(){
+  document.getElementById('tt-hutang-modal-overlay').classList.remove('show');
+  TT_HUTANG_IDX = null;
+}
+function simpanKonversiTitipan(){
+  var t = DATA.titipan[TT_HUTANG_IDX];
+  if(!titipanBisaJadiHutang(t)){ tutupKonversiTitipan(); return; }
+  var errEl = document.getElementById('tt-hutang-err');
+  var jml = parseMoneyValue(document.getElementById('tt-hutang-jumlah').value);
+  var tgl = document.getElementById('tt-hutang-tanggal').value;
+  var jt = document.getElementById('tt-hutang-jt').value;
+  if(!jml || jml<=0){ errEl.textContent = 'Isi jumlah dulu'; return; }
+  if(jml > t.jumlah){ errEl.textContent = 'Jumlah tidak boleh lebih besar dari dana titipan ('+fmt(t.jumlah)+')'; return; }
+  if(!tgl){ errEl.textContent = 'Isi tanggalnya dulu'; return; }
+  if(t.tanggal && tgl < t.tanggal){ errEl.textContent = 'Tanggal tidak boleh sebelum titipan masuk ('+fmtTglIndo(t.tanggal)+')'; return; }
+  var target = t;
+  if(jml < t.jumlah){
+    /* Sebagian saja: pecah titipan. Bagian yang jadi hutang dibuat sebagai catatan titipan sendiri dengan tanggal masuk yang sama, jadi saldo tidak berubah. */
+    target = JSON.parse(JSON.stringify(t));
+    target.id = genId('tt'); target.jumlah = jml; target.jatuhTempo = ''; target.splitDari = t.id;
+    t.jumlah = t.jumlah - jml;
+    DATA.titipan.splice(TT_HUTANG_IDX+1, 0, target);
+  }
+  var h = { id:genId('ht'), tanggal:tgl, metode:target.metode, jumlah:jml,
+    untuk:'Dari titipan '+(target.nama||'-')+(target.untuk ? ' ('+target.untuk+')' : ''),
+    status:'Belum Lunas', metodeBayar:'', jatuhTempo:jt, cicilanBulanan:0, tglCicilan:0,
+    ket:'Dana titipan dijadikan hutang', tanpaSaldo:true, titipanId:target.id };
+  DATA.hutang.push(h);
+  tandaiTitipanDikonversi(target, h);
+  saveData(); tutupKonversiTitipan();
+  renderTitipanList(); renderHutangList(); try{ renderReminders(); renderDashboard(); }catch(e){}
+  toast('Titipan '+fmt(jml)+' dijadikan hutang');
+}
+/* Hapus hutang hasil konversi: titipannya aktif lagi. Hapus titipan yang sudah jadi hutang: hutangnya ikut terhapus (masuk Tempat Sampah bareng). */
+function balikkanTitipanDariHutang(h){
+  if(!h || !h.titipanId) return;
+  var t = DATA.titipan.filter(function(x){ return x.id===h.titipanId; })[0];
+  if(t && t.status==='Dijadikan Hutang'){ t.status = 'Aktif'; delete t.hutangId; delete t.tanggalKonversi; }
+}
+function hapusHutangDariTitipan(t){
+  if(!t || !t.hutangId) return;
+  DATA.hutang = DATA.hutang.filter(function(x){ return x.id!==t.hutangId; });
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-tt-hutang]') : null;
+  if(b){ bukaKonversiTitipan(parseInt(b.getAttribute('data-tt-hutang'),10)); }
+});
 function refreshTtUi(){
   var editing = editState.type;
   var tfw = document.getElementById('tf-tt-wrap'), pmw = document.getElementById('pm-tt-wrap');
@@ -7785,6 +7866,7 @@ function submitHutang(){
     ket:document.getElementById('ht-ket').value};
   if(editState.type==='hutang'){
     var oldH = DATA.hutang[editState.index];
+    if(oldH){ if(oldH.id) record.id = oldH.id; if(oldH.tanpaSaldo) record.tanpaSaldo = true; if(oldH.titipanId) record.titipanId = oldH.titipanId; }
     if(oldH && cicilanOf(oldH).length){
       var sudahBayar = cicilanTotal(oldH);
       if(jumlah < sudahBayar){ toast('Jumlah tidak boleh lebih kecil dari cicilan yang sudah dibayar ('+fmt(sudahBayar)+')'); return; }
@@ -8288,7 +8370,7 @@ function saldoAkun(acc, upToDate){
   });
   DATA.hutang.forEach(function(h){
     if(lim && h.tanggal>lim) return;
-    if(h.metode===acc) v += h.jumlah;
+    if(h.metode===acc && !h.tanpaSaldo) v += h.jumlah; /* tanpaSaldo = uangnya sudah ada di saldo lewat dana titipan yang dijadikan hutang */
     /* Cicilan hutang yang sudah dibayar: uang keluar dari rekening tiap cicilan */
     cicilanOf(h).forEach(function(c){ if(lim && c.tanggal>lim) return; if((c.metode||h.metode)===acc) v -= c.jumlah; });
     if(h.status==='Lunas' && !selesaiSetelah(h, lim)){
@@ -8476,7 +8558,7 @@ function totalHutang(upToDate){
 }
 function totalTitipan(upToDate){
   var lim = upToDate||null, s=0;
-  DATA.titipan.forEach(function(t){ if(lim && t.tanggal>lim) return; if(t.status==='Aktif' || (lim && t.status==='Dikembalikan' && t.tanggalKembali && t.tanggalKembali>lim)) s+=t.jumlah; }); /* sudah dikembalikan tapi belum pada tanggal ini = masih dipegang */
+  DATA.titipan.forEach(function(t){ if(lim && t.tanggal>lim) return; if(t.status==='Aktif' || (lim && t.status==='Dikembalikan' && t.tanggalKembali && t.tanggalKembali>lim) || (lim && t.status==='Dijadikan Hutang' && t.tanggalKonversi && t.tanggalKonversi>lim)) s+=t.jumlah; }); /* sudah dikembalikan tapi belum pada tanggal ini = masih dipegang */
   return s;
 }
 
@@ -9326,7 +9408,7 @@ function buildAllTransactions(){
   DATA.pemasukan.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Masuk', label:x.sumber+' • '+accountOptionLabel(x.metode), sign:1, type:'pemasukan', index:i, currency:x.currency, jumlahAsli:x.jumlahAsli, ket:x.ket||''}); });
   DATA.pengeluaran.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant?merchantCanon(x.merchant)+' • ':'')+x.jenis+' • '+accountOptionLabel(x.metode), sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:merchantCanon(x.merchant), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''}); });
   DATA.piutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Piutang', label:(x.nama||'-')+' • '+accountOptionLabel(x.metode), sign:-1, type:'piutang', index:i, ket:x.ket||''}); });
-  DATA.hutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Hutang', label:(x.untuk||'-')+' • '+accountOptionLabel(x.metode), sign:1, type:'hutang', index:i, ket:x.ket||''}); });
+  DATA.hutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Hutang', label:(x.untuk||'-')+' • '+accountOptionLabel(x.metode), sign:(x.tanpaSaldo ? 0 : 1), type:'hutang', index:i, ket:x.ket||''}); });
   DATA.piutang.forEach(function(x,i){ cicilanOf(x).forEach(function(c){ all.push({tanggal:c.tanggal, jumlah:c.jumlah, tipe:'Cicilan Piutang', label:(x.nama||'-')+' • '+accountOptionLabel(c.metode||x.metode), sign:1, type:'piutang', index:i, ket:c.ket||''}); }); });
   DATA.hutang.forEach(function(x,i){ cicilanOf(x).forEach(function(c){ all.push({tanggal:c.tanggal, jumlah:c.jumlah, tipe:'Cicilan Hutang', label:(x.untuk||'-')+' • '+accountOptionLabel(c.metode||x.metode), sign:-1, type:'hutang', index:i, ket:c.ket||''}); }); });
   DATA.belanja.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Belanja', label:(x.merchant?merchantCanon(x.merchant)+' • ':'')+x.item+(x.metode?' • '+accountOptionLabel(x.metode):''), sign:-1, type:'belanja', index:i, merchant:merchantCanon(x.merchant), ket:(x.ket||'')+' '+(x.kategori||''), note:(x.ket||'')}); });
@@ -10565,7 +10647,7 @@ function buildAccountTransactions(acc){
   });
   DATA.hutang.forEach(function(x,i){
     var sisaMh = sisaPinjamAkhir(x);
-    if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Hutang', label:(x.untuk||'-'), sign:1, type:'hutang', index:i, ket:x.ket||''});
+    if(x.metode===acc && !x.tanpaSaldo) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Hutang', label:(x.untuk||'-'), sign:1, type:'hutang', index:i, ket:x.ket||''});
     cicilanOf(x).forEach(function(c){
       if((c.metode||x.metode)===acc) list.push({tanggal:c.tanggal, jumlah:c.jumlah, tipe:'Cicilan Hutang', label:(x.untuk||'-'), sign:-1, type:'hutang', index:i, ket:c.ket||''});
     });
@@ -11484,7 +11566,7 @@ function hapusCicilan(cid){
 }
 /* Kartu rapi untuk daftar Hutang / Piutang / Dana Titipan */
 function loanCard(o){
-  var done = (o.status==='Lunas' || o.status==='Dikembalikan');
+  var done = (o.status==='Lunas' || o.status==='Dikembalikan' || o.status==='Dijadikan Hutang');
   var c = done ? 'var(--pos)' : (o.status==='Dicicil' ? 'var(--primary)' : 'var(--warn)');
   var prog = '';
   if(o.paid>0 && o.total>0){
@@ -11494,7 +11576,7 @@ function loanCard(o){
   return '<div class="ln'+(done?' done':'')+'" style="--c:'+c+';">'+
     '<div class="ln-h"><span class="acc-badge ic-soft ln-ic">'+o.icon+'</span>'+
       '<div class="ln-m"><div class="ln-t"><span class="ln-name">'+escapeHtml(o.title)+'</span><span class="ln-amt mono">'+fmt(o.amount)+'</span></div>'+
-      '<div class="ln-chips"><span class="ln-st">'+(done ? '&#10003; ' : '')+escapeHtml(o.status)+'</span>'+(o.chips||'')+'</div></div></div>'+
+      '<div class="ln-chips"><span class="ln-st">'+(o.status==='Dijadikan Hutang' ? '&rarr; ' : (done ? '&#10003; ' : ''))+escapeHtml(o.status)+'</span>'+(o.chips||'')+'</div></div></div>'+
     '<div class="ln-info"><div class="ln-line">'+escapeHtml(o.line)+'</div>'+
       (o.ket ? '<div class="ln-ket">'+escapeHtml(o.ket)+'</div>' : '')+
       (o.info ? '<div class="ln-line">'+escapeHtml(o.info)+'</div>' : '')+'</div>'+
@@ -11546,8 +11628,8 @@ function renderHutangList(){
       else if(cicilanOf(h).length) infoLunas = 'Lunas, sisa '+fmt(sisaHl)+' dibayar dari '+accountOptionLabel(bayarAcc);
       else infoLunas = 'Lunas, dibayar dari '+accountOptionLabel(bayarAcc);
     } else { due = lfDueLine(h.jatuhTempo); }
-    html += loanCard({icon:ICONS.arrowDown, title:h.untuk||'-', amount:h.jumlah, status:st, chips:'',
-      line:(h.tanggal ? fmtTglIndo(h.tanggal)+' • ' : '')+'masuk ke '+accountOptionLabel(h.metode), ket:h.ket, info:infoLunas, due:due,
+    html += loanCard({icon:ICONS.arrowDown, title:h.untuk||'-', amount:h.jumlah, status:st, chips:(h.titipanId ? '<span class="badge" style="background:rgba(184,74,124,.18);">Dari Titipan</span>' : ''),
+      line:(h.tanggal ? fmtTglIndo(h.tanggal)+' • ' : '')+(h.tanpaSaldo ? 'uang ada di ' : 'masuk ke ')+accountOptionLabel(h.metode), ket:h.ket, info:infoLunas, due:due,
       paid:(cicilanOf(h).length ? cicilanTotal(h) : 0), total:h.jumlah, sisa:sisaHl,
       actions:txnActions('hutang',i), extra:cicilanBlockHtml('hutang', i, h)});
   }
@@ -11567,12 +11649,12 @@ function renderTitipanList(){
     shown++; sum += t.jumlah||0;
     var bayarAccTt = t.metodeBayar || t.metode;
     var lineRek = (t.tanpaSaldo ? 'Disimpan di ' : 'Masuk ke ')+accountOptionLabel(t.metode);
-    var lineKembali = t.status==='Dikembalikan' ? 'Dikembalikan dari '+accountOptionLabel(bayarAccTt) : '';
-    var due = t.status==='Dikembalikan' ? '' : lfDueLine(t.jatuhTempo);
+    var lineKembali = t.status==='Dikembalikan' ? 'Dikembalikan dari '+accountOptionLabel(bayarAccTt) : (t.status==='Dijadikan Hutang' ? 'Dijadikan hutang'+(t.tanggalKonversi ? ' sejak '+fmtTglIndo(t.tanggalKonversi) : '')+'. Pelunasannya dicatat di menu Hutang.' : '');
+    var due = (t.status==='Dikembalikan' || t.status==='Dijadikan Hutang') ? '' : lfDueLine(t.jatuhTempo);
     html += loanCard({icon:ICONS.cash, title:t.nama||'-', amount:t.jumlah, status:t.status,
       chips:(t.untuk ? '<span class="badge" style="background:rgba(255,255,255,.06); color:var(--text-2);">'+escapeHtml(t.untuk)+'</span>' : ''),
       line:(t.tanggal ? fmtTglIndo(t.tanggal)+' • ' : '')+lineRek, ket:t.ket, info:lineKembali, due:due,
-      actions:(t.status==='Aktif' ? '<div style="padding:0 0 6px;"><span data-tt-pindah="'+i+'" style="font-size:11.5px; font-weight:700; color:var(--primary); cursor:pointer;">Pindah rekening</span></div>' : '')+txnActions('titipan',i)});
+      actions:(t.status==='Aktif' ? '<div style="padding:0 0 6px;"><span data-tt-pindah="'+i+'" style="font-size:11.5px; font-weight:700; color:var(--primary); cursor:pointer;">Pindah rekening</span>'+(titipanBisaJadiHutang(t) ? '<span data-tt-hutang="'+i+'" style="font-size:11.5px; font-weight:700; color:var(--warn); cursor:pointer; margin-left:14px;">Jadikan hutang</span>' : '')+'</div>' : '')+txnActions('titipan',i)});
   }
   lfCount('tt', shown, DATA.titipan.length, 'titipan', sum);
   el.innerHTML = shown ? html : '<div class="empty">Tidak ada dana titipan yang cocok.</div>';
@@ -15573,6 +15655,7 @@ function cancelEdit(){
 function startEdit(type, index){
   var item = DATA[type][index];
   if(!item) return;
+  if(type==='titipan' && item.status==='Dijadikan Hutang'){ toast('Titipan ini sudah dijadikan hutang. Ubah lewat catatan Hutang-nya.'); return; }
   editState = {type:type, index:index};
   if(type==='transfer'){
     document.getElementById('tf-tanggal').value = item.tanggal;
@@ -15736,7 +15819,7 @@ function startEdit(type, index){
    Ukuran dibatasi (SAMPAH_MAX_BYTES) karena seluruh data akun disimpan dalam satu dokumen ~1 MB. */
 var SAMPAH_HARI = 7, SAMPAH_MAX_BYTES = 150000, SAMPAH_FIELD_MAX = 20000;
 var SAMPAH_TYPES = ['transfer','pemasukan','pengeluaran','piutang','hutang','titipan','belanja','invbeli','invjual','tagihan'];
-var SAMPAH_DERIVED = ['transfer','pemasukan','pengeluaran','piutang','titipan'];
+var SAMPAH_DERIVED = ['transfer','pemasukan','pengeluaran','piutang','titipan','hutang'];
 var SAMPAH_LABEL = {transfer:'Transfer', pemasukan:'Pemasukan', pengeluaran:'Pengeluaran', piutang:'Piutang', hutang:'Hutang', titipan:'Titipan', belanja:'Belanja', invbeli:'Beli Investasi', invjual:'Jual Investasi', tagihan:'Tagihan'};
 function sampahClone(x){
   try{
@@ -15798,6 +15881,7 @@ function sampahRestore(sid){
     per[c].sort(function(a,b){ return a.i - b.i; }).forEach(function(r){ DATA[c].splice(Math.min(r.i, DATA[c].length), 0, r.item); });
   });
   if(e.tt){ var t = DATA.titipan.filter(function(x){ return x.id===e.tt.id; })[0]; if(t) t.metode = e.tt.metode; }
+  (per.hutang||[]).forEach(function(r){ if(r.item && r.item.titipanId){ var tk = DATA.titipan.filter(function(x){ return x.id===r.item.titipanId; })[0]; if(tk && tk.status==='Aktif') tandaiTitipanDikonversi(tk, r.item); } });
   DATA.sampah = DATA.sampah.filter(function(x){ return x.sid!==sid; });
   saveData();
   sampahRefresh(Object.keys(per));
@@ -15856,7 +15940,8 @@ function deleteTransaction(type, index){
         removeDerivedFor(DATA[type][index].id);
       }
       if(type==='piutang'){ removePiutangSettleExpense(DATA.piutang[index]); }
-      if(type==='titipan'){ removeTitipanExpense(DATA.titipan[index]); }
+      if(type==='titipan'){ removeTitipanExpense(DATA.titipan[index]); hapusHutangDariTitipan(DATA.titipan[index]); }
+      if(type==='hutang'){ balikkanTitipanDariHutang(DATA.hutang[index]); }
       DATA[type].splice(index, 1);
     });
     if(editState.type===type && editState.index===index){ cancelEdit(); }
@@ -18282,6 +18367,8 @@ function wireEvents(){
   document.getElementById('keluar-aset-simpan').addEventListener('click', simpanKeluarkanAset);
   document.getElementById('tt-pindah-cancel').addEventListener('click', tutupPindahTitipan);
   document.getElementById('tt-pindah-simpan').addEventListener('click', simpanPindahTitipan);
+  document.getElementById('tt-hutang-cancel').addEventListener('click', tutupKonversiTitipan);
+  document.getElementById('tt-hutang-simpan').addEventListener('click', simpanKonversiTitipan);
   document.getElementById('tt-pindah-modal-overlay').addEventListener('click', function(ev){ if(ev.target===this) tutupPindahTitipan(); });
   document.getElementById('jual-rusak-cancel').addEventListener('click', tutupJualRusak);
   document.getElementById('jual-rusak-simpan').addEventListener('click', simpanJualRusak);
