@@ -8397,14 +8397,20 @@ function setRekeningAktif(acc){
 }
 function renderAccountsList(){
   var accEl = document.getElementById('db-accounts');
-  if(!accEl) return;
+  if(accEl) accEl.innerHTML = accountsGroupsHtml();
+  renderDcAccounts();
+}
+function renderDcAccounts(){
+  var el = document.getElementById('dc-accounts');
+  if(el) el.innerHTML = accountsGroupsHtml();
+}
+function accountsGroupsHtml(){
   var list = ACCOUNTS.filter(function(a){
     if(isChildAccountEntry(a)) return false;
     return dbAccFilter==='all' || (ACCOUNT_CATEGORY[a]||'bank')===dbAccFilter;
   });
   if(list.length===0){
-    accEl.innerHTML = '<div class="acc-empty">Belum ada rekening di kategori ini.</div>';
-    return;
+    return '<div class="acc-empty">Belum ada rekening di kategori ini.</div>';
   }
   var order = ['cash','ewallet','bank','investasi','pulsa'];
   var groups = {}, totals = {};
@@ -8455,7 +8461,7 @@ function renderAccountsList(){
       '<div class="accg-right"><span class="accg-total mono">'+maskOrFmt(totals[k])+'</span><span class="accg-chev">'+ICONS.chevronRight+'</span></div></div>'+
       '<div class="accg-body"><div class="accg-scroll">'+groups[k].join('')+'</div></div></div>';
   });
-  accEl.innerHTML = html;
+  return html;
 }
 function totalPiutang(upToDate){
   var lim = upToDate||null, s=0;
@@ -23143,6 +23149,13 @@ html[data-layout="desktop"] #db-compact{display:grid; gap:12px; padding:14px; bo
 .dc-ra.pos{color:var(--pos);}
 .dc-rb{font-size:10.5px; font-weight:800; padding:1px 8px; border-radius:999px; color:var(--c); background:color-mix(in srgb,var(--c) 15%,transparent); white-space:nowrap;}
 .dc-rd{font-size:11px; color:var(--text-2); white-space:nowrap;}
+/* Saldo per rekening (dashboard ringkas): kelompok lipat + kartu geser horizontal */
+#dc-accounts{flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding-right:2px;}
+.dc-saldo .accg-head{padding:8px 0;}
+.dc-saldo .accg-body{padding-bottom:8px;}
+.dc-saldo .accg-card{flex:0 0 138px; padding:12px 8px; gap:6px;}
+.dc-saldo .accg-card .acc-badge{width:38px; height:38px;}
+.dc-saldo .accg-scroll{padding-bottom:8px;}
 .dc-more{font-size:11.5px; font-weight:700; color:var(--primary); padding:1px 4px; flex-shrink:0;}
 .ins-more{display:flex; flex-direction:column; gap:10px;}
 .dc-ok{display:flex; align-items:center; gap:8px; color:var(--pos); font-weight:600; font-size:13px; margin:auto 0;}
@@ -23999,46 +24012,13 @@ function renderDashCompact(){
   var hs = null; try{ hs = computeHealthScore(); }catch(e){}
   h += stat('data-goto="kesehatan"', L('Kesehatan finansial','Financial health'), hs && hs.hasData ? hs.score : '–', hs && hs.hasData ? hs.grade+(hs.provisional ? ' · '+L('sementara','provisional') : '') : L('Belum ada data','No data yet'), hs && hs.hasData ? hs.color : '');
 
-  /* baris 3: perlu perhatian + stok */
-  var rem = window._remItems || [];
-  if(!rem.length){
-    h += '<div class="card dc-t dc-static" style="grid-column:span 2;">'+dcHead('bell','var(--pos)',L('Jatuh tempo','Due soon'),'').replace('<span class="dc-go">'+ICONS.chevronRight+'</span>','')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Tidak ada yang jatuh tempo atau minus.','Nothing due or overdrawn.')+'</span></div></div>';
-  } else {
-    var urgent = rem.filter(function(x){ return x.days<=0 || x.badge; }).length;
-    var rc = urgent ? 'var(--danger)' : 'var(--warn)';
-    var maxR = 14, rows = rem.slice(0,maxR).map(function(x){
-      var b = dcRemBadge(x);
-      return '<div class="dc-r" data-goto="'+x.goto+'" style="--c:'+b.c+';"><span class="dc-rt"><em>'+escapeHtml(x.tipe)+'</em>'+escapeHtml(x.label)+'</span><span class="dc-ra">'+(x.neg ? '−' : '')+maskOrFmt(x.jumlah)+'</span><span class="dc-rb">'+b.t+'</span></div>';
-    }).join('');
-    h += '<div class="card dc-t" data-goto="'+rem[0].goto+'" style="grid-column:span 2;">'+
-      dcHead('bell',rc,L('Perlu perhatian','Needs attention'),'<span class="dc-pill" style="--c:'+rc+';">'+rem.length+(urgent ? ' · '+urgent+L(' mendesak',' urgent') : '')+'</span>')+
-      '<div class="dc-list" data-extra="'+Math.max(0,rem.length-maxR)+'">'+rows+'<div class="dc-more"></div></div></div>';
-  }
-  var sl = window._stokList || [];
-  var habis = sl.filter(function(x){ return x.stok<=0; }).length;
-  if(!sl.length){
-    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:span 2;">'+dcHead('box','var(--pos)',L('Stok barang','Item stock'),'')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Semua stok aman.','All stock is fine.')+'</span></div></div>';
-  } else {
-    var sc = habis ? 'var(--danger)' : 'var(--warn)', maxS = 14;
-    var sorted = sl.slice().sort(function(a,b){ return (a.stok<=0 ? -1 : (a.hariLagi==null ? 9999 : a.hariLagi)) - (b.stok<=0 ? -1 : (b.hariLagi==null ? 9999 : b.hariLagi)); });
-    var srows = sorted.slice(0,maxS).map(function(x){
-      var hb = x.stok<=0, c = hb ? 'var(--danger)' : 'var(--warn)';
-      return '<div class="dc-r" style="--c:'+c+';"><span class="dc-rt">'+escapeHtml(x.nama)+'</span><span class="dc-rb">'+(hb ? L('Habis','Out') : escapeHtml(x.stok+' '+x.satuan))+'</span></div>';
-    }).join('');
-    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:span 2;">'+
-      dcHead('box',sc,L('Stok perlu dibeli','Stock to buy'),'<span class="dc-pill" style="--c:'+sc+';">'+(habis ? habis+L(' habis',' out') : sl.length+L(' menipis',' low'))+'</span>')+
-      '<div class="dc-list" data-extra="'+Math.max(0,sorted.length-maxS)+'">'+srows+'<div class="dc-more"></div></div></div>';
-  }
+  /* baris 3-4 kiri: saldo per rekening */
+  /* saldo per rekening: kelompok bisa dilipat + kartu rekening digeser ke samping (seperti tampilan semula), tinggi 2 baris di kolom kiri */
+  h += '<div class="card dc-t dc-static dc-saldo" style="grid-column:1 / span 2; grid-row:3 / span 2;">'+
+    dcHead('cash','var(--primary)',L('Saldo per rekening','Balance per account'),'<span class="dc-tot">'+maskOrFmt(totalSaldo())+'</span>').replace('<div class="dc-h">','<div class="dc-h" data-goto="saldo-rekening" style="cursor:pointer;">')+
+    '<div id="dc-accounts">'+accountsGroupsHtml()+'</div></div>';
 
-  /* baris 4: saldo per rekening + insight */
-  var accs = ACCOUNTS.filter(function(a){ return !isChildAccountEntry(a); }).map(function(a){ var d = activeAccountFor(a); return {n:d, v:saldoAkun(d)}; }).sort(function(a,b){ return b.v-a.v; });
-  var arows = accs.map(function(a){
-    return '<div class="dc-r" data-acc="'+escapeHtml(a.n)+'" style="--c:'+(a.v<0 ? 'var(--danger)' : 'var(--primary)')+';"><span class="dc-rt">'+escapeHtml(a.n)+'</span><span class="dc-ra'+(a.v<0 && !saldoHidden ? ' neg' : '')+'">'+maskOrFmt(a.v)+'</span></div>';
-  }).join('');
-  h += '<div class="card dc-t" data-goto="saldo-rekening" style="grid-column:span 2;">'+
-    dcHead('cash','var(--primary)',L('Saldo per rekening','Balance per account'),'<span class="dc-tot">'+maskOrFmt(totalSaldo())+'</span>')+
-    '<div class="dc-list" data-extra="0">'+(arows || '<div class="dc-s">'+L('Belum ada rekening.','No accounts yet.')+'</div>')+'<div class="dc-more"></div></div></div>';
-
+  /* baris 3 kanan: insight (dinaikkan) */
   var ins = dcInsight(), ib;
   if(saldoHidden){
     ib = '<div class="dc-s">'+L('Insight disembunyikan bareng saldo.','Insight is hidden together with balances.')+'</div>';
@@ -24051,17 +24031,48 @@ function renderDashCompact(){
     ib = '<div class="dc-big"'+(bc ? ' style="color:'+bc+';"' : '')+'>'+big+'</div><div class="dc-s">'+cap+'</div>'+
       '<div class="dc-mini"><div><span>'+L('Bulan ini','This month')+'</span><b>'+fmtShort(ins.thisM)+'</b></div><div><span>'+L('Rata-rata/hari','Avg / day')+'</span><b>'+fmtShort(ins.avg)+'</b></div><div><span>'+L('Proyeksi bln','Month est.')+'</span><b>'+fmtShort(ins.proj)+'</b></div></div>';
   }
-  h += '<div class="card dc-t" data-goto="insight" style="grid-column:span 2;">'+dcHead('sparkles','var(--gold-text,var(--warn))','Insight','')+'<div class="dc-ib">'+ib+'</div></div>';
+  h += '<div class="card dc-t" data-goto="insight" style="grid-column:3 / span 2; grid-row:3;">'+dcHead('sparkles','var(--gold-text,var(--warn))','Insight','')+'<div class="dc-ib">'+ib+'</div></div>';
 
-  /* baris 5: transaksi terbaru */
+  /* baris 4 kanan: perlu perhatian */
+  var rem = window._remItems || [];
+  if(!rem.length){
+    h += '<div class="card dc-t dc-static" style="grid-column:3 / span 2; grid-row:4;">'+dcHead('bell','var(--pos)',L('Jatuh tempo','Due soon'),'').replace('<span class="dc-go">'+ICONS.chevronRight+'</span>','')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Tidak ada yang jatuh tempo atau minus.','Nothing due or overdrawn.')+'</span></div></div>';
+  } else {
+    var urgent = rem.filter(function(x){ return x.days<=0 || x.badge; }).length;
+    var rc = urgent ? 'var(--danger)' : 'var(--warn)';
+    var maxR = 14, rows = rem.slice(0,maxR).map(function(x){
+      var b = dcRemBadge(x);
+      return '<div class="dc-r" data-goto="'+x.goto+'" style="--c:'+b.c+';"><span class="dc-rt"><em>'+escapeHtml(x.tipe)+'</em>'+escapeHtml(x.label)+'</span><span class="dc-ra">'+(x.neg ? '−' : '')+maskOrFmt(x.jumlah)+'</span><span class="dc-rb">'+b.t+'</span></div>';
+    }).join('');
+    h += '<div class="card dc-t" data-goto="'+rem[0].goto+'" style="grid-column:3 / span 2; grid-row:4;">'+
+      dcHead('bell',rc,L('Perlu perhatian','Needs attention'),'<span class="dc-pill" style="--c:'+rc+';">'+rem.length+(urgent ? ' · '+urgent+L(' mendesak',' urgent') : '')+'</span>')+
+      '<div class="dc-list" data-extra="'+Math.max(0,rem.length-maxR)+'">'+rows+'<div class="dc-more"></div></div></div>';
+  }
+  /* baris 5: transaksi terbaru (setengah) + stok perlu dibeli */
   var all = buildAllTransactions(), maxT = 12;
   var trows = all.slice(0,maxT).map(function(t){
     var sign = t.sign>0 ? '+' : (t.sign<0 ? '-' : '');
     var title = String(t.label||'').split(' • ')[0] || t.tipe;
     return '<div class="dc-r" style="--c:'+(t.sign<0 ? 'var(--danger)' : (t.sign>0 ? 'var(--pos)' : 'var(--text-2)'))+';"><span class="dc-rt"><em>'+escapeHtml(t.tipe)+'</em>'+escapeHtml(title)+'</span><span class="dc-rd">'+escapeHtml(fmtTglIndo(t.tanggal))+'</span><span class="dc-ra '+(t.sign<0 ? 'neg' : (t.sign>0 ? 'pos' : ''))+'">'+sign+maskOrFmt(t.jumlah)+'</span></div>';
   }).join('');
-  h += '<div class="card dc-t" data-goto="riwayat" style="grid-column:1 / -1;">'+dcHead('clock','var(--info,var(--primary))',L('Transaksi terbaru','Recent transactions'),'')+
+  h += '<div class="card dc-t" data-goto="riwayat" style="grid-column:1 / span 2; grid-row:5;">'+dcHead('clock','var(--info,var(--primary))',L('Transaksi terbaru','Recent transactions'),'')+
     (all.length ? '<div class="dc-list" data-extra="0" data-always="1">'+trows+'<div class="dc-more"></div></div>' : '<div class="dc-s">'+L('Belum ada transaksi.','No transactions yet.')+'</div>')+'</div>';
+
+  var sl = window._stokList || [];
+  var habis = sl.filter(function(x){ return x.stok<=0; }).length;
+  if(!sl.length){
+    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:3 / span 2; grid-row:5;">'+dcHead('box','var(--pos)',L('Stok barang','Item stock'),'')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Semua stok aman.','All stock is fine.')+'</span></div></div>';
+  } else {
+    var sc = habis ? 'var(--danger)' : 'var(--warn)', maxS = 14;
+    var sorted = sl.slice().sort(function(a,b){ return (a.stok<=0 ? -1 : (a.hariLagi==null ? 9999 : a.hariLagi)) - (b.stok<=0 ? -1 : (b.hariLagi==null ? 9999 : b.hariLagi)); });
+    var srows = sorted.slice(0,maxS).map(function(x){
+      var hb = x.stok<=0, c = hb ? 'var(--danger)' : 'var(--warn)';
+      return '<div class="dc-r" style="--c:'+c+';"><span class="dc-rt">'+escapeHtml(x.nama)+'</span><span class="dc-rb">'+(hb ? L('Habis','Out') : escapeHtml(x.stok+' '+x.satuan))+'</span></div>';
+    }).join('');
+    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:3 / span 2; grid-row:5;">'+
+      dcHead('box',sc,L('Stok perlu dibeli','Stock to buy'),'<span class="dc-pill" style="--c:'+sc+';">'+(habis ? habis+L(' habis',' out') : sl.length+L(' menipis',' low'))+'</span>')+
+      '<div class="dc-list" data-extra="'+Math.max(0,sorted.length-maxS)+'">'+srows+'<div class="dc-more"></div></div></div>';
+  }
 
   el.innerHTML = h;
   dcLayout();
