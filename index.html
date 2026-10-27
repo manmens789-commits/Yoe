@@ -3975,6 +3975,8 @@ function isHybridTabunganInvestasi(acc){
    ini -- nomor versi yang ditampilkan di halaman Pengaturan otomatis ikut ke-update,
    nggak perlu ubah HTML manual. */
 var CHANGELOG = [
+  { versi:"1.11.7", catatan:'Perbaikan tampilan desktop: kartu "Perlu perhatian" dan "Stok perlu dibeli" tidak lagi berdesakan di kolom sempit. Daftar pengingat satu kolom (dua kolom hanya kalau kartunya lebar), dan kartu stok menyesuaikan lebar kolom.' },
+  { versi:"1.11.6", catatan:'Kesehatan Finansial: saldo rekening yang minus sekarang dihitung sebagai hutang di pilar Rasio Hutang (muncul sebagai baris "Saldo rekening minus" di rinciannya). Aset bersih memakai saldo rekening positif saja supaya minus tidak terhitung dua kali.' },
   { versi:"1.11.5", catatan:'Tampilan baru kartu "Perlu perhatian" dan "Stok perlu dibeli" di Beranda: header seragam (ikon, judul, ringkasan), tiap pengingat jadi dua baris dengan ikon per jenis (saldo minus, hutang, piutang, tagihan, cicilan, titipan) sehingga nama rekening tidak terpotong lagi, nominal dan status rata kanan, serta warna mengikuti tingkat urgensi. Stok jadi kartu mini yang bisa digeser.' },
   { versi:"1.11.4", catatan:'Perbaikan bug: di form Transfer, "Pindahkan titipan" tidak bisa disimpan dan selalu minta pilih dana titipan padahal sudah dipilih. Penyebabnya, titipan yang dicatat lewat menu Dana Titipan tidak punya id. Sekarang semua titipan (lama maupun baru) otomatis punya id, dan pilihan tidak ikut reset saat daftar dimuat ulang.' },
   { versi:"1.11.3", catatan:'Pengingat baru di Beranda: kalau saldo sebuah rekening minus, muncul peringatan merah "Saldo Minus" (selalu di urutan teratas, lengkap dengan nominal minusnya) supaya segera dilunasi atau diisi. Ketuk untuk langsung ke menu Transfer.' },
@@ -8833,18 +8835,30 @@ function ksTagihanTelat(t){
   var d = new Date(); d.setDate(d.getDate()-30);
   return (t.tanggal||'') <= aiIso(d);
 }
+/* Saldo rekening yang minus (overdraft / dana keluar melebihi saldo) = kewajiban yang harus ditutup, jadi dihitung sebagai hutang */
+function ksSaldoMinus(){
+  var s = 0;
+  ACCOUNTS.forEach(function(a){ var v = saldoAkun(a); if(v < -0.5) s += Math.abs(v); });
+  return s;
+}
+/* Total saldo hanya dari rekening yang positif: minus sudah dihitung sebagai hutang, jangan dikurangkan lagi dari aset */
+function ksSaldoPositif(){
+  var s = 0;
+  ACCOUNTS.forEach(function(a){ var v = saldoAkun(a); if(v > 0) s += v; });
+  return s;
+}
 function ksHutangKesehatan(){
-  var pinjaman = 0, telat = 0;
+  var pinjaman = 0, telat = 0, minus = ksSaldoMinus();
   (DATA.hutang||[]).forEach(function(h){ if(h.status==='Belum Lunas') pinjaman += sisaPinjam(h); });
   (DATA.tagihan||[]).forEach(function(t){ if(t.status==='Belum Lunas'){ var sisa = sisaPinjam(t); if(sisa>0 && ksTagihanTelat(t)) telat += sisa; } });
-  return {pinjaman:pinjaman, telat:telat, total:pinjaman+telat};
+  return {pinjaman:pinjaman, telat:telat, minus:minus, total:pinjaman+telat+minus};
 }
 function computeHealthScore(){
   /* Metode (v9):
      - Sampel: 3 bulan penuh terakhir; kalau belum ada, bulan ini diproyeksikan dan skor ditandai sementara.
      - Rasio nabung: (total pemasukan rutin - total beban) / total pemasukan rutin atas bulan-bulan sampel (digabung, bukan rata-rata rasio).
      - Dana darurat: dana darurat bersih / (rata-rata beban + cicilan hutang bulanan).
-     - Hutang: pinjaman + tagihan yang lewat jatuh tempo, dibanding aset bersih (saldo - titipan), pendapatan setahun, dan cicilan bulanan;
+     - Hutang: pinjaman + tagihan yang lewat jatuh tempo + saldo rekening minus, dibanding aset bersih (saldo rekening positif - titipan), pendapatan setahun, dan cicilan bulanan;
        skor = rata-rata ukuran yang ada, tapi tidak boleh lebih dari 25 poin di atas ukuran terburuk. Tanpa hutang: pilar ditampilkan tapi bobotnya 0.
      - Batas atas: dana darurat < 1 bulan => maks 69; hutang > aset => maks 69; hutang > 2x aset => maks 54. */
   var y = new Date().getFullYear(), m = new Date().getMonth()+1;
@@ -8857,7 +8871,7 @@ function computeHealthScore(){
   var ef = ksDanaDarurat();
   var liquid = ef.ada ? ef.total : ksLiquidSaldo();
   var hk = ksHutangKesehatan(), hutang = hk.total;
-  var asetTotal = Math.max(totalSaldo() - totalTitipan(), 0);
+  var asetTotal = Math.max(ksSaldoPositif() - totalTitipan(), 0);
 
   var pillars = [], efMonths = null, ratioAset = 0;
 
@@ -8931,7 +8945,7 @@ function computeHealthScore(){
   if(hutang>0 || cic.total>0 || hadCore) pillars.push({ key:'debt', label:'Rasio Hutang', weight:debtWeight, score:scoreDebt, detail:debtDetail,
     icon:'\uD83D\uDCC9', sub:(debtWeight>0 ? 'Beban hutang dibanding aset dan pendapatan' : 'Bebas hutang: pilar ditampilkan tapi tidak ikut menghitung skor'), value:Math.round(ratioAset*100)+'% aset',
     marks:[{at:50,l:'50%'},{at:80,l:'20%'},{at:100,l:'0%'}], target:'Target: hutang \u226420% dari aset. Skor = rata-rata ukuran yang ada, maksimal 25 poin di atas ukuran terburuk. Hutang > aset membatasi skor total 69; > 2x aset, 54.',
-    rows:[['Pinjaman berjalan', fmt(hk.pinjaman)], ['Tagihan lewat jatuh tempo', fmt(hk.telat)], ['Total hutang', fmt(hutang)], ['Total aset bersih', fmt(asetTotal)], ['Hutang / aset', Math.round(ratioAset*100)+'%']].concat(avgIncome>0 ? [['Hutang / pendapatan setahun', (hutang/(avgIncome*12)).toFixed(1)+'x']] : []).concat((avgIncome>0 && cic.total>0) ? [['Cicilan bulanan', fmt(cic.total)+' ('+Math.round(cic.total/avgIncome*100)+'% pendapatan)']] : []) });
+    rows:[['Pinjaman berjalan', fmt(hk.pinjaman)], ['Tagihan lewat jatuh tempo', fmt(hk.telat)]].concat(hk.minus>0 ? [['Saldo rekening minus', fmt(hk.minus)]] : []).concat([['Total hutang', fmt(hutang)], ['Total aset bersih', fmt(asetTotal)], ['Hutang / aset', Math.round(ratioAset*100)+'%']]).concat(avgIncome>0 ? [['Hutang / pendapatan setahun', (hutang/(avgIncome*12)).toFixed(1)+'x']] : []).concat((avgIncome>0 && cic.total>0) ? [['Cicilan bulanan', fmt(cic.total)+' ('+Math.round(cic.total/avgIncome*100)+'% pendapatan)']] : []) });
 
   // 4. Kepatuhan Budget Belanja (dibobot nominal, biar kelewat sedikit di kategori kecil nggak menjatuhkan skor sama beratnya dengan kelewat besar di kategori besar)
   var withBudget = (DATA.kategoriBelanja||[]).filter(function(k){ return (DATA.budgetBelanja[k]||0)>0; });
@@ -23054,9 +23068,20 @@ html[data-layout="desktop"] #view-dashboard #db-stok-wrap[data-goto]:hover{borde
 .sk-n{max-width:none; width:100%; font-size:13px; font-weight:700; line-height:1.3; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
 .sk-more{flex:0 0 auto; width:76px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border-radius:16px; font-size:11px; color:var(--text-2); background:var(--primary-dim); padding:0;}
 .sk-more b{font-size:17px; color:var(--primary);}
-/* desktop */
-html[data-layout="desktop"] .rm-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
-html[data-layout="desktop"] .sk-chips{flex-wrap:wrap; overflow:visible; -webkit-mask-image:none; mask-image:none;}
+/* desktop: kolom dashboard bisa sempit, jadi tata letak mengikuti lebar kartunya sendiri (container query), bukan lebar layar */
+#view-dashboard #db-reminder-wrap,#view-dashboard #db-stok-wrap{container-type:inline-size;}
+html[data-layout="desktop"] .rm-list{display:flex; flex-direction:column; gap:8px;}
+html[data-layout="desktop"] .sk-chips{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); overflow:visible; -webkit-mask-image:none; mask-image:none;}
+html[data-layout="desktop"] .sk-chip,html[data-layout="desktop"] .sk-more{width:auto; min-height:64px;}
+@container (min-width:560px){
+  html[data-layout="desktop"] .rm-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@container (max-width:250px){
+  .rm-row{flex-wrap:wrap; row-gap:8px;}
+  .rm-t{flex:1 1 0; min-width:0;}
+  .rm-r{flex:1 1 100%; flex-direction:row; justify-content:space-between; align-items:center;}
+  .al-go{padding:6px 8px;}
+}
 </style>
 <style id="tk-light-v3">
 /* ============ TEMA TERANG v3: tidak lagi abu-abu polos, lebih segar & hidup (mode gelap tidak berubah) ============ */
