@@ -705,6 +705,12 @@
   html[data-layout="desktop"] #view-laporan .card:has(> .field #exp-dari) > :not(.field){grid-column:1 / -1;}
   .catat-grp{display:contents;}
   html[data-layout="desktop"] .catat-grp{display:block; min-width:0; margin-bottom:6px;}
+  /* Panel bantalan per grup menu Catat (aktif di HP & desktop) */
+  #view-catat .catat-grp{display:block; min-width:0; box-sizing:border-box; margin:0 0 14px; padding:14px 12px 14px; border-radius:18px;
+    background:color-mix(in srgb,var(--primary) 8%,var(--surface)); border:1px solid color-mix(in srgb,var(--primary) 30%,var(--line)); box-shadow:var(--shadow);}
+  #view-catat .catat-grp > .catat-group-title{margin:0 2px 12px;}
+  html[data-layout="desktop"] #view-catat .catat-grp{margin:0; padding:16px 16px 18px;}
+  html[data-layout="desktop"] #view-catat main{row-gap:14px;}
   /* Desktop: modal lebih lebar (struk tetap) */
   html[data-layout="desktop"] .modal-overlay:not(#struk-modal-overlay) .modal-box{max-width:520px !important;}
   html[data-wide="1"] #app{min-height:687px; width:1100px; max-width:1100px;}
@@ -1721,6 +1727,51 @@ html[data-layout="desktop"] #goals-list > .goal-acc:first-child, html[data-layou
   #view-dividen .dv-row .tr{height:6px; border-radius:6px; background:var(--line); margin-top:4px; overflow:hidden;}
   #view-dividen .dv-row .tr i{display:block; height:100%; background:#12B886; border-radius:6px;}
   #view-dividen .dv-delta.up{color:#12B886;} #view-dividen .dv-delta.down{color:#E5484D;}
+</style>
+<style id="dv-pretty">
+/* ===== Dividen Saham: tampilan lebih menarik (gelap & terang). Hapus blok ini untuk membatalkan. ===== */
+html #view-dividen#view-dividen#view-dividen main > .section-title{background:linear-gradient(135deg,#0F3B31 0%,#0B1F1B 100%) !important; color:#EAFBF6 !important; -webkit-text-fill-color:#EAFBF6 !important; border:1px solid rgba(45,212,191,.38) !important; border-radius:18px !important; padding:12px 14px !important; box-shadow:0 14px 28px -18px rgba(18,184,134,.75), inset 0 1px 0 rgba(255,255,255,.1) !important;}
+html #view-dividen#view-dividen#view-dividen main > .section-title > [data-icon]:first-child{background:linear-gradient(135deg,#2DD4BF,#12B886) !important; color:#04241C !important; border-radius:12px !important;}
+html #view-dividen#view-dividen#view-dividen main > .section-title > [data-icon]:first-child svg{color:#04241C !important;}
+
+/* kartu ringkasan (hero) */
+html #view-dividen#view-dividen#view-dividen .dv-sum{position:relative; overflow:hidden; padding:18px 16px 14px !important; border-radius:22px !important; color:#EAFBF6;
+  background:radial-gradient(120% 90% at 100% 0%,rgba(45,212,191,.38),transparent 58%),linear-gradient(150deg,#0F3B31 0%,#0B2823 55%,#0A1A17 100%) !important;
+  border:1px solid rgba(45,212,191,.4) !important; box-shadow:0 20px 38px -22px rgba(18,184,134,.8), inset 0 1px 0 rgba(255,255,255,.12) !important;}
+html #view-dividen#view-dividen#view-dividen .dv-sum::before{content:""; position:absolute; right:-34px; top:-34px; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 35% 35%,rgba(94,242,199,.35),rgba(94,242,199,.05) 62%,transparent 70%); border:1px solid rgba(94,242,199,.25); opacity:1 !important; pointer-events:none;}
+html #view-dividen#view-dividen#view-dividen .dv-sum > *{position:relative; z-index:1;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-lbl{color:rgba(234,251,246,.72) !important; font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:11px;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#5EF2C7 !important; font-size:34px; letter-spacing:-1px; text-shadow:0 0 22px rgba(94,242,199,.45);}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.up{color:#5EF2C7;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.down{color:#FF8A94;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stats{gap:10px; margin:14px 0;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat{background:rgba(255,255,255,.07) !important; border:1px solid rgba(255,255,255,.1); border-left:3px solid var(--sc,#2DD4BF); border-radius:12px; padding:9px 11px;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(1){--sc:#2DD4BF;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(2){--sc:#7DB8FF;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(3){--sc:#FFC857;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(4){--sc:#FF8A94;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat .dv-lbl{text-transform:none; letter-spacing:0; font-weight:600; color:rgba(234,251,246,.68) !important;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat b{color:#fff !important; font-size:15px;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-bars{height:100px; padding:10px 8px 6px; border-radius:14px; background:rgba(0,0,0,.22); gap:5px;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-bar i{background:linear-gradient(180deg,#5EF2C7,#12B886) !important; border-radius:6px 6px 2px 2px; box-shadow:0 0 12px rgba(94,242,199,.4); opacity:1;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-bar.zero i{background:rgba(255,255,255,.14) !important; box-shadow:none;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-bar span{color:rgba(234,251,246,.6);}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-sub{color:#9FE8D2; text-transform:uppercase; letter-spacing:.06em; font-size:11px;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-row .top{color:#fff;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-row .top small{color:rgba(234,251,246,.6);}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-row .tr{background:rgba(255,255,255,.12); height:7px;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-row .tr i{background:linear-gradient(90deg,#12B886,#5EF2C7) !important;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .empty{color:rgba(234,251,246,.72) !important;}
+
+/* kartu form & riwayat */
+html #view-dividen#view-dividen#view-dividen main > .card:not(.dv-sum){border-radius:20px !important; border:1px solid color-mix(in srgb,#12B886 32%,transparent) !important;
+  background:linear-gradient(160deg,color-mix(in srgb,#12B886 13%,var(--surface)) 0%,var(--surface) 42%) !important;
+  box-shadow:inset 0 3px 0 #12B886, 0 14px 28px -20px rgba(0,0,0,.6) !important;}
+html #view-dividen#view-dividen#view-dividen main > .card:not(.dv-sum) h3{font-weight:800; letter-spacing:.01em;}
+html #view-dividen#view-dividen#view-dividen main > .card:not(.dv-sum) h3 .dot{background:#12B886 !important; box-shadow:0 0 0 4px rgba(18,184,134,.25) !important;}
+html #view-dividen#view-dividen#view-dividen .dv-chip{border:1px solid rgba(18,184,134,.5); background:linear-gradient(135deg,rgba(18,184,134,.22),rgba(18,184,134,.08)); padding:7px 12px;}
+html #view-dividen#view-dividen#view-dividen .dv-chip:active{transform:scale(.96);}
+html #view-dividen#view-dividen#view-dividen .toggle-row .toggle.active{background:linear-gradient(135deg,#14C795,#0B8F6A) !important; color:#fff !important; border-color:transparent !important; box-shadow:0 8px 16px -8px rgba(18,184,134,.8) !important;}
+html #view-dividen#view-dividen#view-dividen input:focus, html #view-dividen#view-dividen#view-dividen select:focus{border-color:#12B886 !important; box-shadow:0 0 0 3px rgba(18,184,134,.25) !important;}
+html #view-dividen#view-dividen#view-dividen .dv-calc{background:color-mix(in srgb,#12B886 12%,var(--surface)); border:1px solid color-mix(in srgb,#12B886 35%,transparent); border-left:4px solid #12B886; border-radius:14px;}
+html #view-dividen#view-dividen#view-dividen .dv-calc .r.t{border-top-color:rgba(18,184,134,.5);}
+html #view-dividen#view-dividen#view-dividen #dv-save{background:linear-gradient(135deg,#14C795,#0B8F6A) !important; color:#fff !important; border:0 !important; font-weight:800; letter-spacing:.02em; box-shadow:0 14px 24px -12px rgba(18,184,134,.85) !important;}
+html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4px solid #12B886 !important; border-radius:14px;}
 </style>
 </head>
 <body>
@@ -23337,7 +23388,7 @@ html[data-layout="desktop"] .sk-chip,html[data-layout="desktop"] .sk-more{width:
 #db-compact{display:none;}
 html[data-layout="desktop"] #view-dashboard > main{display:none !important;}
 html[data-layout="desktop"] #db-compact{display:grid; gap:12px; padding:14px; box-sizing:border-box;
-  grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:auto auto minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr);
+  grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:auto auto minmax(0,1.7fr) minmax(0,1fr) minmax(0,.9fr);
   height:calc(100vh - var(--dbc-top,170px) - var(--dbc-bot,0px)); min-height:380px;}
 .dc-qa{grid-column:1 / -1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px;}
 .dc-qa .qb{display:flex; align-items:center; justify-content:center; gap:10px; padding:6px 8px; border-radius:14px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow); cursor:pointer; font-size:13px; font-weight:700; transition:border-color .15s, transform .12s;}
@@ -24179,6 +24230,169 @@ html, html[data-theme="dark"]{ --tk-motif: url("data:image/svg+xml,%3Csvg xmlns=
 html[data-theme="light"]{ --tk-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Cpath d='M20 0V20H0' fill='none' stroke='%230D0D0D' stroke-width='1' opacity='0.09'/%3E%3C/svg%3E"); }
 body::before, html[data-theme="light"] body::before, #screen-auth{ background-size:20px 20px !important; }
 </style>
+<style id="tk-insight-dc">
+/* Kartu Insight dashboard (desktop): hero berwarna sesuai status + grafik 7 hari + perbandingan bulan lalu */
+.dc-insc{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 16%,var(--surface)) 0%,color-mix(in srgb,var(--c) 5%,var(--surface)) 60%,var(--surface) 100%) !important;
+  border:1px solid color-mix(in srgb,var(--c) 32%,var(--line)) !important; box-shadow:inset 0 3px 0 var(--c), 0 14px 26px -22px var(--c);}
+.dc-insc::after{content:""; position:absolute; right:-34px; top:-34px; width:130px; height:130px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle,color-mix(in srgb,var(--c) 26%,transparent),transparent 70%); animation:dcInsOrb 7s ease-in-out infinite alternate;}
+@keyframes dcInsOrb{from{transform:translate(0,0) scale(1);}to{transform:translate(-14px,10px) scale(1.18);}}
+.dc-insc .dc-h, .dc-insc .dc-ib{position:relative; z-index:1;}
+.dc-ins-top{display:flex; align-items:center; gap:10px; min-height:0; flex-shrink:0;}
+.dc-ins-badge{width:38px; height:38px; border-radius:12px; flex-shrink:0; display:grid; place-items:center; background:var(--c); color:#fff; box-shadow:0 6px 14px -4px var(--c);}
+.dc-ins-badge svg{width:20px; height:20px;}
+.dc-ins-main{min-width:0; flex:1; display:flex; flex-direction:column; align-items:flex-start; gap:1px;}
+.dc-ins-chip{font-size:9.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; padding:1px 8px; border-radius:99px; color:#fff; background:var(--c);}
+.dc-insc .dc-big{font-size:25px; animation:none;}
+.dc-insc .dc-ins-main .dc-s{max-width:100%;}
+.dc-wk{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; align-items:end; width:42%; max-width:150px; flex-shrink:0;}
+.dc-wc{display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0;}
+.dc-wcol{width:100%; height:34px; display:flex; align-items:flex-end;}
+.dc-wcol i{display:block; width:100%; border-radius:4px 4px 2px 2px; background:color-mix(in srgb,var(--c) 38%,transparent);}
+.dc-wc.on .dc-wcol i{background:var(--c); box-shadow:0 2px 8px color-mix(in srgb,var(--c) 50%,transparent);}
+.dc-wc em{font-style:normal; font-size:8.5px; font-weight:700; color:var(--text-2);}
+.dc-wc.on em{color:var(--c);}
+.dc-cmp{display:flex; flex-direction:column; gap:4px; flex-shrink:0;}
+.dc-cr{display:grid; grid-template-columns:62px minmax(0,1fr) auto; align-items:center; gap:7px; font-size:10.5px;}
+.dc-cr span{color:var(--text-2); font-weight:600; white-space:nowrap;}
+.dc-cr b{font-family:ui-monospace,Menlo,monospace; font-size:11px; white-space:nowrap;}
+.dc-ct{height:7px; border-radius:99px; background:rgba(127,127,127,.2); overflow:hidden;}
+.dc-ct i{display:block; height:100%; border-radius:99px; background:var(--c);}
+.dc-cr.prev .dc-ct i{background:rgba(127,127,127,.6);}
+.dc-insc .dc-mini div{background:color-mix(in srgb,var(--c) 14%,transparent);}
+.dc-insc .dc-mini div:last-child b{color:var(--c);}
+</style>
+<style id="tk-goals-color">
+/* Halaman Target & Tabungan: sentuhan warna teal (satu warna, senada identitas Tumbuh Kaya) */
+#view-goals{--gt:var(--primary); --on-gt:#06332E;}
+html[data-theme="light"] #view-goals{--gt:#0F9D8E; --on-gt:#fff;}
+#view-goals .hero-card{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 94%,#fff) 0%,color-mix(in srgb,var(--gt) 72%,#04201D) 100%) !important; box-shadow:0 14px 28px -14px var(--gt) !important; color:#fff;}
+#view-goals .hero-card .hero-title, #view-goals .hero-card .hero-sub{color:#fff;}
+#view-goals main > .card{
+  background:linear-gradient(160deg,color-mix(in srgb,var(--gt) 11%,var(--surface)) 0%,color-mix(in srgb,var(--gt) 3%,var(--surface)) 70%) !important;
+  border:1px solid color-mix(in srgb,var(--gt) 26%,transparent) !important;
+  box-shadow:inset 0 3px 0 var(--gt), 0 12px 24px -20px var(--gt);}
+#goals-list > .card{box-shadow:inset 4px 0 0 var(--gt), 0 10px 22px -20px var(--gt) !important;}
+#view-goals .field > label{color:color-mix(in srgb,var(--gt) 68%,var(--text)); font-weight:700;}
+#view-goals input:focus, #view-goals select:focus{border-color:var(--gt) !important; box-shadow:0 0 0 3px color-mix(in srgb,var(--gt) 24%,transparent) !important;}
+#view-goals .btn:not(.ghost):not(.danger){background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 68%,#000)) !important; color:var(--on-gt) !important; border-color:transparent !important; box-shadow:0 8px 18px -8px var(--gt) !important;}
+#view-goals .goal-chip{background:color-mix(in srgb,var(--gt) 14%,transparent); color:var(--text);}
+#view-goals .budget-bar-track{background:color-mix(in srgb,var(--gt) 16%,transparent);}
+#view-goals .goal-name{color:color-mix(in srgb,var(--gt) 40%,var(--text));}
+#view-goals .goal-caret::after{color:var(--gt);}
+#view-goals .goal-del[data-goal-action="edit-buka"]{color:var(--gt) !important; border-color:var(--gt) !important;}
+#view-goals .goal-setor-wrap{border-top-color:color-mix(in srgb,var(--gt) 35%,transparent);}
+#view-goals .back-row{color:color-mix(in srgb,var(--gt) 70%,var(--text));}
+#view-goals .budget-bar-fill[style*="var(--primary)"], #view-goals .goal-pct-chip[style*="var(--primary)"]{background:var(--gt) !important; color:var(--on-gt) !important;}
+</style>
+<style id="tk-inv-color">
+/* Pembelian & Penjualan Produk Investasi: sentuhan teal (satu warna, senada Target & Tabungan) */
+#view-investasi-beli, #view-investasi-jual{--gt:var(--primary); --on-gt:#06332E;}
+html[data-theme="light"] #view-investasi-beli, html[data-theme="light"] #view-investasi-jual{--gt:#0F9D8E; --on-gt:#fff;}
+html[data-theme="light"] #view-investasi-beli main > .section-title, html[data-theme="light"] #view-investasi-jual main > .section-title,
+#view-investasi-beli main > .section-title, #view-investasi-jual main > .section-title{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 94%,#fff) 0%,color-mix(in srgb,var(--gt) 72%,#04201D) 100%) !important;
+  color:#fff !important; border:0 !important; box-shadow:0 14px 28px -14px var(--gt) !important;}
+html[data-theme="light"] #view-investasi-beli main > .section-title > *:not([data-icon]), html[data-theme="light"] #view-investasi-jual main > .section-title > *:not([data-icon]){color:#fff !important;}
+html[data-theme="light"] #view-investasi-beli main > .section-title > [data-icon]:first-child, html[data-theme="light"] #view-investasi-jual main > .section-title > [data-icon]:first-child,
+#view-investasi-beli main > .section-title > [data-icon]:first-child, #view-investasi-jual main > .section-title > [data-icon]:first-child{background:rgba(255,255,255,.24) !important; color:#fff !important;}
+html[data-theme="light"] #view-investasi-beli main > .section-title > [data-icon]:first-child svg, html[data-theme="light"] #view-investasi-jual main > .section-title > [data-icon]:first-child svg{color:#fff !important;}
+#view-investasi-beli main > .card, #view-investasi-jual main > .card{
+  background:linear-gradient(160deg,color-mix(in srgb,var(--gt) 11%,var(--surface)) 0%,color-mix(in srgb,var(--gt) 3%,var(--surface)) 70%) !important;
+  border:1px solid color-mix(in srgb,var(--gt) 26%,transparent) !important;
+  box-shadow:inset 0 3px 0 var(--gt), 0 12px 24px -20px var(--gt) !important;}
+#view-investasi-beli .card h3 .dot, #view-investasi-jual .card h3 .dot{background:var(--gt) !important; box-shadow:0 0 0 4px color-mix(in srgb,var(--gt) 22%,transparent) !important;}
+#view-investasi-beli .card h3, #view-investasi-jual .card h3{color:color-mix(in srgb,var(--gt) 45%,var(--text));}
+#view-investasi-beli .field > label, #view-investasi-jual .field > label{color:color-mix(in srgb,var(--gt) 68%,var(--text)); font-weight:700;}
+#view-investasi-beli input:focus, #view-investasi-beli select:focus, #view-investasi-jual input:focus, #view-investasi-jual select:focus{border-color:var(--gt) !important; box-shadow:0 0 0 3px color-mix(in srgb,var(--gt) 24%,transparent) !important;}
+#view-investasi-beli .btn:not(.ghost):not(.danger), #view-investasi-jual .btn:not(.ghost):not(.danger){background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 68%,#000)) !important; color:var(--on-gt) !important; border-color:transparent !important; box-shadow:0 8px 18px -8px var(--gt) !important;}
+#view-investasi-beli .txn-row.v2, #view-investasi-jual .txn-row.v2{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 9%,var(--surface)),color-mix(in srgb,var(--gt) 2%,var(--surface))) !important; border:1px solid color-mix(in srgb,var(--gt) 22%,transparent) !important; box-shadow:inset 4px 0 0 var(--gt) !important;}
+#view-investasi-beli .txn-bottom > .txn-sub, #view-investasi-jual .txn-bottom > .txn-sub{color:color-mix(in srgb,var(--gt) 70%,var(--text)) !important; background:color-mix(in srgb,var(--gt) 16%,transparent) !important;}
+#view-investasi-beli .txn-row .badge, #view-investasi-jual .txn-row .badge{background:color-mix(in srgb,var(--gt) 16%,transparent) !important; color:color-mix(in srgb,var(--gt) 60%,var(--text)) !important;}
+#view-investasi-beli .txn-actions .icon-btn:not(.del), #view-investasi-jual .txn-actions .icon-btn:not(.del){background:var(--gt) !important; color:var(--on-gt) !important;}
+#view-investasi-beli .txn-actions .icon-btn:not(.del) svg, #view-investasi-jual .txn-actions .icon-btn:not(.del) svg{color:var(--on-gt) !important;}
+#view-investasi-beli .back-row, #view-investasi-jual .back-row{color:color-mix(in srgb,var(--gt) 70%,var(--text));}
+</style>
+<style id="tk-inv2-color">
+/* Inventaris Aset & Budget Belanja: sentuhan teal (satu warna) */
+#view-inventaris{--gt:var(--primary); --on-gt:#06332E;}
+#view-atur-budget{--gt:var(--primary); --on-gt:#06332E;}
+html[data-theme="light"] #view-inventaris{--gt:#0F9D8E; --on-gt:#fff;}
+html[data-theme="light"] #view-atur-budget{--gt:#0F9D8E; --on-gt:#fff;}
+#view-inventaris .section-title, #view-atur-budget .section-title, html[data-theme="light"] #view-inventaris .section-title, html[data-theme="light"] #view-atur-budget .section-title{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 94%,#fff) 0%,color-mix(in srgb,var(--gt) 72%,#04201D) 100%) !important; color:#fff !important; border:0 !important; box-shadow:0 12px 24px -14px var(--gt) !important; border-radius:16px; padding:11px 14px;}
+html[data-theme="light"] #view-inventaris .section-title > *:not([data-icon]), html[data-theme="light"] #view-atur-budget .section-title > *:not([data-icon]){color:#fff !important;}
+#view-inventaris .section-title > [data-icon]:first-child, #view-atur-budget .section-title > [data-icon]:first-child, html[data-theme="light"] #view-inventaris .section-title > [data-icon]:first-child, html[data-theme="light"] #view-atur-budget .section-title > [data-icon]:first-child{background:rgba(255,255,255,.24) !important; color:#fff !important;}
+html[data-theme="light"] #view-inventaris .section-title > [data-icon]:first-child svg, html[data-theme="light"] #view-atur-budget .section-title > [data-icon]:first-child svg{color:#fff !important;}
+#view-inventaris .section-title::after, #view-atur-budget .section-title::after{display:none !important;}
+#view-inventaris .card:not([style*="var(--primary)"]):not(.inv-item-card), #view-atur-budget .card:not([style*="var(--primary)"]):not(.inv-item-card){background:linear-gradient(160deg,color-mix(in srgb,var(--gt) 11%,var(--surface)) 0%,color-mix(in srgb,var(--gt) 3%,var(--surface)) 70%) !important; border:1px solid color-mix(in srgb,var(--gt) 26%,transparent) !important; box-shadow:inset 0 3px 0 var(--gt), 0 12px 24px -20px var(--gt) !important;}
+#view-inventaris .card[style*="background: var(--primary)"], #view-inventaris .card[style*="background:var(--primary)"], #view-atur-budget .card[style*="background: var(--primary)"], #view-atur-budget .card[style*="background:var(--primary)"]{background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 62%,#04201D)) !important; color:#fff !important; border:0 !important; box-shadow:0 14px 28px -14px var(--gt) !important;}
+#view-inventaris .card[style*="background: var(--primary)"], #view-inventaris .card[style*="background:var(--primary)"] select, #view-atur-budget .card[style*="background: var(--primary)"], #view-atur-budget .card[style*="background:var(--primary)"] select{color:#fff !important; border-color:rgba(255,255,255,.7) !important;}
+#view-inventaris .card h3 .dot, #view-atur-budget .card h3 .dot{background:var(--gt) !important; box-shadow:0 0 0 4px color-mix(in srgb,var(--gt) 22%,transparent) !important;}
+#view-inventaris .card h3, #view-atur-budget .card h3{color:color-mix(in srgb,var(--gt) 45%,var(--text));}
+#view-inventaris .field > label, #view-atur-budget .field > label{color:color-mix(in srgb,var(--gt) 68%,var(--text)); font-weight:700;}
+#view-inventaris input:focus, #view-atur-budget input:focus, #view-inventaris select:focus, #view-atur-budget select:focus{border-color:var(--gt) !important; box-shadow:0 0 0 3px color-mix(in srgb,var(--gt) 24%,transparent) !important;}
+#view-inventaris .btn:not(.danger), #view-atur-budget .btn:not(.danger){background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 68%,#000)) !important; color:var(--on-gt) !important; border-color:transparent !important; box-shadow:0 8px 18px -8px var(--gt) !important;}
+#view-inventaris .btn svg, #view-atur-budget .btn svg{color:var(--on-gt) !important;}
+#view-inventaris .inv-item-card, #view-atur-budget .inv-item-card{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 9%,var(--surface)),color-mix(in srgb,var(--gt) 2%,var(--surface))) !important; border:1px solid color-mix(in srgb,var(--gt) 22%,transparent) !important; box-shadow:inset 4px 0 0 var(--gt) !important;}
+#view-inventaris .menu-row, #view-atur-budget .menu-row{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 8%,var(--surface)),color-mix(in srgb,var(--gt) 2%,var(--surface))) !important; border:1px solid color-mix(in srgb,var(--gt) 20%,transparent) !important; box-shadow:inset 3px 0 0 var(--gt) !important;}
+#view-inventaris .badge, #view-atur-budget .badge{background:color-mix(in srgb,var(--gt) 16%,transparent) !important; color:color-mix(in srgb,var(--gt) 60%,var(--text)) !important;}
+#view-inventaris .back-row, #view-atur-budget .back-row{color:color-mix(in srgb,var(--gt) 70%,var(--text));}
+#view-inventaris .hint, #view-atur-budget .hint{color:color-mix(in srgb,var(--gt) 25%,var(--text-2));}
+</style>
+<style id="tk-teal-all">
+/* Nuansa teal untuk SEMUA halaman selain Dashboard & menu Catat (satu warna, senada identitas Tumbuh Kaya) */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget){--gt:var(--primary); --on-gt:#06332E;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget){--gt:#0F9D8E; --on-gt:#fff; --primary:#0F9D8E; --primary-2:#0B7A6E; --primary-dim:#CDE6E2; --accent:#0F9D8E; --on-primary:#fff;}
+/* latar halaman: pendar teal halus */
+html[data-theme="light"] body::after{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(900px 520px at 88% -8%,rgba(15,157,142,.22),transparent 62%),radial-gradient(760px 560px at -8% 46%,rgba(15,157,142,.12),transparent 64%),radial-gradient(700px 400px at 70% 108%,rgba(45,212,191,.14),transparent 64%);}
+/* judul halaman & hero */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 94%,#fff) 0%,color-mix(in srgb,var(--gt) 72%,#04201D) 100%) !important;
+  color:#fff !important; border:0 !important; box-shadow:0 14px 28px -14px var(--gt) !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > *:not([data-icon]){color:#fff !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > [data-icon]:first-child, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > [data-icon]:first-child{background:rgba(255,255,255,.24) !important; color:#fff !important; box-shadow:none !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > [data-icon]:first-child svg{color:#fff !important;}
+/* tombol kembali */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 85%,#000),color-mix(in srgb,var(--gt) 55%,#001a17)) !important; color:#fff !important; border:0 !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row *{color:#fff !important;}
+/* kartu */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card):not([style*="background: var(--primary)"]):not([style*="background:var(--primary)"]){
+  background:linear-gradient(160deg,color-mix(in srgb,var(--gt) 11%,var(--surface)) 0%,color-mix(in srgb,var(--gt) 3%,var(--surface)) 70%) !important;
+  border:1px solid color-mix(in srgb,var(--gt) 26%,transparent) !important; box-shadow:inset 0 3px 0 var(--gt), 0 12px 24px -20px var(--gt) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background: var(--primary)"], .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background:var(--primary)"]{background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 62%,#04201D)) !important; color:#fff !important; border:0 !important; box-shadow:0 14px 28px -14px var(--gt) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card h3 .dot, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card h3 .dot{background:var(--gt) !important; box-shadow:0 0 0 4px color-mix(in srgb,var(--gt) 22%,transparent) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card h3{color:color-mix(in srgb,var(--gt) 45%,var(--text));}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .field > label{color:color-mix(in srgb,var(--gt) 68%,var(--text)); font-weight:700;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) input:focus, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) select:focus, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) textarea:focus{border-color:var(--gt) !important; box-shadow:0 0 0 3px color-mix(in srgb,var(--gt) 24%,transparent) !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) input[type=checkbox], html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) input[type=radio]{accent-color:var(--gt);}
+/* tombol */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.danger), html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger), html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) button[style*="var(--primary-dim)"], html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .ap-btn{background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 68%,#000)) !important; color:var(--on-gt) !important; border-color:transparent !important; box-shadow:0 8px 18px -8px var(--gt) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn svg{color:var(--on-gt) !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .toggle.active, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .cvt-btn.active, html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) input.ap-sw:checked{background:linear-gradient(135deg,var(--gt),color-mix(in srgb,var(--gt) 68%,#000)) !important; color:#fff !important; border-color:transparent !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .toggle:not(.active){background:color-mix(in srgb,var(--gt) 10%,#E3E3E3); color:color-mix(in srgb,var(--gt) 70%,#000); border-color:color-mix(in srgb,var(--gt) 28%,transparent);}
+/* baris daftar */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .inv-item-card, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .acc-row{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 9%,var(--surface)),color-mix(in srgb,var(--gt) 2%,var(--surface))) !important; border:1px solid color-mix(in srgb,var(--gt) 22%,transparent) !important; box-shadow:inset 4px 0 0 var(--gt) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .badge{background:color-mix(in srgb,var(--gt) 16%,transparent) !important; color:color-mix(in srgb,var(--gt) 60%,var(--text)) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-actions .icon-btn:not(.del){background:var(--gt) !important; color:var(--on-gt) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-actions .icon-btn:not(.del) svg{color:var(--on-gt) !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hint{color:color-mix(in srgb,var(--gt) 25%,var(--text-2));}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .budget-bar-track{background:color-mix(in srgb,var(--gt) 16%,transparent);}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .nw-chip.active, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .sr-chip.on, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) [class*="chip"].active, .view:not(#view-dashboard):not(#view-catat):not(#view-widget) [class*="chip"].on{background:var(--gt) !important; color:var(--on-gt) !important; border-color:transparent !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .nw-chip:not(.active){border-color:color-mix(in srgb,var(--gt) 35%,transparent); color:color-mix(in srgb,var(--gt) 70%,var(--text));}
+/* tema gelap: gradasi teal lebih dalam supaya teks putih tetap terbaca */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title, html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card, html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row, html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background: var(--primary)"], html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background:var(--primary)"]{background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 66%,#04201D),color-mix(in srgb,var(--gt) 40%,#04201D)) !important; color:#fff !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > *:not([data-icon]){color:#fff !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger){color:#fff !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger){background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 80%,#04201D),color-mix(in srgb,var(--gt) 52%,#04201D)) !important;}
+</style>
+<style id="tk-nav-dark">
+/* Tombol pindah tab (Home, Catat, dll) di mode terang: bantalan hitam dipertahankan */
+html[data-theme="light"] nav{background:rgba(23,23,23,.96) !important; border:1px solid rgba(255,255,255,.1) !important; box-shadow:0 14px 30px -12px rgba(0,0,0,.6) !important;}
+html[data-theme="light"] nav .navbtn{color:#BDBDBD !important;}
+html[data-theme="light"] nav .navbtn.active{color:#fff !important;}
+html[data-theme="light"] nav .navbtn.active .ic{background:linear-gradient(135deg,#2DD4BF,#14B8A6) !important; color:#06332E !important;}
+</style>
 <script id="tk-dash-compact-js">
 /* ============ DASHBOARD RINGKAS (desktop) + halaman Insight & Saldo per Rekening ============ */
 var srFilter = 'all';
@@ -24208,7 +24422,15 @@ function dcInsight(){
   var lastSame = bebanOperasional(firstDayStr(prevY, prevM), prevY+'-'+String(prevM).padStart(2,'0')+'-'+String(dSama).padStart(2,'0'));
   var avg = dHari>0 ? thisM/dHari : 0, pct = null;
   if(lastSame>0){ var diff = thisM-lastSame; pct = Math.round(Math.abs(diff)/lastSame*100); if(pct<1) pct = 0; else if(diff<0) pct = -pct; }
-  return {thisM:thisM, avg:avg, proj:avg*dMonth, pct:pct, lastSame:lastSame};
+  var DN = isEN() ? ['Su','Mo','Tu','We','Th','Fr','Sa'] : ['M','S','S','R','K','J','S'], week = [], wmax = 1;
+  for(var k=6; k>=0; k--){
+    var dt = new Date(now.getFullYear(), now.getMonth(), now.getDate()-k);
+    var ds = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    var v = 0; try{ v = bebanOperasional(ds, ds)||0; }catch(e){}
+    if(v>wmax) wmax = v;
+    week.push({v:v, d:DN[dt.getDay()], today:k===0});
+  }
+  return {thisM:thisM, avg:avg, proj:avg*dMonth, pct:pct, lastSame:lastSame, week:week, wmax:wmax};
 }
 function renderDashCompact(){
   var el = document.getElementById('db-compact'); if(!el) return;
@@ -24265,19 +24487,37 @@ function renderDashCompact(){
     '<div id="dc-accounts">'+accountsGroupsHtml()+'</div></div>';
 
   /* baris 3 kanan: insight (dinaikkan) */
-  var ins = dcInsight(), ib;
+  var ins = dcInsight(), ib, insC = 'var(--primary)';
   if(saldoHidden){
     ib = '<div class="dc-s">'+L('Insight disembunyikan bareng saldo.','Insight is hidden together with balances.')+'</div>';
   } else if(ins.thisM===0 && ins.lastSame===0){
     ib = '<div class="dc-s">'+L('Belum ada pengeluaran tercatat bulan ini.','No spending recorded this month yet.')+'</div>';
   } else {
     var big = ins.pct===null ? fmt(ins.thisM) : (ins.pct>0 ? '+' : (ins.pct<0 ? '−' : '≈ '))+Math.abs(ins.pct)+'%';
-    var bc = ins.pct===null || ins.pct===0 ? '' : (ins.pct>0 ? 'var(--danger)' : 'var(--pos)');
-    var cap = ins.pct===null ? L('Pengeluaran bulan ini','Spending this month') : L('Pengeluaran dibanding periode sama bulan lalu','Spending vs same period last month');
-    ib = '<div class="dc-big"'+(bc ? ' style="color:'+bc+';"' : '')+'>'+big+'</div><div class="dc-s">'+cap+'</div>'+
+    var bc = ins.pct===null ? 'var(--primary)' : (ins.pct===0 ? 'var(--primary)' : (ins.pct>0 ? 'var(--danger)' : 'var(--pos)'));
+    var chipT = ins.pct===null ? L('Berjalan','So far') : (ins.pct===0 ? L('Stabil','Steady') : (ins.pct>0 ? L('Naik','Up') : L('Hemat','Saving')));
+    var icoK = ins.pct===null ? 'sparkles' : (ins.pct===0 ? 'activity' : (ins.pct>0 ? 'trendUp' : 'trendDown'));
+    var cap = ins.pct===null ? L('Pengeluaran bulan ini','Spending this month') : L('vs periode sama bln lalu','vs same period last mo.');
+    insC = bc;
+    var wk = '';
+    if(ins.week && ins.week.some(function(x){ return x.v>0; })){
+      wk = '<div class="dc-wk" title="'+L('7 hari terakhir','Last 7 days')+'">'+ins.week.map(function(x){
+        return '<div class="dc-wc'+(x.today?' on':'')+'"><div class="dc-wcol"><i style="height:'+(x.v>0?Math.max(10,Math.round(x.v/ins.wmax*100)):4)+'%"></i></div><em>'+x.d+'</em></div>';
+      }).join('')+'</div>';
+    }
+    var cmp = '';
+    if(ins.pct!==null){
+      var mx = Math.max(ins.thisM, ins.lastSame, 1);
+      cmp = '<div class="dc-cmp">'+
+        '<div class="dc-cr"><span>'+L('Bulan ini','This month')+'</span><div class="dc-ct"><i style="width:'+Math.max(4,Math.round(ins.thisM/mx*100))+'%"></i></div><b>'+fmtShort(ins.thisM)+'</b></div>'+
+        '<div class="dc-cr prev"><span>'+L('Bulan lalu','Last month')+'</span><div class="dc-ct"><i style="width:'+Math.max(4,Math.round(ins.lastSame/mx*100))+'%"></i></div><b>'+fmtShort(ins.lastSame)+'</b></div></div>';
+    }
+    ib = '<div class="dc-ins-top"><span class="dc-ins-badge">'+(ICONS[icoK]||'')+'</span>'+
+      '<div class="dc-ins-main"><span class="dc-ins-chip">'+chipT+'</span><div class="dc-big">'+big+'</div><div class="dc-s">'+cap+'</div></div>'+wk+'</div>'+
+      cmp+
       '<div class="dc-mini"><div><span>'+L('Bulan ini','This month')+'</span><b>'+fmtShort(ins.thisM)+'</b></div><div><span>'+L('Rata-rata/hari','Avg / day')+'</span><b>'+fmtShort(ins.avg)+'</b></div><div><span>'+L('Proyeksi bln','Month est.')+'</span><b>'+fmtShort(ins.proj)+'</b></div></div>';
   }
-  h += '<div class="card dc-t" data-goto="insight" style="grid-column:3 / span 2; grid-row:3;">'+dcHead('sparkles','var(--gold-text,var(--warn))','Insight','')+'<div class="dc-ib">'+ib+'</div></div>';
+  h += '<div class="card dc-t dc-insc" data-goto="insight" style="--c:'+insC+'; grid-column:3 / span 2; grid-row:3;">'+dcHead('sparkles','var(--gold-text,var(--warn))','Insight','')+'<div class="dc-ib">'+ib+'</div></div>';
 
   /* baris 4 kanan: perlu perhatian */
   var rem = window._remItems || [];
@@ -24328,8 +24568,9 @@ function renderDashCompact(){
 function dcFit(){
   /* kartu Insight: kalau tinggi tidak cukup, sembunyikan statistik kecil dulu, lalu keterangan */
   document.querySelectorAll('#db-compact .dc-ib').forEach(function(ib){
-    var mini = ib.querySelector('.dc-mini'), cap = ib.querySelector('.dc-big + .dc-s');
-    if(mini) mini.style.display = ''; if(cap) cap.style.display = '';
+    var cmp = ib.querySelector('.dc-cmp'), mini = ib.querySelector('.dc-mini'), cap = ib.querySelector('.dc-big + .dc-s');
+    if(cmp) cmp.style.display = ''; if(mini) mini.style.display = ''; if(cap) cap.style.display = '';
+    if(cmp && ib.scrollHeight>ib.clientHeight+1) cmp.style.display = 'none';
     if(mini && ib.scrollHeight>ib.clientHeight+1) mini.style.display = 'none';
     if(cap && ib.scrollHeight>ib.clientHeight+1) cap.style.display = 'none';
   });
@@ -24959,7 +25200,10 @@ html[data-layout="desktop"] body:has(#view-dashboard.active, #view-catat.active)
    Untuk 1 kolom saja seperti HP, ubah repeat(2,...) di "main" menjadi 1fr dan beri max-width:560px.
    Mode terang (semua layout): latar diredupkan + sentuhan hitam. Hapus blok ini untuk membatalkan. */
 html[data-layout="desktop"] #view-catat main{grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:28px; row-gap:4px; align-items:start;}
-html[data-layout="desktop"] #view-catat .catat-grp{background:transparent !important; border:0 !important; box-shadow:none !important; padding:0 0 8px !important; border-radius:0; margin:0;}
+html[data-layout="desktop"] #view-catat .catat-grp{background:#131415 !important; border:1px solid rgba(255,255,255,.09) !important; box-shadow:0 12px 26px -14px rgba(0,0,0,.65) !important; padding:2px 10px 10px !important; border-radius:16px; margin:0;}
+html[data-layout="desktop"] #view-catat .catat-grp .catat-group-title{color:#D9DCDE;}
+html[data-layout="desktop"] #view-catat main{align-items:stretch !important; row-gap:12px !important; column-gap:14px !important;}
+html[data-layout="desktop"][data-theme="light"] #view-catat .catat-grp{background:#17181A !important; border-color:rgba(0,0,0,.55) !important;}
 html[data-layout="desktop"] #view-catat .catat-group-title{margin:14px 2px 10px;}
 html[data-layout="desktop"] #view-catat .catat-grid, html[data-layout="desktop"] #view-catat .catat-grid.grid2{grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px;}
 html[data-layout="desktop"] #view-catat .catat-grid .qa{min-height:84px; padding:8px 4px 7px; justify-content:flex-start;}
@@ -24968,7 +25212,6 @@ html[data-layout="desktop"] #view-catat .catat-grid .qa .ic svg{width:17px; heig
 html[data-layout="desktop"] #view-catat .catat-grid .qa .lb{font-size:11.5px;}
 html[data-layout="desktop"] #view-catat .catat-grid .qa .lb::after{font-size:9px; margin-top:2px;}
 html[data-layout="desktop"] #view-catat .catat-group-title{margin:8px 2px 7px;}
-html[data-layout="desktop"] #view-catat .catat-grp{padding:0 0 4px !important;}
 html[data-layout="desktop"] #view-catat main{row-gap:0;}
 
 html[data-theme="light"]{
@@ -24994,6 +25237,18 @@ html[data-layout="desktop"][data-theme="light"] .dc-qa .qb{background:#151617; c
 html[data-layout="desktop"][data-theme="light"] .dc-qa .qb:hover{border-color:#2DD4BF;}
 html[data-layout="desktop"][data-theme="light"] .dc-qa .qi{background:rgba(255,255,255,.12); color:#2DD4BF;}
 html[data-layout="desktop"][data-theme="light"] .dc-t .dc-ic{background:rgba(0,0,0,.14);}
+/* Dashboard mode terang: kartu diberi tint pastel + garis warna di atas sesuai fungsinya */
+html[data-theme="light"] #db-compact > .dc-t{
+  --ac:#5B7A99;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--ac) 24%,#CBCED0),color-mix(in srgb,var(--ac) 12%,#BDC0C2)) !important;
+  border:1px solid color-mix(in srgb,var(--ac) 38%,rgba(10,10,10,.22)) !important;
+  box-shadow:inset 0 3px 0 var(--ac), 0 10px 24px -16px rgba(0,0,0,.5) !important;
+}
+html[data-theme="light"] #db-compact > .dc-stat[onclick*="masuk"], html[data-theme="light"] #db-compact > .dc-saldo{--ac:#19B894;}
+html[data-theme="light"] #db-compact > .dc-stat[onclick*="keluar"], html[data-theme="light"] #db-compact > .dc-t[style*="grid-row:4"], html[data-theme="light"] #db-compact > .dc-t[data-goto="stok-barang"]{--ac:#E14B54;}
+html[data-theme="light"] #db-compact > .dc-t[data-goto="insight"], html[data-theme="light"] #db-compact > .dc-hlh{--ac:#3B82C4;}
+html[data-theme="light"] #db-compact > .dc-nwh{--ac:#7B5CFA;}
+html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondisi aman (tidak ada jatuh tempo / stok aman) = hijau */
 </style>
 <script id="dv-js">
 /* ============ DIVIDEN SAHAM ============
