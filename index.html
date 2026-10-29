@@ -20261,7 +20261,8 @@ if(document.readyState==='loading'){
   function doText(n){
     var v = n.nodeValue, rec = textMap.get(n);
     if(rec && rec.t===v) return;               // already our translation
-    var out = tr(v);
+    /* "Mati" pada pilihan animasi = Off (bukan "Died" seperti status aset biologis) */
+    var out = (v.trim()==='Mati' && n.parentNode && n.parentNode.closest && n.parentNode.closest('#anim-toggle-row,#auth-anim-btn')) ? v.replace('Mati','Off') : tr(v);
     if(out!==v){ textMap.set(n,{o:v,t:out}); n.nodeValue = out; }
   }
   function doEl(el){
@@ -25860,59 +25861,6 @@ html *{text-shadow:none !important;}
 .fx-on #view-riwayat .hint + .card::after, .fx-on #view-riwayat .section-title + .card::after, .fx-on #view-untuk-orang .hint + .card::after{box-shadow:none !important;}
 .fx-on .view.fx6 .card .empty::before{filter:none !important;}
 </style>
-<script id="tk-noglow-js">
-/* Buang lapisan box-shadow / drop-shadow yang berwarna terang (glow) dari semua elemen; lapisan inset, cincin (blur 0), dan bayangan gelap dipertahankan. */
-(function(){
-  function split(v){var o=[],d=0,c='',i,ch;for(i=0;i<v.length;i++){ch=v[i];if(ch==='(')d++;if(ch===')')d--;if(ch===','&&d===0){o.push(c.trim());c='';}else c+=ch;}if(c.trim())o.push(c.trim());return o;}
-  function glow(layer){
-    if(/\binset\b/.test(layer)) return false;
-    var m=layer.match(/(rgba?|color)\(([^)]*)\)/); var rest=m?layer.replace(m[0],''):layer;
-    var nums=(rest.match(/-?[\d.]+px/g)||[]).map(parseFloat);
-    if((nums[2]||0)<=0) return false;
-    if(!m) return false;
-    var p=m[2].replace('srgb','').split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
-    var sc=(m[1]==='color')?255:1;
-    var mx=Math.max(p[0]*sc,p[1]*sc,p[2]*sc);
-    return mx>80;
-  }
-  function proc(el){
-    if(!el||el.nodeType!==1||!el.style) return;
-    var st=el.style;
-    if(el.getAttribute('data-dgs')){st.removeProperty('box-shadow');st.removeProperty('filter');el.removeAttribute('data-dgs');}
-    var cs=getComputedStyle(el),done=false;
-    var bs=cs.boxShadow;
-    if(bs&&bs!=='none'){
-      var L=split(bs),K=L.filter(function(x){return !glow(x);});
-      if(K.length!==L.length){st.setProperty('box-shadow',K.join(', ')||'none','important');done=true;}
-    }
-    var f=cs.filter;
-    if(f&&f.indexOf('drop-shadow')>-1){
-      var nf=f.replace(/drop-shadow\((?:[^()]|\([^()]*\))*\)/g,'').trim();
-      st.setProperty('filter',nf||'none','important');done=true;
-    }
-    if(done) el.setAttribute('data-dgs','1');
-  }
-  function procTree(root){proc(root);if(root.querySelectorAll){var a=root.querySelectorAll('*');for(var i=0;i<a.length;i++)proc(a[i]);}}
-  var q=new Set(),t=null;
-  function enq(n,deep){q.add({n:n,d:deep});if(!t)t=setTimeout(flush,150);}
-  function flush(){t=null;var arr=Array.from(q);q.clear();arr.forEach(function(o){if(!o.n.isConnected)return;if(o.d)procTree(o.n);else proc(o.n);});}
-  function first(){
-    var all=document.querySelectorAll('*'),i=0;
-    (function step(){var end=Math.min(i+400,all.length);for(;i<end;i++)proc(all[i]);if(i<all.length)setTimeout(step,0);})();
-  }
-  var mo=new MutationObserver(function(ms){
-    ms.forEach(function(m){
-      if(m.type==='childList'){m.addedNodes.forEach(function(n){if(n.nodeType===1)enq(n,true);});}
-      else if(m.type==='attributes'){var n=m.target;var big=(n===document.documentElement||n===document.body||(n.classList&&n.classList.contains('view')));enq(n,big);}
-    });
-  });
-  function start(){
-    first();
-    mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-  }
-  if(document.readyState==='complete') setTimeout(start,200); else window.addEventListener('load',function(){setTimeout(start,200);});
-})();
-</script>
 <style id="tk-noglow-2">
 /* Hapus glow (bayangan teal berkabut) di tema gelap. Garis aksen atas kartu tetap. */
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title,
@@ -25965,7 +25913,9 @@ html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="masuk"] .i
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="hutang"] .ic{color:#0D0D0D !important;}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="hutang"] .ic svg{stroke:#0D0D0D;}
 </style>
-<style id="tk-noglow-3">
+<style id="tk-polish">
+/* Gabungan perbaikan tampilan (dirapikan dari beberapa blok; urutan aturan dipertahankan) */
+/* ===== Mode gelap: hapus glow teal di semua halaman ===== */
 /* Mode gelap: hapus glow teal di semua halaman (kecuali Dashboard/Catat yang sudah punya aturan sendiri).
    Dihapus: bayangan berwarna di kartu/judul/tombol/tombol kembali, cincin glow titik judul, gelembung dekoratif kartu, gradasi teal di latar kartu & baris, tepi teal berkabut.
    Dipertahankan: garis aksen tipis (inset) dan cincin fokus input. */
@@ -25999,19 +25949,60 @@ html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):
   html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card):hover{box-shadow:inset 0 3px 0 var(--gt) !important;}
   html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(.btn,.rc-card,.qa,.rw-mon-head):hover{box-shadow:none !important;}
 }
-</style>
-<style id="tk-widep">
+/* ===== HP tegak + mode Desktop: bingkai 560px ===== */
 /* HP potret + mode Desktop: bingkai 560px. Kolom dirapatkan supaya tidak sempit, dan area konten memakai sisa lebar penuh. */
 html[data-wide-p="1"] #app{min-height:0;}
 html[data-wide-p="1"] #view-dashboard main{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
 html[data-wide-p="1"] #view-grafik main, html[data-wide-p="1"] #view-kesehatan main{column-count:1 !important;}
 html[data-wide-p="1"] #ff-side .ff-item{font-size:12.5px;}
 html[data-wide-p="1"] #ff-toggle{display:none !important;}
+/* halaman dua kolom (Detail Akun, dll.) jadi satu kolom di HP tegak */
+html[data-wide-p="1"] .dk-body, html[data-wide-p="1"] .dk-body.dk-narrow, html[data-wide-p="1"] .pg-cols{grid-template-columns:minmax(0,1fr) !important;}
 html[data-wide-p="1"] #view-dashboard .topbar{grid-template-columns:minmax(0,1fr) !important;}
 html[data-wide-p="1"] #view-dashboard .topbar .balance-panel{width:100% !important; max-width:none !important; box-sizing:border-box;}
 html[data-wide-p="1"] #view-catat main, html[data-wide-p="1"] #view-catat .catat-wrap{grid-template-columns:minmax(0,1fr) !important; column-count:1 !important;}
 html[data-wide-p="1"] #view-dashboard .grid4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
 html[data-wide-p="1"] .view main > .back-row{white-space:nowrap;}
+/* ===== Teks tidak terpotong, tombol mata ===== */
+/* Teks tidak terpotong / tidak patah di layar sempit */
+.view main > .back-row{white-space:nowrap; max-width:calc(100% - 52px); box-sizing:border-box;}
+.view main > .back-row > span:last-child{overflow:hidden; text-overflow:ellipsis; min-width:0;}
+.view select{text-overflow:ellipsis;}
+/* Grafik: kartu Tahun & Pilih Grafik selalu selebar penuh supaya nama grafik terbaca utuh */
+html[data-layout="desktop"] #view-grafik main > .card:has(#gr-tahun),
+html[data-layout="desktop"] #view-grafik main > .card:has(#lp-chart-pilih){column-span:all;}
+/* Tombol mata (sembunyikan saldo): lebih kecil, tidak menimpa header; tetap di pojok kanan atas */
+#tk-eye-fab{width:32px; height:32px; top:calc(env(safe-area-inset-top,0px) + 8px); right:10px; opacity:.92;}
+#tk-eye-fab svg{width:17px; height:17px;}
+/* ===== Jarak garis aksen baris ===== */
+/* Baris dengan garis aksen kiri (Email, menu, kartu inventaris): beri jarak supaya garis tidak menimpa teks, di tema terang/gelap, HP maupun Desktop */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .acc-row,
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row{padding:10px 12px 10px 18px !important; border-radius:12px; box-sizing:border-box;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .acc-row:not(.akun-id-row){margin-bottom:7px;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .akun-id-row{gap:10px; margin-bottom:0;}
+/* ===== Tombol pilihan Tema/Animasi/Layar/Bahasa ===== */
+/* Pilihan Tema/Animasi/Layar/Bahasa: tanpa indikator geser (sering salah posisi saat baris membungkus atau panel baru dibuka).
+   Tombol aktif memakai warna solid, teks di tengah, tema terang maupun gelap. */
+#theme-toggle-row .fx-ind, #anim-toggle-row .fx-ind, #layout-toggle-row .fx-ind, #lang-toggle-row .fx-ind{display:none !important;}
+#theme-toggle-row .toggle, #anim-toggle-row .toggle, #layout-toggle-row .toggle, #lang-toggle-row .toggle{display:flex; align-items:center; justify-content:center; text-align:center; box-sizing:border-box;}
+html:not([data-theme="light"]) :is(#theme-toggle-row,#anim-toggle-row,#layout-toggle-row,#lang-toggle-row) .toggle.active{background:var(--primary) !important; color:var(--on-primary) !important; animation:none !important; box-shadow:none !important;}
+html[data-theme="light"] :is(#theme-toggle-row,#anim-toggle-row,#layout-toggle-row,#lang-toggle-row) .toggle.active{background:linear-gradient(135deg,#0B0B0B,#2B2B2B) !important; color:#fff !important; animation:none !important;}
+/* ===== Menu bawah HP dan tombol profil ===== */
+/* Menu bawah (HP): lapisan pudar di belakangnya supaya teks yang lewat tidak terlihat terpotong di celah bawah/samping bar */
+html:not([data-layout="desktop"]) body:not(.widget-mode)::after{content:""; position:fixed; left:0; right:0; bottom:0; height:calc(env(safe-area-inset-bottom,0px) + 92px); background:linear-gradient(to top, var(--bg) 0, var(--bg) 62%, transparent 100%); pointer-events:none; z-index:19;}
+html:not([data-layout="desktop"]) body:has(.modal-overlay.open)::after, html:not([data-layout="desktop"]) body:has(.modal-overlay[style*="flex"])::after{display:none;}
+html[data-theme="light"] nav{background:#171717 !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;}
+/* Tombol di kartu profil (Ubah Nama, Ubah Foto Profil, Hapus Foto): bentuk pil rapi, tidak patah baris, tanpa kotak hitam */
+.profile-info .actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+.profile-info .lnk{display:inline-flex; align-items:center; white-space:nowrap; padding:6px 12px; border-radius:999px; line-height:1.2; box-sizing:border-box;}
+html:not([data-theme="light"]) .profile-info .lnk:not(.danger){background:color-mix(in srgb,#2DD4BF 14%,transparent); color:#2DD4BF; border:1px solid color-mix(in srgb,#2DD4BF 38%,transparent);}
+html:not([data-theme="light"]) .profile-info .lnk.danger{background:color-mix(in srgb,var(--danger,#FF5C6C) 14%,transparent); color:var(--danger,#FF5C6C); border:1px solid color-mix(in srgb,var(--danger,#FF5C6C) 38%,transparent);}
+/* ===== Pengganti skrip penghapus glow ===== */
+/* Hapus glow teal yang sebelumnya dibersihkan lewat skrip (tk-noglow-js): penanda tab geser, garis progres, judul halaman, tombol Dividen */
+.fx-ind, .fx6-prog > i{box-shadow:none !important;}
+.view .section-title, html[data-theme="light"] .view .section-title{box-shadow:none !important;}
+html body #view-dividen#view-dividen#view-dividen#view-dividen .btn{box-shadow:none !important;}
+html body :is(#view-atur-budget,#view-inventaris,#view-goals) .section-title, html[data-theme="light"] body :is(#view-atur-budget,#view-inventaris,#view-goals) .section-title{box-shadow:none !important;}
 </style>
 <script id="tk-widep-js">
 /* Sidebar otomatis ringkas di HP potret (kecuali user pernah memilih "lebar"); kembali normal saat lanskap */
@@ -26027,17 +26018,5 @@ html[data-wide-p="1"] .view main > .back-row{white-space:nowrap;}
   new MutationObserver(fit).observe(document.documentElement,{attributes:true,attributeFilter:['data-wide-p']});
 })();
 </script>
-<style id="tk-fit34">
-/* Teks tidak terpotong / tidak patah di layar sempit */
-.view main > .back-row{white-space:nowrap; max-width:calc(100% - 52px); box-sizing:border-box;}
-.view main > .back-row > span:last-child{overflow:hidden; text-overflow:ellipsis; min-width:0;}
-.view select{text-overflow:ellipsis;}
-/* Grafik: kartu Tahun & Pilih Grafik selalu selebar penuh supaya nama grafik terbaca utuh */
-html[data-layout="desktop"] #view-grafik main > .card:has(#gr-tahun),
-html[data-layout="desktop"] #view-grafik main > .card:has(#lp-chart-pilih){column-span:all;}
-/* Tombol mata (sembunyikan saldo): lebih kecil, tidak menimpa header; tetap di pojok kanan atas */
-#tk-eye-fab{width:32px; height:32px; top:calc(env(safe-area-inset-top,0px) + 8px); right:10px; opacity:.92;}
-#tk-eye-fab svg{width:17px; height:17px;}
-</style>
 </body>
 </html>
