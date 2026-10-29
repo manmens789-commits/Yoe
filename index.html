@@ -9044,6 +9044,31 @@ function ksPemasukanBulan(year, month){
   DATA.pemasukan.forEach(function(p){ if(p.tanggal>=start && p.tanggal<=end && !isPemasukanNonRutin(p)) s += (p.jumlah||0); });
   return s;
 }
+/* ===== PENGHASILAN PASIF (Dividen Saham) =====
+   Dividen disimpan sebagai pemasukan (p.dividen). Tetap dihitung sebagai pemasukan rutin, tapi ditampilkan terpisah di PDF, CSV, prompt AI, dan skor kesehatan. */
+function dvPasifStats(start, end){
+  var o = {neto:0, bruto:0, pajak:0, n:0, map:{}, arr:[]};
+  (DATA.pemasukan||[]).forEach(function(p){
+    if(!p || !p.dividen || p.tanggal<start || p.tanggal>end) return;
+    var d = p.dividen, neto = p.jumlah||0, pajak = d.pajak>0 ? d.pajak : 0, bruto = d.bruto>0 ? d.bruto : neto+pajak;
+    var k = String(d.kode||'-').toUpperCase(), m = o.map[k] || (o.map[k] = {k:k, neto:0, bruto:0, pajak:0, n:0});
+    m.neto += neto; m.bruto += bruto; m.pajak += pajak; m.n++;
+    o.neto += neto; o.bruto += bruto; o.pajak += pajak; o.n++;
+  });
+  o.arr = Object.keys(o.map).map(function(k){ return o.map[k]; }).sort(function(a,b){ return b.neto-a.neto; });
+  return o;
+}
+function dvPasifHtml(start, end){
+  var st = dvPasifStats(start, end);
+  if(!st.n) return '';
+  var maxV = Math.max.apply(null, st.arr.map(function(a){ return a.neto; }).concat([1]));
+  var h = '<table class="pr-grp"><thead><tr><th style="width:30%;"><i class="pr-sw" style="background:#7A5AF8;"></i>Penghasilan Pasif (Dividen)</th><th>Porsi</th><th class="num">Bruto</th><th class="num">Pajak</th><th class="num">Neto</th></tr></thead><tbody>';
+  st.arr.forEach(function(a){
+    var pct = st.neto>0 ? a.neto/st.neto*100 : 0;
+    h += '<tr><td>'+escapeHtml(a.k)+' ('+a.n+'x)</td><td><div class="pr-mini"><span style="width:'+Math.min(a.neto/maxV*100,100)+'%; background:#7A5AF8;"></span></div><em>'+(a.neto>0 && pct<1 ? '<1%' : Math.round(pct)+'%')+'</em></td><td class="num">'+fmt(a.bruto)+'</td><td class="num">'+fmt(a.pajak)+'</td><td class="num">'+fmt(a.neto)+'</td></tr>';
+  });
+  return h+'<tr class="pr-sub"><td colspan="2">Subtotal (sudah termasuk di Total Pemasukan)</td><td class="num">'+fmt(st.bruto)+'</td><td class="num">'+fmt(st.pajak)+'</td><td class="num">'+fmt(st.neto)+'</td></tr></tbody></table>';
+}
 /* ===== SUMBER TUNGGAL: n bulan PENUH sebelum bulan dari refD =====
    Bulan pertama mulai mencatat yang kemungkinan tidak penuh (mulai > tgl 3) dilewati.
    Dipakai oleh: skor kesehatan, kartu dana darurat, dan pembanding bulanan di prompt Analisis AI. */
@@ -9067,22 +9092,22 @@ function bulanPenuhSebelum(refD, n){
 function ksMonthSamples(){
   var now = new Date();
   function collect(list){
-    var r = {expense:[], income:[], pairs:[], current:false, insufficient:false, faktor:1};
+    var r = {expense:[], income:[], pairs:[], current:false, insufficient:false, faktor:1, div:0};
     list.forEach(function(ym){
       var e = ksPengeluaranBulan(ym.y, ym.m), inc = ksPemasukanBulan(ym.y, ym.m);
       if(e>0) r.expense.push(e);
-      if(inc>0){ r.income.push(inc); r.pairs.push({inc:inc, e:e}); }
+      if(inc>0){ r.income.push(inc); r.pairs.push({inc:inc, e:e}); r.div += dvPasifStats(firstDayStr(ym.y,ym.m), lastDayStr(ym.y,ym.m)).neto; }
     });
     return r;
   }
   var r = collect(bulanPenuhSebelum(now, 3));
   if(!r.expense.length && !r.income.length){
     var y = now.getFullYear(), m = now.getMonth()+1, hari = now.getDate(), dim = new Date(y, m, 0).getDate();
-    r = {expense:[], income:[], pairs:[], current:true, insufficient:true, faktor:1};
+    r = {expense:[], income:[], pairs:[], current:true, insufficient:true, faktor:1, div:0};
     if(hari>=7){
       var st = firstDayStr(y,m), td = todayISO(), f = dim/hari;
       var e = bebanOperasional(st, td)*f, inc = sumInRange(DATA.pemasukan,'jumlah',st,td,function(x){ return !isPemasukanNonRutin(x); });
-      r.insufficient = false; r.faktor = f;
+      r.insufficient = false; r.faktor = f; r.div = dvPasifStats(st, td).neto*f;
       if(e>0) r.expense.push(e);
       if(inc>0){ r.income.push(inc); r.pairs.push({inc:inc, e:e}); }
     }
@@ -9156,7 +9181,7 @@ function computeHealthScore(){
       detail:(rate>=0 ? 'Nyisa ' : 'Defisit ')+Math.abs(Math.round(rate*100))+'% dari pemasukan ('+bulanLabel+')',
       icon:'\uD83D\uDCB0', sub:'Seberapa banyak pemasukan rutin yang tersisa setelah beban', value:Math.round(rate*100)+'%',
       marks:[{at:40,l:'0%'},{at:100,l:'30%'}], target:'Target: sisa \u226530% dari pemasukan rutin = skor penuh. Sisa 0% = skor 40; defisit menurunkan skor.',
-      rows:[['Pemasukan rutin / bulan', fmt(sumInc/msx.pairs.length)], ['Beban operasional / bulan', fmt(sumE/msx.pairs.length)], ['Sisa / bulan', fmt((sumInc-sumE)/msx.pairs.length)], ['Dasar hitung', bulanLabel+(msx.current?' (diproyeksikan)':'')]] });
+      rows:[['Pemasukan rutin / bulan', fmt(sumInc/msx.pairs.length)], ['Beban operasional / bulan', fmt(sumE/msx.pairs.length)], ['Sisa / bulan', fmt((sumInc-sumE)/msx.pairs.length)], msx.div>0 ? ['Termasuk penghasilan pasif (dividen) / bulan', fmt(msx.div/msx.pairs.length)] : null, ['Dasar hitung', bulanLabel+(msx.current?' (diproyeksikan)':'')]] });
   }
 
   // 2. Dana Darurat: terhadap pengeluaran wajib bulanan (rata-rata beban + cicilan hutang)
@@ -9406,7 +9431,7 @@ function renderKesehatan(){
           '<div class="ks-bar"><span style="width:'+pct+'%; background:'+color+';"></span>'+marks.map(function(m){ return '<u style="left:'+m.at+'%;"></u>'; }).join('')+'</div>'+
           (marks.length ? '<div class="ks-bar-lb">'+marks.map(function(m){ return '<em style="left:'+Math.min(m.at,96)+'%;">'+escapeHtml(m.l)+'</em>'; }).join('')+'</div>' : '')+
           '<div class="meta" style="margin-top:6px;"><b>Kondisi kamu: '+escapeHtml(p.value||'')+'</b> \u00B7 '+(p.weight>0 ? 'bobot '+Math.round(p.share)+'% \u00B7 menyumbang '+p.points.toFixed(1)+' poin' : 'tidak ikut menghitung skor')+'</div>'+
-          ((p.rows&&p.rows.length) ? '<div class="ks-rows">'+p.rows.map(function(r){ return '<div class="ks-rw"><span>'+escapeHtml(r[0])+'</span><span>'+escapeHtml(r[1])+'</span></div>'; }).join('')+'</div>' : '<div class="ks-note">'+escapeHtml(p.detail)+'</div>')+
+          ((p.rows&&p.rows.length) ? '<div class="ks-rows">'+p.rows.filter(Boolean).map(function(r){ return '<div class="ks-rw"><span>'+escapeHtml(r[0])+'</span><span>'+escapeHtml(r[1])+'</span></div>'; }).join('')+'</div>' : '<div class="ks-note">'+escapeHtml(p.detail)+'</div>')+
           (p.target ? '<div class="ks-note">'+escapeHtml(p.target)+'</div>' : '')+
         '</div>';
       });
@@ -10033,12 +10058,20 @@ function buildAiPrompt(){
   L.push('');
   L.push(Q('## Pemasukan per sumber','## Income by source'));
   L.push(aiLines(aiGroup(DATA.pemasukan,function(x){ var k=x.sumber||''; if(anon && k && (DATA.sumberPemasukan||[]).concat(typeof SUMBER_PEMASUKAN!=='undefined'?SUMBER_PEMASUKAN:[]).indexOf(k)===-1 && !nonRutinRe.test(k) && !/^Hasil Panen/.test(k)) k=Q('Sumber lain','Other source'); return nonRutinRe.test(k) ? k+Q(' [bukan penghasilan rutin]',' [not regular income]') : k; },s,e),8));
+  var dvP = dvPasifStats(s,e);
+  if(dvP.n){
+    L.push('');
+    L.push(Q('## Penghasilan pasif (dividen saham)','## Passive income (stock dividends)'));
+    L.push(Q('- Total dividen diterima (neto): ','- Total dividends received (net): ')+fmt(dvP.neto)+Q(' ('+dvP.n+' catatan; bruto '+fmt(dvP.bruto)+', pajak '+fmt(dvP.pajak)+'). Sudah termasuk di Total pemasukan dan dihitung sebagai penghasilan rutin.',' ('+dvP.n+' records; gross '+fmt(dvP.bruto)+', tax '+fmt(dvP.pajak)+'). Already included in Total income and counted as regular income.'));
+    if(masuk>0) L.push(Q('- Porsi dari total pemasukan: ','- Share of total income: ')+aiPct(dvP.neto,masuk)+'%');
+    if(!anon) dvP.arr.slice(0,8).forEach(function(a){ L.push('  - '+a.k+': '+fmt(a.neto)+' ('+a.n+'x)'); });
+  }
   var apAkun = akunPendapatanTotals(s,e);
   var pendArr = AKUN_COA.filter(function(a){ return a.t==='Pendapatan' && apAkun.map[a.k]>0; }).map(function(a){ return {k:a.k+' '+a.n, v:apAkun.map[a.k]}; }).sort(function(a,b){ return b.v-a.v; });
   if(pendArr.length){
     L.push('');
     L.push(Q('## Pendapatan per akun','## Income by account'));
-    L.push(Q('Pengelompokan pemasukan yang sama dengan menu Laporan; totalnya sama dengan Total pemasukan di atas. Akun 4-300 (penjualan aset & stok) dan 4-400 (investasi) bukan penghasilan rutin.','Income grouping is the same as the Reports menu; the total equals Total income above. Accounts 4-300 (asset & stock sales) and 4-400 (investments) are not regular income.'));
+    L.push(Q('Pengelompokan pemasukan yang sama dengan menu Laporan; totalnya sama dengan Total pemasukan di atas. Akun 4-300 (penjualan aset & stok) dan keuntungan investasi bukan penghasilan rutin; Dividen Saham (akun 4-400) dihitung sebagai penghasilan pasif rutin.','Income grouping is the same as the Reports menu; the total equals Total income above. Accounts 4-300 (asset & stock sales) and investment gains are not regular income; Stock Dividends (account 4-400) count as regular passive income.'));
     L.push(aiLines({arr:pendArr, total:apAkun.total}, 12));
   }
   L.push('');
@@ -17432,7 +17465,7 @@ function exportLaporanPDF(){
   html += '<div class="grid2col">'+
     '<div class="pr-section"><h2><span class="n">04</span>Pemasukan per Sumber</h2>'+
       printCatChart(msPemasukan, 'Total pemasukan')+
-      '<table>'+rowsFor(DATA.pemasukan,function(x){return x.sumber;},'Sumber')+'</table>'+pendapatanAkunHtml(start, end)+'</div>'+
+      '<table>'+rowsFor(DATA.pemasukan,function(x){return x.sumber;},'Sumber')+'</table>'+pendapatanAkunHtml(start, end)+dvPasifHtml(start, end)+'</div>'+
     '<div class="pr-section"><h2><span class="n">05</span>Pengeluaran per Jenis</h2>'+
       printCatChart(msPengeluaran, 'Total pengeluaran')+
       '<table>'+rowsFor(pengeluaranPerJenis(),akunJenisKey,'Jenis')+'</table></div>'+
@@ -17640,6 +17673,14 @@ function exportLaporanCSV(){
   mapRows(DATA.pemasukan, function(x){ return x.sumber; }).forEach(function(r){ rows.push(r); });
   rows.push([]);
   var apCsv = akunPendapatanTotals(start, end);
+  var dvCsv = dvPasifStats(start, end);
+  if(dvCsv.n){
+    rows.push(['PENGHASILAN PASIF (DIVIDEN SAHAM) - sudah termasuk di Total Pemasukan']);
+    rows.push(['Kode Saham','Jumlah Catatan','Bruto (Rp)','Pajak (Rp)','Neto (Rp)']);
+    dvCsv.arr.forEach(function(a){ rows.push([a.k, a.n, Math.round(a.bruto), Math.round(a.pajak), Math.round(a.neto)]); });
+    rows.push(['Total', dvCsv.n, Math.round(dvCsv.bruto), Math.round(dvCsv.pajak), Math.round(dvCsv.neto)]);
+    rows.push([]);
+  }
   rows.push(['PEMASUKAN PER AKUN (COA)']);
   rows.push(['Kode Akun','Nama Akun','Golongan','Nominal (Rp)']);
   AKUN_COA.forEach(function(ak){ if(ak.t==='Pendapatan' && apCsv.map[ak.k]>0) rows.push([ak.k, ak.n, ak.t, Math.round(apCsv.map[ak.k])]); });
@@ -24315,6 +24356,9 @@ html[data-theme="light"] #view-investasi-beli main > .section-title > [data-icon
 #view-investasi-beli .txn-actions .icon-btn:not(.del), #view-investasi-jual .txn-actions .icon-btn:not(.del){background:var(--gt) !important; color:var(--on-gt) !important;}
 #view-investasi-beli .txn-actions .icon-btn:not(.del) svg, #view-investasi-jual .txn-actions .icon-btn:not(.del) svg{color:var(--on-gt) !important;}
 #view-investasi-beli .back-row, #view-investasi-jual .back-row{color:color-mix(in srgb,var(--gt) 70%,var(--text));}
+html[data-theme="light"] #view-investasi-beli main > .pf-card, html[data-theme="light"] #view-investasi-jual main > .pf-card{background:#FFFFFF !important; border-color:#D4D4D4 !important;}
+html[data-theme="light"] #view-investasi-beli .pf-card .pf-hero, html[data-theme="light"] #view-investasi-jual .pf-card .pf-hero{background:linear-gradient(135deg,rgba(15,157,142,.13),rgba(139,124,246,.10)); border-color:rgba(15,157,142,.35);}
+html[data-theme="light"] #view-investasi-beli .pf-card .pf-d, html[data-theme="light"] #view-investasi-jual .pf-card .pf-d{background:#F6F6F3; border-color:#DDDDD8; border-left-color:var(--c,#BFBFB8);}
 </style>
 <style id="tk-inv2-color">
 /* Inventaris Aset & Budget Belanja: sentuhan teal (satu warna) */
@@ -24341,6 +24385,7 @@ html[data-theme="light"] #view-inventaris .section-title > [data-icon]:first-chi
 #view-inventaris .badge, #view-atur-budget .badge{background:color-mix(in srgb,var(--gt) 16%,transparent) !important; color:color-mix(in srgb,var(--gt) 60%,var(--text)) !important;}
 #view-inventaris .back-row, #view-atur-budget .back-row{color:color-mix(in srgb,var(--gt) 70%,var(--text));}
 #view-inventaris .hint, #view-atur-budget .hint{color:color-mix(in srgb,var(--gt) 25%,var(--text-2));}
+#view-atur-budget #set-budget input.budget-input{border:1.5px solid #000 !important;}
 </style>
 <style id="tk-teal-all">
 /* Nuansa teal untuk SEMUA halaman selain Dashboard & menu Catat (satu warna, senada identitas Tumbuh Kaya) */
@@ -24388,6 +24433,10 @@ html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > *:not([data-icon]){color:#fff !important;}
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger){color:#fff !important;}
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger){background:linear-gradient(135deg,color-mix(in srgb,var(--gt) 80%,#04201D),color-mix(in srgb,var(--gt) 52%,#04201D)) !important;}
+/* rapikan judul halaman & tombol kembali (semua tema) */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title{padding:12px 16px !important; padding-right:72px !important; margin:2px 0 14px !important; border-radius:18px !important; overflow:hidden; align-items:center;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > [data-icon]:first-child{border-radius:12px !important;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row{display:inline-flex !important; align-items:center; width:auto; max-width:calc(100% - 72px); padding:8px 16px 8px 11px !important; border-radius:999px !important; margin-bottom:12px;}
 </style>
 <style id="tk-nav-dark">
 /* Tombol pindah tab (Home, Catat, dll) di mode terang: bantalan hitam dipertahankan */
@@ -25218,22 +25267,22 @@ html[data-layout="desktop"] #view-catat .catat-group-title{margin:8px 2px 7px;}
 html[data-layout="desktop"] #view-catat main{row-gap:0;}
 
 html[data-theme="light"]{
-  --bg:#B0B3B6; --surface:#C2C5C7; --line:#979B9E; --primary-dim:#B2B5B7; --input-bg:#BEC1C3; --input-disabled-bg:#B0B3B5;
-  --ghost-bg:#BBBEC0; --ghost-border:#9A9EA1; --text-2:#2A2D2F; --info-dim:#B7C6D0; --gold-dim:#B2B5B7;
-  --lt-mint:#A9C2BB; --lt-peach:#CDB9AB; --lt-sky:#A9BDCB; --lt-rose:#CBB4B9; --lt-violet:#B8B8BB;
+  --bg:#E9E0CB; --surface:#F3ECDC; --line:#CDBF9D; --primary-dim:#E4DAC2; --input-bg:#EBE3CF; --input-disabled-bg:#E0D6BE;
+  --ghost-bg:#E6DDC8; --ghost-border:#CDBF9D; --text-2:#3A3A2E; --info-dim:#D5E0E6; --gold-dim:#E4DAC2;
+  --lt-mint:#CFE6DD; --lt-peach:#F0D5C2; --lt-sky:#CFDFEA; --lt-rose:#EBCDD3; --lt-violet:#DCD6EE;
   --shadow:0 1px 2px rgba(0,0,0,.18), 0 10px 24px -12px rgba(0,0,0,.5);
 }
-html[data-theme="light"] body{background:linear-gradient(180deg,#B8BBBE 0%,#A9ACAF 100%) fixed;}
-html[data-theme="light"] .card{background:linear-gradient(180deg,#CBCED0 0%,#BEC1C3 100%); border:1px solid rgba(10,10,10,.28); box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 10px 24px -14px rgba(0,0,0,.55);}
-html[data-theme="light"] nav{background:rgba(188,191,193,.96); border-color:rgba(10,10,10,.3);}
-html[data-theme="light"] .grid4 .qa{background:linear-gradient(180deg,#C7CACC,#BBBEC0);}
+html[data-theme="light"] body{background:linear-gradient(180deg,#EDE5D1 0%,#E2D8C0 100%) fixed;}
+html[data-theme="light"] .card{background:linear-gradient(180deg,#F7F1E3 0%,#EBE3CF 100%); border:1px solid rgba(120,98,56,.32); box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 10px 24px -14px rgba(0,0,0,.55);}
+html[data-theme="light"] nav{background:rgba(240,233,216,.96); border-color:rgba(10,10,10,.3);}
+html[data-theme="light"] .grid4 .qa{background:linear-gradient(180deg,#F3ECDC,#E6DDC8);}
 html[data-theme="light"] #view-catat .catat-grid .qa{
-  background:linear-gradient(160deg,color-mix(in srgb,var(--a) 14%,#C8CBCD),color-mix(in srgb,var(--a) 26%,#B4B7B9));
+  background:linear-gradient(160deg,color-mix(in srgb,var(--a) 14%,#FFFFFF),color-mix(in srgb,var(--a) 26%,#F1F1EE));
   border:1px solid rgba(10,10,10,.32);
   box-shadow:0 8px 16px -10px rgba(0,0,0,.6), inset 0 3px 0 var(--a);
 }
 html[data-theme="light"] #view-catat .catat-grid .qa .lb{color:#0A0A0A;}
-html[data-theme="light"] #view-catat .catat-grid .qa .lb::after{color:#2A2D2F;}
+html[data-theme="light"] #view-catat .catat-grid .qa .lb::after{color:#3A3A2E;}
 html[data-theme="light"] .badge{background:rgba(0,0,0,.12);}
 html[data-theme="light"] .txn-row, html[data-theme="light"] .modal-box{border-color:rgba(10,10,10,.22);}
 html[data-layout="desktop"][data-theme="light"] .dc-qa .qb{background:#151617; color:#F2F2F2; border-color:#000;}
@@ -25243,7 +25292,7 @@ html[data-layout="desktop"][data-theme="light"] .dc-t .dc-ic{background:rgba(0,0
 /* Dashboard mode terang: kartu diberi tint pastel + garis warna di atas sesuai fungsinya */
 html[data-theme="light"] #db-compact > .dc-t{
   --ac:#5B7A99;
-  background:linear-gradient(160deg,color-mix(in srgb,var(--ac) 24%,#CBCED0),color-mix(in srgb,var(--ac) 12%,#BDC0C2)) !important;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--ac) 24%,#F7F1E3),color-mix(in srgb,var(--ac) 12%,#EEE5CF)) !important;
   border:1px solid color-mix(in srgb,var(--ac) 38%,rgba(10,10,10,.22)) !important;
   box-shadow:inset 0 3px 0 var(--ac), 0 10px 24px -16px rgba(0,0,0,.5) !important;
 }
@@ -25664,22 +25713,23 @@ html[data-theme="light"] #view-dividen .dv-bar:not(.zero) i,html[data-theme="lig
 /* Kembalikan teal untuk non-tombol (judul, label, titik, tautan, aksen, pendar). Tombol tetap hitam. */
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget){--gt:#0F9D8E; --primary:#0F9D8E; --primary-2:#0B7A6E; --accent:#0F9D8E; --primary-dim:#CDE6E2;}
 html[data-theme="light"] body::after{display:block !important;}
-html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card):not([style*="background: var(--primary)"]):not([style*="background:var(--primary)"]){box-shadow:inset 0 3px 0 #0F9D8E, 0 12px 24px -20px #0F9D8E !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card):not([style*="background: var(--primary)"]):not([style*="background:var(--primary)"]){box-shadow:inset 0 3px 0 #171717, 0 12px 24px -20px rgba(23,23,23,.45) !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card h3{color:color-mix(in srgb,#0F9D8E 45%,#0D0D0D) !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card h3 .dot{background:#0F9D8E !important; box-shadow:0 0 0 4px rgba(15,157,142,.22) !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .field > label{color:color-mix(in srgb,#0F9D8E 68%,#0D0D0D) !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hint{color:color-mix(in srgb,#0F9D8E 25%,#434343) !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) input:focus,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) select:focus,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) textarea:focus{border-color:#0F9D8E !important; box-shadow:0 0 0 3px rgba(15,157,142,.24) !important;}
-html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .inv-item-card,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .acc-row{box-shadow:inset 4px 0 0 #0F9D8E !important;}
+html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .inv-item-card,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row,html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .acc-row{box-shadow:inset 4px 0 0 #171717 !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .badge{background:rgba(15,157,142,.16) !important; color:#0B7A6E !important; border:0 !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .budget-bar-track{background:rgba(15,157,142,.16) !important;}
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .nw-chip:not(.active){border-color:rgba(15,157,142,.4) !important; color:#0B7A6E !important;}
-html[data-theme="light"] #view-dividen#view-dividen#view-dividen main > .card:not(.dv-sum){box-shadow:inset 0 3px 0 #12B886, 0 12px 24px -20px #12B886 !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen main > .card:not(.dv-sum){box-shadow:inset 0 3px 0 #171717, 0 12px 24px -20px rgba(23,23,23,.45) !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen main > .card:not(.dv-sum) h3 .dot{background:#12B886 !important; box-shadow:0 0 0 4px rgba(18,184,134,.25) !important;}
-html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-calc{border-left:4px solid #12B886;}
-html[data-theme="light"] #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4px solid #12B886 !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-calc{border-left:4px solid #171717;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4px solid #171717 !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen input:focus,html[data-theme="light"] #view-dividen#view-dividen#view-dividen select:focus{border-color:#12B886 !important; box-shadow:0 0 0 3px rgba(18,184,134,.25) !important;}
 html[data-theme="light"] #view-dividen .dv-bar:not(.zero) i,html[data-theme="light"] #view-dividen .dv-row .tr i{background:#12B886;}
+html[data-theme="light"] .profile-avatar{border-color:#171717 !important;}
 </style>
 <style id="tk-light-panel-white">
 html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget){--primary-dim:#FFFFFF;}
@@ -25687,7 +25737,7 @@ html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-w
 </style>
 <style id="tk-insight-hero">
 /* Insight (desktop, mode terang): kartu hitam + angka & grafik teal, jadi titik fokus dashboard */
-html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc{--c:#2DD4BF; color:#fff;
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc{--c:#2DD4BF !important; color:#fff;
   background:linear-gradient(135deg,#0B0B0B 0%,#17211F 100%) !important; border:1px solid #000 !important;
   box-shadow:inset 0 4px 0 #2DD4BF, 0 12px 24px -12px rgba(0,0,0,.65) !important;}
 html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc[style*="--c:var(--danger)"]{--c:#FF6B7A !important;}
@@ -25714,6 +25764,71 @@ html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-
 html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-mini b{color:#fff;}
 html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-mini div:last-child b{color:var(--c);}
 </style>
+<style id="tk-insight-light">
+/* Insight (desktop, mode terang): kartu krem terang, aksen tosca, teks gelap */
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc{--c:#0F9D8E !important; color:#0D2B27; background:#FFFFFF !important; border:1px solid #D4D4D4 !important; box-shadow:inset 0 4px 0 var(--c), 0 2px 6px -2px rgba(0,0,0,.18) !important;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc[style*="--c:var(--danger)"]{--c:#D6455D !important;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc[style*="--c:var(--pos)"]{--c:#2E9E5B !important;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc:hover{border-color:var(--c) !important;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-ttl{color:#0D2B27;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-go{color:var(--c);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-ic{background:var(--c) !important; color:#fff !important;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-big{color:var(--c);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-s{color:rgba(13,43,39,.7);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-ins-badge{background:var(--c); color:#fff;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-ins-chip{background:var(--c); color:#fff;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-wc em{color:rgba(13,43,39,.55);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-wc.on em{color:var(--c);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-wcol i{background:color-mix(in srgb,var(--c) 32%,transparent);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-wc.on .dc-wcol i{background:var(--c);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-ct{background:rgba(13,43,39,.12);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-ct i{background:var(--c);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-cr.prev .dc-ct i{background:rgba(13,43,39,.35);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-cr span{color:rgba(13,43,39,.7);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-cr b{color:#0D2B27;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-mini div{background:#F6F6F3; border:1px solid #DDDDD8;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-mini span{color:rgba(13,43,39,.65);}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-mini b{color:#0D2B27;}
+html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-mini div:last-child b{color:var(--c);}
+</style>
+<style id="tk-catat-white">
+/* Catat Transaksi (mode terang): kartu grup putih, seragam dengan tab lain */
+html[data-theme="light"] #view-catat .card{background:#FFFFFF !important; border:1px solid #D4D4D4 !important; box-shadow:inset 0 4px 0 #171717, 0 2px 6px -2px rgba(0,0,0,.18) !important;}
+</style>
+<style id="tk-dividen-light">
+/* Dividen Saham (mode terang): kartu ringkasan putih + teks gelap, seragam dengan tab lain (sebelumnya teks terang di atas putih) */
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum{background:#FFFFFF !important; color:#000000; border:1px solid #D4D4D4 !important; box-shadow:inset 0 4px 0 #171717, 0 2px 6px -2px rgba(0,0,0,.18) !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum::before{background:radial-gradient(circle at 35% 35%,rgba(15,157,142,.14),rgba(15,157,142,.03) 62%,transparent 70%); border:1px solid rgba(15,157,142,.2);}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-lbl{color:#000000 !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#000000 !important; text-shadow:none;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.up{color:#0F9D8E;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.down{color:#D6455D;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-stat{background:#F6F6F3 !important; border:1px solid #DDDDD8; border-left:3px solid var(--sc,#2DD4BF);}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-stat .dv-lbl{color:#000000 !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-stat b{color:#000000 !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-bars{background:#F1F1EE;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-bar i{box-shadow:none;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-bar.zero i{background:rgba(13,43,39,.2) !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-bar span{color:#000000;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-sub{color:#000000;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-row .top{color:#000000;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-row .top small{color:#000000;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-row .tr{background:rgba(13,43,39,.12);}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .empty{color:#000000 !important;}
+</style>
+<style id="tk-dashboard-white">
+/* Dashboard (mode terang): semua kartu putih, seragam dengan tab lain */
+html[data-theme="light"] #view-dashboard .card, html[data-theme="light"] #db-compact > .dc-t{background:#FFFFFF !important; border-color:#D4D4D4 !important;}
+</style>
+<style id="tk-txn-title-fix">
+/* Judul transaksi (mis. "MyPertamina") jangan terpotong di tengah kata: badge/nominal turun ke baris berikutnya kalau tidak muat */
+.txn-row.v2 .txn-top{flex-wrap:wrap; row-gap:2px;}
+.txn-row.v2 .txn-top .txn-title{flex:0 1 auto; max-width:100%; word-break:normal; overflow-wrap:break-word;}
+</style>
+<style id="tk-asetbio-icon">
+/* Aset Biologis (mode terang): kartu total hitam, jadi ikon tanaman jangan dibuat redup */
+html[data-theme="light"] #view-asetbio .card:has(#ab-total-nilai)::after{opacity:1 !important; filter:none !important;}
+</style>
 <style id="tk-print-fix">
 /* Export PDF / cetak: abaikan zoom & lebar frame mode Desktop di HP supaya isi laporan tidak melebar ke samping */
 @media print{
@@ -25733,5 +25848,88 @@ html[data-layout="desktop"][data-theme="light"] #db-compact > .dc-t.dc-insc .dc-
 window.addEventListener('beforeprint', function(){ try{ document.documentElement.style.zoom=''; }catch(e){} });
 window.addEventListener('afterprint', function(){ try{ if(typeof applyLayout==='function') applyLayout(); }catch(e){} });
 </script>
+<style id="tk-noglow">
+/* Hilangkan efek glow: bayangan berwarna/terang, glow teks, dan glow garis animasi. Garis aksen (inset) dan cincin fokus tetap. */
+html *{text-shadow:none !important;}
+.fx-on #view-riwayat .hint + .card::after, .fx-on #view-riwayat .section-title + .card::after, .fx-on #view-untuk-orang .hint + .card::after{box-shadow:none !important;}
+.fx-on .view.fx6 .card .empty::before{filter:none !important;}
+</style>
+<script id="tk-noglow-js">
+/* Buang lapisan box-shadow / drop-shadow yang berwarna terang (glow) dari semua elemen; lapisan inset, cincin (blur 0), dan bayangan gelap dipertahankan. */
+(function(){
+  function split(v){var o=[],d=0,c='',i,ch;for(i=0;i<v.length;i++){ch=v[i];if(ch==='(')d++;if(ch===')')d--;if(ch===','&&d===0){o.push(c.trim());c='';}else c+=ch;}if(c.trim())o.push(c.trim());return o;}
+  function glow(layer){
+    if(/\binset\b/.test(layer)) return false;
+    var m=layer.match(/(rgba?|color)\(([^)]*)\)/); var rest=m?layer.replace(m[0],''):layer;
+    var nums=(rest.match(/-?[\d.]+px/g)||[]).map(parseFloat);
+    if((nums[2]||0)<=0) return false;
+    if(!m) return false;
+    var p=m[2].replace('srgb','').split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+    var sc=(m[1]==='color')?255:1;
+    var mx=Math.max(p[0]*sc,p[1]*sc,p[2]*sc);
+    return mx>80;
+  }
+  function proc(el){
+    if(!el||el.nodeType!==1||!el.style) return;
+    var st=el.style;
+    if(el.getAttribute('data-dgs')){st.removeProperty('box-shadow');st.removeProperty('filter');el.removeAttribute('data-dgs');}
+    var cs=getComputedStyle(el),done=false;
+    var bs=cs.boxShadow;
+    if(bs&&bs!=='none'){
+      var L=split(bs),K=L.filter(function(x){return !glow(x);});
+      if(K.length!==L.length){st.setProperty('box-shadow',K.join(', ')||'none','important');done=true;}
+    }
+    var f=cs.filter;
+    if(f&&f.indexOf('drop-shadow')>-1){
+      var nf=f.replace(/drop-shadow\((?:[^()]|\([^()]*\))*\)/g,'').trim();
+      st.setProperty('filter',nf||'none','important');done=true;
+    }
+    if(done) el.setAttribute('data-dgs','1');
+  }
+  function procTree(root){proc(root);if(root.querySelectorAll){var a=root.querySelectorAll('*');for(var i=0;i<a.length;i++)proc(a[i]);}}
+  var q=new Set(),t=null;
+  function enq(n,deep){q.add({n:n,d:deep});if(!t)t=setTimeout(flush,150);}
+  function flush(){t=null;var arr=Array.from(q);q.clear();arr.forEach(function(o){if(!o.n.isConnected)return;if(o.d)procTree(o.n);else proc(o.n);});}
+  function first(){
+    var all=document.querySelectorAll('*'),i=0;
+    (function step(){var end=Math.min(i+400,all.length);for(;i<end;i++)proc(all[i]);if(i<all.length)setTimeout(step,0);})();
+  }
+  var mo=new MutationObserver(function(ms){
+    ms.forEach(function(m){
+      if(m.type==='childList'){m.addedNodes.forEach(function(n){if(n.nodeType===1)enq(n,true);});}
+      else if(m.type==='attributes'){var n=m.target;var big=(n===document.documentElement||n===document.body||(n.classList&&n.classList.contains('view')));enq(n,big);}
+    });
+  });
+  function start(){
+    first();
+    mo.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  }
+  if(document.readyState==='complete') setTimeout(start,200); else window.addEventListener('load',function(){setTimeout(start,200);});
+})();
+</script>
+<style id="tk-noglow-2">
+/* Hapus glow (bayangan teal berkabut) di tema gelap. Garis aksen atas kartu tetap. */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title,
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row,
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card,
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn,
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) [class*="chip"],
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row{box-shadow:none !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card){box-shadow:inset 0 3px 0 var(--gt) !important;}
+html:not([data-theme="light"]) #tk-eye-fab, html:not([data-theme="light"]) #tk-eye-fab:hover, html:not([data-theme="light"]) #tk-eye-fab:active{box-shadow:none !important;}
+html:not([data-theme="light"]) body::before, html:not([data-theme="light"]) body::after{filter:none !important;}
+html:not([data-theme="light"]) .view main > .section-title::after, html:not([data-theme="light"]) .view .back-row::after{box-shadow:none !important; filter:none !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2{padding:12px 14px !important; margin:0 0 10px !important; border-radius:16px !important; box-shadow:inset 3px 0 0 var(--gt) !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .rw-day-head{padding:10px 4px;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .rw-day-body{padding:2px 0 4px;}
+/* judul transaksi: jangan terpotong di tengah kata */
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2 .txn-top{flex-wrap:wrap; row-gap:3px;}
+.view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2 .txn-title{flex:1 1 auto; min-width:min(100%,12ch); word-break:normal !important; overflow-wrap:break-word;}
+/* Dashboard mode terang: semua kartu (termasuk Kekayaan Bersih & Saldo per Rekening) putih polos, tanpa gradasi abu-abu */
+html[data-theme="light"] body #view-dashboard main > .card,
+html[data-theme="light"] body #view-dashboard #db-networth-card,
+html[data-theme="light"] body #view-dashboard .card{background:#FFFFFF !important; background-image:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; border-color:#D4D4D4 !important;}
+html[data-theme="light"] body #view-dashboard #db-networth-mini, html[data-theme="light"] body #view-dashboard #db-accounts{background:transparent !important;}
+</style>
 </body>
 </html>
