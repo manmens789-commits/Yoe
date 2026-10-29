@@ -713,7 +713,7 @@
   html[data-layout="desktop"] #view-catat main{row-gap:14px;}
   /* Desktop: modal lebih lebar (struk tetap) */
   html[data-layout="desktop"] .modal-overlay:not(#struk-modal-overlay) .modal-box{max-width:520px !important;}
-  html[data-wide="1"] #app{min-height:687px; width:1100px; max-width:1100px;}
+  html[data-wide="1"] #app{min-height:687px; width:var(--ff-fw,1100px); max-width:var(--ff-fw,1100px);}
   html[data-wide="1"] body{min-height:0;}
   html[data-wide="1"] nav{left:12px; top:343px;}
 
@@ -6120,11 +6120,15 @@ function applyLayout(){
   if(pref==='desktop' && small){
     var land = window.matchMedia && window.matchMedia('(orientation: landscape)').matches;
     var w = land ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-    var z = (w/1100).toFixed(4);
+    /* Potret: bingkai 560px (bukan 1100px) supaya teks tidak mengecil jadi ~33%; lanskap tetap 1100px */
+    var fw = land ? 1100 : 560;
+    var z = (w/fw).toFixed(4);
     de.setAttribute('data-wide','1');
+    if(land) de.removeAttribute('data-wide-p'); else de.setAttribute('data-wide-p','1');
+    de.style.setProperty('--ff-fw', fw+'px');
     if(de.style.zoom!==z) de.style.zoom = z;
   } else {
-    de.removeAttribute('data-wide');
+    de.removeAttribute('data-wide'); de.removeAttribute('data-wide-p'); de.style.removeProperty('--ff-fw');
     if(de.style.zoom) de.style.zoom = '';
   }
 }
@@ -18037,7 +18041,7 @@ function renderNetWorth(year){
   var prev = isTahun ? (n>1 ? rows[n-2] : netWorthAt(lastDayStr(year-1, 12))) : netWorthAt(nwIso(nwAddMonths(nwParse(endDate), -1)));
   var base = isTahun ? netWorthAt(lastDayStr(year-1, 12)) : rows[0];
   var baseLbl = isTahun ? 'vs akhir tahun lalu' : 'vs awal periode';
-  var dMon = last.net - prev.net, dYear = last.net - base.net;
+  var dMon = Math.round(last.net - prev.net), dYear = Math.round(last.net - base.net); /* bulatkan: selisih pecahan kecil tidak tampil sebagai "-Rp0" */
   function sg(v){ return (v>=0?'+':'-')+maskOrFmt(Math.abs(v)); }
   function col(v){ return v>0 ? 'var(--pos)' : (v<0 ? 'var(--danger)' : 'var(--text-2)'); }
   if(sumEl){
@@ -20975,7 +20979,7 @@ html[data-theme="light"] .fx-orb{opacity:.45;}
 @keyframes fxModal{from{opacity:0; transform:scale(.92) translateY(16px)}}
 .fx-on .fx-rise{animation:fxRise .62s cubic-bezier(.2,.8,.2,1) backwards; animation-delay:calc(var(--fxi,0) * 65ms);}
 .fx-on .fx-drop{animation:fxDrop .6s cubic-bezier(.2,.8,.2,1) backwards;}
-.fx-on .fx-slide{animation:fxSlide .5s cubic-bezier(.2,.8,.2,1) backwards; animation-delay:calc(var(--fxi,0) * 55ms);}
+.fx-on .fx-slide{animation:fxSlide .4s cubic-bezier(.2,.8,.2,1) backwards; animation-delay:calc(min(var(--fxi,0), 6) * 40ms);}
 .fx-on .grid4.fx-pop > .qa{animation:fxPop .6s cubic-bezier(.2,.9,.3,1.2) backwards; animation-delay:calc(var(--fxi,0) * 65ms + var(--q,0) * 75ms);}
 .fx-on .grid4 > .qa:nth-child(1){--q:0}.fx-on .grid4 > .qa:nth-child(2){--q:1}.fx-on .grid4 > .qa:nth-child(3){--q:2}.fx-on .grid4 > .qa:nth-child(4){--q:3}
 .fx-on .modal-overlay:not(#struk-modal-overlay) .modal-box{animation:fxModal .42s cubic-bezier(.2,.9,.3,1.1) backwards;}
@@ -21284,13 +21288,14 @@ html[data-theme="light"] .fx-orb{opacity:.45;}
     var w = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, null), nodes = [], n;
     while((n = w.nextNode())){ if(RXT.test(n.nodeValue)) nodes.push(n); }
     nodes.slice(0, 40).forEach(function(tn, i){
-      var T = fxNodeTarget(tn, RXT); if(!T) return; var m = T.m, to = T.to, t0 = performance.now() + i * 40, dur = 850;
+      var T = fxNodeTarget(tn, RXT); if(!T) return; var m = T.m, to = T.to, t0 = performance.now() + i * 40, dur = 600;
       if(!to) return;
+      setTimeout(function(){ if(tn.parentNode && tn._fxTok === tok){ tn.nodeValue = m[1] + Math.round(to).toLocaleString('id-ID') + m[3]; tn._fxBusy = 0; } }, i*40 + 900);
       tn._fxM = m; tn._fxTo = to; tn._fxBusy = 1; var tok = tn._fxTok = (tn._fxTok||0) + 1;
       (function step(now){
         if(!tn.parentNode || tn._fxTok !== tok) return;
         var k = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - k, 4);
-        tn.nodeValue = m[1] + Math.round(to * e).toLocaleString('id-ID') + m[3];
+        tn.nodeValue = m[1] + Math.round(to * (0.7 + 0.3 * e)).toLocaleString('id-ID') + m[3];
         if(k < 1) requestAnimationFrame(step); else tn._fxBusy = 0;
       })(performance.now());
     });
@@ -21453,13 +21458,14 @@ html[data-theme="light"] .fx-orb{opacity:.45;}
     var w = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, null), nodes = [], n;
     while((n = w.nextNode())){ if(RXT.test(n.nodeValue) && !(n.parentElement && n.parentElement.closest('.nw-tip'))) nodes.push(n); }
     nodes.slice(0, 40).forEach(function(tn, i){
-      var T = fxNodeTarget(tn, RXT); if(!T) return; var m = T.m, to = T.to, t0 = performance.now() + i * 45, dur = 900;
+      var T = fxNodeTarget(tn, RXT); if(!T) return; var m = T.m, to = T.to, t0 = performance.now() + i * 45, dur = 600;
       if(!to) return;
+      setTimeout(function(){ if(tn.parentNode && tn._fxTok === tok){ tn.nodeValue = m[1] + Math.round(to).toLocaleString('id-ID') + m[3]; tn._fxBusy = 0; } }, i*45 + 900);
       tn._fxM = m; tn._fxTo = to; tn._fxBusy = 1; var tok = tn._fxTok = (tn._fxTok||0) + 1;
       (function step(now){
         if(!tn.parentNode || tn._fxTok !== tok) return;
         var k = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - k, 4);
-        tn.nodeValue = m[1] + Math.round(to * e).toLocaleString('id-ID') + m[3];
+        tn.nodeValue = m[1] + Math.round(to * (0.7 + 0.3 * e)).toLocaleString('id-ID') + m[3];
         if(k < 1) requestAnimationFrame(step); else tn._fxBusy = 0;
       })(performance.now());
     });
@@ -23160,7 +23166,7 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   html[data-layout="desktop"] nav{display:none !important;}
   html[data-layout="desktop"] #app,
   html[data-layout="desktop"]:not([data-wide]) #app{max-width:none !important; width:100% !important; margin:0 !important; padding-left:var(--ffw) !important; padding-right:0 !important; box-sizing:border-box; transition:padding-left .2s ease;}
-  html[data-layout="desktop"][data-wide="1"] #app{width:1100px !important; max-width:1100px !important;}
+  html[data-layout="desktop"][data-wide="1"] #app{width:var(--ff-fw,1100px) !important; max-width:var(--ff-fw,1100px) !important;}
   html[data-layout="desktop"] body{padding-bottom:28px;}
   html[data-layout="desktop"] #ff-side{display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; width:var(--ffw); background:var(--surface); border-right:1px solid var(--line); z-index:22; box-sizing:border-box; transition:width .2s ease;}
   html[data-layout="desktop"] #app.hidden + #ff-side, html[data-layout="desktop"] body.widget-mode #ff-side{display:none;}
@@ -25930,6 +25936,107 @@ html[data-theme="light"] body #view-dashboard main > .card,
 html[data-theme="light"] body #view-dashboard #db-networth-card,
 html[data-theme="light"] body #view-dashboard .card{background:#FFFFFF !important; background-image:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; border-color:#D4D4D4 !important;}
 html[data-theme="light"] body #view-dashboard #db-networth-mini, html[data-theme="light"] body #view-dashboard #db-accounts{background:transparent !important;}
+/* Desktop gelap: matikan glow teal di dashboard, Catat, navigasi/sidebar, lencana, tombol, dan lapisan dekoratif */
+html[data-layout="desktop"]:not([data-theme="light"]) :is(nav, .dk-left, .dk-left *, .view .btn, .view .qa, .view .pill, .view .dc-t, .view .dc-ins-badge, .view .balance-panel, .view .hero-card, .view .menu-row, .view [class*="chip"], .view [class*="badge"], .view .ic, .view .section-title, .view .back-row, .view .dot, #tk-eye-fab){box-shadow:none !important; filter:none !important; text-shadow:none !important;}
+html[data-layout="desktop"]:not([data-theme="light"]) .view *::before, html[data-layout="desktop"]:not([data-theme="light"]) .view *::after{box-shadow:none !important; filter:none !important;}
+html[data-layout="desktop"]:not([data-theme="light"]) .view .dc-big, html[data-layout="desktop"]:not([data-theme="light"]) .view .balance-num, html[data-layout="desktop"]:not([data-theme="light"]) .view .dv-big{text-shadow:none !important; filter:none !important;}
+/* Baris catatan: kotak terpisah (border + latar + jarak) di mode gelap, sama seperti mode terang, di HP maupun desktop */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2{padding:12px 14px !important; margin:0 0 10px !important; border:1px solid color-mix(in srgb,var(--vc,var(--gt)) 26%,rgba(255,255,255,.07)) !important; border-radius:16px !important; background:color-mix(in srgb,var(--vc,var(--gt)) 6%,rgba(255,255,255,.035)) !important; box-shadow:inset 3px 0 0 var(--vc,var(--gt)) !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row:not(.v2){padding:11px 12px !important; margin:0 0 8px !important; border:1px solid color-mix(in srgb,var(--vc,var(--gt)) 22%,rgba(255,255,255,.07)) !important; border-radius:14px !important; background:color-mix(in srgb,var(--vc,var(--gt)) 5%,rgba(255,255,255,.03)) !important;}
+html[data-layout="desktop"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(#pm-list,#pg-list,#ib-list,#ij-list,#dv-list,#rw-list){row-gap:0;}
+/* ===== Halaman Catat: terang = panel putih + tile pastel; gelap = panel gelap + tile gelap; ikon solid datar ===== */
+html[data-theme="light"] body:has(#view-catat.active){background:#EDEDED !important; background-image:none !important;}
+html[data-theme="light"] #view-catat .catat-grp, html[data-layout="desktop"][data-theme="light"] #view-catat .catat-grp{background:#FFFFFF !important; border:1px solid #D4D4D4 !important; box-shadow:none !important;}
+html[data-theme="light"] #view-catat .catat-group-title{color:#171717 !important;}
+html[data-theme="light"] #view-catat .catat-group-title::after{background:#D4D4D4 !important;}
+html[data-theme="light"] #view-catat .catat-grid .qa{box-shadow:none !important;}
+html[data-theme="light"] #view-catat .catat-grid .qa .ic{background:var(--a) !important; color:#FFFFFF !important; border-radius:10px !important; box-shadow:none !important;}
+html[data-theme="light"] #view-catat .catat-grid .qa .ic svg{stroke:#FFFFFF;}
+html:not([data-theme="light"]) #view-catat .catat-grp, html[data-layout="desktop"]:not([data-theme="light"]) #view-catat .catat-grp{background:#17191B !important; border:1px solid rgba(255,255,255,.09) !important; box-shadow:none !important;}
+html:not([data-theme="light"]) #view-catat .catat-group-title{color:#C9CDD0 !important;}
+html:not([data-theme="light"]) #view-catat .catat-group-title::after{background:rgba(255,255,255,.12) !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa{background:#25282B !important; border:1px solid rgba(255,255,255,.06) !important; box-shadow:none !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa:hover{box-shadow:none !important; border-color:rgba(255,255,255,.22) !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa .lb{color:#F2F2F2 !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa .lb::after{color:#9AA0A6 !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa .ic{border-radius:10px !important; box-shadow:none !important; color:#FFFFFF;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa .ic svg{stroke:#FFFFFF;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="masuk"] .ic{background:#19B394 !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="hutang"] .ic{color:#0D0D0D !important;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="hutang"] .ic svg{stroke:#0D0D0D;}
+</style>
+<style id="tk-noglow-3">
+/* Mode gelap: hapus glow teal di semua halaman (kecuali Dashboard/Catat yang sudah punya aturan sendiri).
+   Dihapus: bayangan berwarna di kartu/judul/tombol/tombol kembali, cincin glow titik judul, gelembung dekoratif kartu, gradasi teal di latar kartu & baris, tepi teal berkabut.
+   Dipertahankan: garis aksen tipis (inset) dan cincin fokus input. */
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card):not([style*="background: var(--primary)"]):not([style*="background:var(--primary)"]){
+  background:var(--surface) !important; background-image:none !important;
+  border:1px solid var(--line) !important;
+  box-shadow:inset 0 3px 0 var(--gt) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background: var(--primary)"],
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background:var(--primary)"],
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.danger),
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .toggle,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .goal-chip,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) [class*="chip"],
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card h3 .dot{box-shadow:none !important; filter:none !important;}
+/* baris daftar: tanpa gradasi teal, tanpa bayangan luar (garis aksen kiri tetap) */
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .inv-item-card,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .acc-row{background:var(--surface) !important; background-image:none !important; border-color:var(--line) !important;}
+html:not([data-theme="light"]) body #goals-list > .card{box-shadow:inset 4px 0 0 var(--gt) !important;}
+/* gelembung/lingkaran dekoratif & lapisan berkilau pada kartu */
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card::before,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card::after,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card::before,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card::after{background:none !important; box-shadow:none !important; filter:none !important; opacity:0 !important;}
+/* hover: tanpa bayangan teal */
+@media (hover:hover){
+  html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card:not(.card .card):hover{box-shadow:inset 0 3px 0 var(--gt) !important;}
+  html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(.btn,.rc-card,.qa,.rw-mon-head):hover{box-shadow:none !important;}
+}
+</style>
+<style id="tk-widep">
+/* HP potret + mode Desktop: bingkai 560px. Kolom dirapatkan supaya tidak sempit, dan area konten memakai sisa lebar penuh. */
+html[data-wide-p="1"] #app{min-height:0;}
+html[data-wide-p="1"] #view-dashboard main{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+html[data-wide-p="1"] #view-grafik main, html[data-wide-p="1"] #view-kesehatan main{column-count:1 !important;}
+html[data-wide-p="1"] #ff-side .ff-item{font-size:12.5px;}
+html[data-wide-p="1"] #view-dashboard .topbar{grid-template-columns:minmax(0,1fr) !important;}
+html[data-wide-p="1"] #view-dashboard .topbar .balance-panel{width:100% !important; max-width:none !important; box-sizing:border-box;}
+html[data-wide-p="1"] #view-catat main, html[data-wide-p="1"] #view-catat .catat-wrap{grid-template-columns:minmax(0,1fr) !important; column-count:1 !important;}
+html[data-wide-p="1"] #view-dashboard .grid4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+html[data-wide-p="1"] .view main > .back-row{white-space:nowrap;}
+</style>
+<script id="tk-widep-js">
+/* Sidebar otomatis ringkas di HP potret (kecuali user pernah memilih "lebar"); kembali normal saat lanskap */
+(function(){
+  function fit(){
+    var de=document.documentElement, st=null; try{ st=localStorage.getItem('tk_ffside'); }catch(e){}
+    var want = st==='min' || (st!=='full' && de.getAttribute('data-wide-p')==='1');
+    if(want) de.setAttribute('data-ffside','min'); else de.removeAttribute('data-ffside');
+  }
+  function run(){ fit(); }
+  if(document.readyState==='complete') run(); else window.addEventListener('load', run);
+  window.addEventListener('resize', fit); window.addEventListener('orientationchange', function(){ setTimeout(fit,250); });
+  new MutationObserver(fit).observe(document.documentElement,{attributes:true,attributeFilter:['data-wide-p']});
+})();
+</script>
+<style id="tk-fit34">
+/* Teks tidak terpotong / tidak patah di layar sempit */
+.view main > .back-row{white-space:nowrap; max-width:calc(100% - 52px); box-sizing:border-box;}
+.view main > .back-row > span:last-child{overflow:hidden; text-overflow:ellipsis; min-width:0;}
+.view select{text-overflow:ellipsis;}
+/* Grafik: kartu Tahun & Pilih Grafik selalu selebar penuh supaya nama grafik terbaca utuh */
+html[data-layout="desktop"] #view-grafik main > .card:has(#gr-tahun),
+html[data-layout="desktop"] #view-grafik main > .card:has(#lp-chart-pilih){column-span:all;}
+/* Tombol mata (sembunyikan saldo): lebih kecil, tidak menimpa header; tetap di pojok kanan atas */
+#tk-eye-fab{width:32px; height:32px; top:calc(env(safe-area-inset-top,0px) + 8px); right:10px; opacity:.92;}
+#tk-eye-fab svg{width:17px; height:17px;}
 </style>
 </body>
 </html>
