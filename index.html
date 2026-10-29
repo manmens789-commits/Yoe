@@ -26006,6 +26006,7 @@ html[data-wide-p="1"] #app{min-height:0;}
 html[data-wide-p="1"] #view-dashboard main{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
 html[data-wide-p="1"] #view-grafik main, html[data-wide-p="1"] #view-kesehatan main{column-count:1 !important;}
 html[data-wide-p="1"] #ff-side .ff-item{font-size:12.5px;}
+html[data-wide-p="1"] #ff-toggle{display:none !important;}
 html[data-wide-p="1"] #view-dashboard .topbar{grid-template-columns:minmax(0,1fr) !important;}
 html[data-wide-p="1"] #view-dashboard .topbar .balance-panel{width:100% !important; max-width:none !important; box-sizing:border-box;}
 html[data-wide-p="1"] #view-catat main, html[data-wide-p="1"] #view-catat .catat-wrap{grid-template-columns:minmax(0,1fr) !important; column-count:1 !important;}
@@ -26017,7 +26018,7 @@ html[data-wide-p="1"] .view main > .back-row{white-space:nowrap;}
 (function(){
   function fit(){
     var de=document.documentElement, st=null; try{ st=localStorage.getItem('tk_ffside'); }catch(e){}
-    var want = st==='min' || (st!=='full' && de.getAttribute('data-wide-p')==='1');
+    var want = st==='min' || de.getAttribute('data-wide-p')==='1'; /* HP tegak: sidebar selalu ringkas (bingkai 560px terlalu sempit untuk sidebar lebar) */
     if(want) de.setAttribute('data-ffside','min'); else de.removeAttribute('data-ffside');
   }
   function run(){ fit(); }
