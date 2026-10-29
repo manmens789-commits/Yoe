@@ -25989,7 +25989,7 @@ html:not([data-theme="light"]) :is(#theme-toggle-row,#anim-toggle-row,#layout-to
 html[data-theme="light"] :is(#theme-toggle-row,#anim-toggle-row,#layout-toggle-row,#lang-toggle-row) .toggle.active{background:linear-gradient(135deg,#0B0B0B,#2B2B2B) !important; color:#fff !important; animation:none !important;}
 /* ===== Menu bawah HP dan tombol profil ===== */
 /* Menu bawah (HP): lapisan pudar di belakangnya supaya teks yang lewat tidak terlihat terpotong di celah bawah/samping bar */
-html:not([data-layout="desktop"]) body:not(.widget-mode)::after{content:""; position:fixed; left:0; right:0; bottom:0; height:calc(env(safe-area-inset-bottom,0px) + 92px); background:linear-gradient(to top, var(--bg) 0, var(--bg) 62%, transparent 100%); pointer-events:none; z-index:19;}
+html:not([data-layout="desktop"]) body:not(.widget-mode)::after{content:""; position:fixed; top:auto; left:0; right:0; bottom:0; height:calc(env(safe-area-inset-bottom,0px) + 92px); background:linear-gradient(to top, var(--bg) 0, var(--bg) 62%, transparent 100%); pointer-events:none; z-index:19;}
 html:not([data-layout="desktop"]) body:has(.modal-overlay.open)::after, html:not([data-layout="desktop"]) body:has(.modal-overlay[style*="flex"])::after{display:none;}
 html[data-theme="light"] nav{background:#171717 !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;}
 /* Tombol di kartu profil (Ubah Nama, Ubah Foto Profil, Hapus Foto): bentuk pil rapi, tidak patah baris, tanpa kotak hitam */
