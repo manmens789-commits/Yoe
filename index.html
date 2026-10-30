@@ -22881,18 +22881,35 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
     var map = {};
     function g(x){
       var k = [x.instrumen||'-', x.platform||'-', x.kode||'(tanpa kode)'].join('|');
-      return map[k] || (map[k] = {key:k, instrumen:x.instrumen||'-', platform:x.platform||'', kode:x.kode||'(tanpa kode)', beli:0, nBeli:0, jual:0, nJual:0, ur:0, uB:0, uJ:0});
+      return map[k] || (map[k] = {key:k, instrumen:x.instrumen||'-', platform:x.platform||'', kode:x.kode||'(tanpa kode)', beli:0, nBeli:0, jual:0, nJual:0, ur:0, uB:0, uJ:0, nBeliTanpaUnit:0, jualTanpaUnit:[], approx:false});
     }
-    DATA.invbeli.forEach(function(x){ var r = g(x); r.beli += x.jumlah||0; r.nBeli++; if(x.unit>0) r.uB += Math.round(x.unit*1e8); });
+    DATA.invbeli.forEach(function(x){ var r = g(x); r.beli += x.jumlah||0; r.nBeli++; if(x.unit>0) r.uB += Math.round(x.unit*1e8); else r.nBeliTanpaUnit++; });
     DATA.invjual.forEach(function(x){
       var r = g(x); var mod = (x.modal!==undefined && x.modal!==null && x.modal!=='') ? x.modal : (x.jumlah||0);
-      r.jual += mod; r.nJual++; if(x.unit>0) r.uJ += Math.round(x.unit*1e8); r.ur += (x.untungRugi!==undefined ? x.untungRugi : ((x.jumlah||0)-mod-(x.fee||0)));
+      r.jual += mod; r.nJual++; if(x.unit>0) r.uJ += Math.round(x.unit*1e8); else r.jualTanpaUnit.push(mod); r.ur += (x.untungRugi!==undefined ? x.untungRugi : ((x.jumlah||0)-mod-(x.fee||0)));
     });
     var held = [], sold = [];
-    Object.keys(map).forEach(function(k){ var r = map[k]; r.sisa = r.beli - r.jual; r.unitSisa = Math.max(0, (r.uB - r.uJ)/1e8); (r.sisa > 0.5 ? held : sold).push(r); });
+    Object.keys(map).forEach(function(k){ var r = map[k]; r.sisa = r.beli - r.jual;
+      /* Instrumen berbasis lot (Saham, ETF): pembelian yang tidak mengisi jumlah lot dianggap 1 lot per transaksi
+         (pembelian BEI umumnya genap 1 lot). Penjualan tanpa lot diperkirakan dari modal terjual / modal per lot. */
+      var cu = unitCfg(r.instrumen);
+      if(cu && cu.u==='lot'){
+        if(r.nBeliTanpaUnit>0){ r.uB += r.nBeliTanpaUnit*1e8; r.approx = true; }
+        if(r.jualTanpaUnit.length && r.uB>0){
+          var perLot = r.beli / (r.uB/1e8);
+          r.jualTanpaUnit.forEach(function(m){ r.uJ += Math.max(1, Math.round(m/perLot))*1e8; });
+          r.approx = true;
+        }
+      }
+      r.unitSisa = Math.max(0, (r.uB - r.uJ)/1e8); (r.sisa > 0.5 ? held : sold).push(r); });
     return {held:held, sold:sold};
   }
   function keyOf(x){ return [x.instrumen||'-', x.platform||'-', x.kode||'(tanpa kode)'].join('|'); }
+  function beliSub(x){
+    var c = unitCfg(x.instrumen);
+    if(c && c.u==='lot' && !(x.unit>0)) return ' \u2022 1 lot*';
+    return unitSub(x);
+  }
   function detailHtml(key){
     var ev = [];
     DATA.invbeli.forEach(function(x){ if(keyOf(x)===key) ev.push({t:x.tanggal||'', k:'beli', x:x}); });
@@ -22902,7 +22919,7 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
     return ev.map(function(e){
       var x = e.x, ket = x.ket ? ' &bull; '+escapeHtml(x.ket) : '';
       if(e.k==='beli'){
-        return '<div class="pf-tx"><div class="pf-tl"><b>Beli</b><span>'+escapeHtml(fmtTglIndo(x.tanggal))+escapeHtml(unitSub(x))+' &bull; '+escapeHtml(accountOptionLabel(x.metode||''))+(x.fee?' &bull; fee '+fmt(x.fee):'')+ket+'</span></div><div class="pf-ta mono neg">-'+fmt(x.jumlah||0)+'</div></div>';
+        return '<div class="pf-tx"><div class="pf-tl"><b>Beli</b><span>'+escapeHtml(fmtTglIndo(x.tanggal))+escapeHtml(beliSub(x))+' &bull; '+escapeHtml(accountOptionLabel(x.metode||''))+(x.fee?' &bull; fee '+fmt(x.fee):'')+ket+'</span></div><div class="pf-ta mono neg">-'+fmt(x.jumlah||0)+'</div></div>';
       }
       var mod = (x.modal!==undefined && x.modal!==null && x.modal!=='') ? x.modal : (x.jumlah||0);
       var ur = (x.untungRugi!==undefined) ? x.untungRugi : ((x.jumlah||0)-mod-(x.fee||0));
@@ -22914,11 +22931,11 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   function unitChip(r, isSold){
     var c = unitCfg(r.instrumen); if(isSold || !c || !(r.unitSisa>0)) return '';
     var avg = r.sisa / (r.unitSisa * c.mult);
-    return ' <i class="pf-unit" title="Rata-rata '+escapeHtml(fmt(Math.round(avg)))+' per '+c.hl+'">'+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+'</i>';
+    return ' <i class="pf-unit" title="Rata-rata '+escapeHtml(fmt(Math.round(avg)))+' per '+c.hl+'">'+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+(r.approx?'*':'')+'</i>';
   }
   function avgLine(r, isSold){
     var c = unitCfg(r.instrumen); if(isSold || !c || !(r.unitSisa>0)) return '';
-    return '<span>Dimiliki '+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+' &bull; rata-rata '+fmt(Math.round(r.sisa/(r.unitSisa*c.mult)))+'/'+c.hl+'</span>';
+    return '<span>Dimiliki '+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+' &bull; rata-rata '+fmt(Math.round(r.sisa/(r.unitSisa*c.mult)))+'/'+c.hl+(r.approx?' &bull; *asumsi 1 lot per pembelian tanpa jumlah lot':'')+'</span>';
   }
   function rowHtml(r, isSold, color, pct){
     var urTxt = r.nJual ? (' • Untung/rugi '+(r.ur>=0?'+':'-')+fmt(Math.abs(r.ur))) : '';
@@ -25422,20 +25439,38 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     }
   }
 
-  /* kepemilikan saham dari catatan Beli/Jual Investasi */
+  /* kepemilikan saham dari catatan Beli/Jual Investasi.
+     Aturan "masih dimiliki" SAMA dengan kartu Portofolio & form Jual Investasi (getModalMap): sisa modal > 0.
+     Lot hanya info tambahan (kolom lot bersifat opsional saat mencatat pembelian), jadi tidak dipakai untuk menentukan kepemilikan.
+     Kode dinormalkan (nk) supaya "bbca" / "BBCA " dianggap sama.
+     Hasil: { KODE: {kode, lot, modal, platform, unitOk, held} } -> held=false berarti pernah dimiliki tapi sudah habis dijual. */
   function dvHoldings(){
     var h = {};
     (DATA.invbeli||[]).forEach(function(b){
       if(b.instrumen!=='Saham') return; var k = nk(b.kode); if(!k) return;
-      var o = h[k] || (h[k] = {kode:k, lot:0, modal:0, platform:''});
-      o.lot += b.unit||0; o.modal += b.jumlah||0; if(b.platform) o.platform = b.platform;
+      var o = h[k] || (h[k] = {kode:k, lot:0, modal:0, platform:'', unitOk:true, held:false});
+      /* pembelian tanpa jumlah lot dianggap 1 lot (pembelian BEI umumnya genap 1 lot) */
+      o.modal += b.jumlah||0; if(b.platform) o.platform = b.platform;
+      if(b.unit>0) o.lot += b.unit; else { o.lot += 1; o.unitOk = false; }
     });
     (DATA.invjual||[]).forEach(function(s){
       if(s.instrumen!=='Saham') return; var k = nk(s.kode); if(!k || !h[k]) return;
-      h[k].lot -= s.unit||0;
-      h[k].modal -= (s.modal!==undefined && s.modal!==null && s.modal!=='') ? s.modal : (s.jumlah||0);
+      var mj = (s.modal!==undefined && s.modal!==null && s.modal!=='') ? s.modal : (s.jumlah||0);
+      if(s.unit>0) h[k].lot -= s.unit;
+      else { /* penjualan tanpa lot: perkirakan dari modal terjual / modal per lot */
+        var perLot = h[k].lot>0 ? h[k].modal/h[k].lot : 0;
+        h[k].lot -= perLot>0 ? Math.max(1, Math.round(mj/perLot)) : 0; h[k].unitOk = false;
+      }
+      h[k].modal -= mj;
     });
+    Object.keys(h).forEach(function(k){ h[k].held = h[k].modal>0.01; if(h[k].lot<0) h[k].lot = 0; });
     return h;
+  }
+  /* jumlah pembelian saham yang kolom Kode-nya kosong (tidak bisa masuk dropdown) */
+  function dvTanpaKode(){
+    var n = 0;
+    (DATA.invbeli||[]).forEach(function(b){ if(b.instrumen==='Saham' && !nk(b.kode)) n++; });
+    return n;
   }
 
   function dvCalc(){
@@ -25510,21 +25545,38 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     if(h.platform && !$('dv-platform').value){ try{ $('dv-platform').value = h.platform; }catch(e){} }
   }
 
+  function dvLotTxt(o){
+    if(o.lot>0) return fmtDec(o.lot)+' lot'+(o.unitOk ? '' : '*');
+    return L('lot belum dicatat','lot not recorded');
+  }
   function dvRenderChips(){
-    var h = dvHoldings(), ks = Object.keys(h).filter(function(k){ return h[k].lot>0; }).sort();
+    var h = dvHoldings(), all = Object.keys(h).sort();
+    var ks = all.filter(function(k){ return h[k].held; });
+    var sold = all.filter(function(k){ return !h[k].held; });
     $('dv-chips-lbl').style.display = ks.length ? '' : 'none';
     $('dv-chips').innerHTML = ks.map(function(k){
-      return '<span class="dv-chip" data-dvk="'+esc(k)+'">'+esc(k)+'<small>'+fmtDec(h[k].lot)+' lot</small></span>';
+      return '<span class="dv-chip" data-dvk="'+esc(k)+'">'+esc(k)+'<small>'+esc(dvLotTxt(h[k]))+'</small></span>';
     }).join('');
     var sel = $('dv-kode'), cur = sel.value;
-    var opts = '<option value="">'+esc(ks.length ? L('Pilih saham yang dimiliki','Select a stock you own') : L('Belum ada saham di portofolio','No stocks in portfolio yet'))+'</option>';
-    opts += ks.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+' \u2022 '+fmtDec(h[k].lot)+' lot</option>'; }).join('');
+    var opts = '<option value="">'+esc(ks.length||sold.length ? L('Pilih kode saham','Select a stock') : L('Belum ada saham di portofolio','No stocks in portfolio yet'))+'</option>';
+    if(ks.length){
+      opts += '<optgroup label="'+esc(L('Masih dimiliki','Currently held'))+'">'+ks.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+' \u2022 '+esc(dvLotTxt(h[k]))+'</option>'; }).join('')+'</optgroup>';
+    }
+    if(sold.length){
+      opts += '<optgroup label="'+esc(L('Sudah dijual (dividen cum date masih bisa dicatat)','Sold (dividends from before the sale can still be logged)'))+'">'+sold.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+' \u2022 '+esc(L('sudah dijual','sold'))+'</option>'; }).join('')+'</optgroup>';
+    }
     sel.innerHTML = opts;
-    if(cur && ks.indexOf(cur)===-1 && cur){ var o = document.createElement('option'); o.value = cur; o.textContent = cur+' ('+L('sudah tidak dimiliki','no longer held')+')'; sel.appendChild(o); }
+    if(cur && !h[nk(cur)]){ var o = document.createElement('option'); o.value = cur; o.textContent = cur+' ('+L('tidak ada di catatan pembelian','not in purchase records')+')'; sel.appendChild(o); }
     sel.value = cur || '';
-    var note = $('dv-kode-note');
-    note.style.display = ks.length ? 'none' : '';
-    note.textContent = ks.length ? '' : L('Catat dulu pembelian saham di menu Pembelian Investasi (instrumen Saham) supaya muncul di sini.','Record a stock purchase under Investment Purchases (instrument: Stock) first so it shows up here.');
+    var note = $('dv-kode-note'), tk = dvTanpaKode(), msg = '';
+    if(!ks.length && !sold.length){
+      msg = L('Catat dulu pembelian saham di menu Pembelian Investasi (instrumen Saham, kolom Kode wajib diisi) supaya muncul di sini.','Record a stock purchase under Investment Purchases (instrument: Stock, Code filled in) first so it shows up here.');
+    }
+    if(tk>0){
+      msg += (msg ? ' ' : '') + L('Ada '+tk+' pembelian saham tanpa kode, jadi belum bisa dipilih di sini. Lengkapi kodenya lewat Riwayat > Pembelian Investasi.', tk+' stock purchase(s) have no code and cannot be selected here. Add the code from History > Investment Purchases.');
+    }
+    note.style.display = msg ? '' : 'none';
+    note.textContent = msg;
     dvHist();
   }
 
@@ -26176,6 +26228,22 @@ html:not([data-theme="light"]) .profile-info .lnk{padding:5px 10px; border-radiu
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(.btn.ghost,.ap-btn){border-width:1px !important;}
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(.btn:not(.ghost),.toggle,.icon-btn,.maps-chip,.cancel,.p-cancel,.p-danger,.nw-chip.active,.cvt-btn.active,.sr-chip.on,[class*="chip"].active,[class*="chip"].on){border:1px solid rgba(255,255,255,.14);}
 html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .toggle{font-weight:700;}
+
+/* ===== Teal lebih hidup (mode gelap, semua halaman selain Dashboard/Catat/Widget) =====
+   Sebelumnya gradasi teal dicampur ~35-50% dengan hijau-hitam (#04201D) sehingga tampak kusam.
+   Sekarang: kartu/judul hijau dipakai teal jenuh yang dalam (teks putih tetap terbaca),
+   tombol isi & tombol ghost memakai teal terang dengan teks gelap (kontras tinggi). */
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background: var(--primary)"],
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card[style*="background:var(--primary)"],
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title,
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row{
+  background:linear-gradient(135deg,#14B8A0 0%,#0B8D79 100%) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger){
+  background:linear-gradient(135deg,#34E0C8 0%,#1FC2AB 100%) !important; color:#06332E !important; border-color:rgba(255,255,255,.18) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger) svg{color:#06332E !important; stroke:currentColor;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn.ghost{
+  background:linear-gradient(135deg,#34E0C8 0%,#1FC2AB 100%) !important; color:#06332E !important;}
 </style>
 <script id="tk-widep-js">
 /* Sidebar otomatis ringkas di HP potret (kecuali user pernah memilih "lebar"); kembali normal saat lanskap */
