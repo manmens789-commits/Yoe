@@ -55,6 +55,40 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script id="tk-offline-shim">
+/* Cadangan kalau library Firebase tidak bisa dimuat (HP offline dan library belum tersimpan di cache):
+   aplikasi tetap terbuka memakai salinan data terakhir di HP. Login baru / sinkron ke server butuh internet. */
+(function(){
+  if(typeof firebase!=='undefined') return;
+  window.__tkNoSDK = true;
+  function eNet(c){ var e = new Error('offline'); e.code = c; return e; }
+  var u = null; try{ u = JSON.parse(localStorage.getItem('tk-last-user')||'null'); }catch(e){}
+  var cur = u && u.uid ? { uid:u.uid, displayName:u.nama||'', email:u.email||'' } : null;
+  var subs = [];
+  var authBase = {
+    currentUser: cur,
+    setPersistence: function(){ return Promise.resolve(); },
+    onAuthStateChanged: function(cb){ subs.push(cb); setTimeout(function(){ cb(authBase.currentUser); }, 0); return function(){}; },
+    signOut: function(){ authBase.currentUser = null; subs.forEach(function(f){ try{ f(null); }catch(e){} }); return Promise.resolve(); }
+  };
+  var auth = new Proxy(authBase, { get:function(t,k){ return k in t ? t[k] : function(){ return Promise.reject(eNet('auth/network-request-failed')); }; } });
+  function ref(){
+    return new Proxy(function(){}, { get:function(t,k){
+      if(k==='get'||k==='set'||k==='update'||k==='delete'||k==='add') return function(){ return Promise.reject(eNet('unavailable')); };
+      if(k==='then') return undefined;
+      return function(){ return ref(); };
+    } });
+  }
+  var fs = { collection:function(){ return ref(); } };
+  window.firebase = {
+    initializeApp:function(){},
+    auth:function(){ return auth; },
+    firestore:function(){ return fs; }
+  };
+  window.firebase.auth.Auth = { Persistence:{ LOCAL:'local' } };
+  window.firebase.auth.EmailAuthProvider = { credential:function(){ return {}; } };
+})();
+</script>
 <script>
   var firebaseConfig = {
     apiKey: "AIzaSyAydLSJvBVz2r6VKX21tDllXu4WUkxsBg0",
@@ -376,7 +410,7 @@
   .rw-day-t{font-weight:800; font-size:13.5px; color:var(--text);}
   .rw-day-n{font-size:11.5px; color:var(--text-2);}
   .rw-day-net{margin-left:auto; font-size:12.5px; font-weight:700;}
-  .rw-day-net.neg{color:var(--danger);} .rw-day-net.pos{color:var(--lime);}
+  .rw-day-net.neg{color:var(--danger);} .rw-day-net.pos{color:var(--pos);}
   .rw-day-body{display:none;}
   .rw-day.open .rw-day-body{display:block;}
   .txn-row.v2 .txn-title{white-space:normal; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; word-break:break-word;}
@@ -859,7 +893,7 @@
   .rekap-group:last-child{margin-bottom:0;}
   .rekap-head{display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--primary-dim); border-radius:10px 10px 0 0; font-weight:700; font-size:13.5px;}
   .rekap-head .pos{font-family:var(--font-mono); font-weight:700;}
-  .rekap-head .pos.up{color:var(--accent);}
+  .rekap-head .pos.up{color:var(--pos);}
   .rekap-head .pos.down{color:var(--danger);}
   .rekap-sub{border:1px solid var(--line); border-top:none; border-radius:0 0 10px 10px; overflow:hidden;}
   .rekap-row{display:flex; justify-content:space-between; padding:8px 12px; font-size:12.5px; border-top:1px solid var(--line);}
@@ -1330,14 +1364,14 @@
 
     #print-area .pr-kpis{display:flex; gap:10px; margin:0 0 18px; page-break-inside:avoid; break-inside:avoid;}
     #print-area .pr-kpi{flex:1; min-width:0; border:1px solid #E7E7E7; border-top:3px solid #171717; border-radius:8px; padding:10px 12px;}
-    #print-area .pr-kpi.pos{border-top-color:#0F8A5F;}
+    #print-area .pr-kpi.pos{border-top-color:#2E7D32;}
     #print-area .pr-kpi.neg{border-top-color:#C1533D;}
     #print-area .pr-kpi .lb{font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:#434343; font-weight:700;}
     #print-area .pr-kpi .vl{font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; margin-top:3px; color:#0D0D0D; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
     #print-area .pr-bar-wrap{margin:0 0 22px; page-break-inside:avoid; break-inside:avoid;}
     #print-area .pr-bar{height:10px; border-radius:6px; overflow:hidden; display:flex; background:#EFEFEF;}
-    #print-area .pr-bar .in{background:#0F8A5F;}
+    #print-area .pr-bar .in{background:#2E7D32;}
     #print-area .pr-bar .out{background:#C1533D;}
     #print-area .pr-bar-legend{display:flex; justify-content:space-between; font-size:9.5px; color:#434343; margin-top:4px; font-weight:600;}
 
@@ -1380,7 +1414,7 @@
     #print-area .grid2col{display:block;}
     #print-area .grid2col > div{display:block; min-width:0;}
     #print-area .neg-p{color:#C1533D;}
-    #print-area .pos-p{color:#0F8A5F;}
+    #print-area .pos-p{color:#2E7D32;}
     #print-area .pr-saldo{break-inside:auto; page-break-inside:auto;}
     #print-area .pr-saldo-head{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin:2px 0 10px;}
     #print-area .pr-saldo-total .lbl{font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#4E4E4E;}
@@ -1726,7 +1760,7 @@ html[data-layout="desktop"] #goals-list > .goal-acc:first-child, html[data-layou
   #view-dividen .dv-row .top small{font-weight:500; color:var(--text-2); margin-left:6px;}
   #view-dividen .dv-row .tr{height:6px; border-radius:6px; background:var(--line); margin-top:4px; overflow:hidden;}
   #view-dividen .dv-row .tr i{display:block; height:100%; background:#12B886; border-radius:6px;}
-  #view-dividen .dv-delta.up{color:#12B886;} #view-dividen .dv-delta.down{color:#E5484D;}
+  #view-dividen .dv-delta.up{color:var(--pos);} #view-dividen .dv-delta.down{color:#E5484D;}
 </style>
 <style id="dv-pretty">
 /* ===== Dividen Saham: tampilan lebih menarik (gelap & terang). Hapus blok ini untuk membatalkan. ===== */
@@ -1741,8 +1775,8 @@ html #view-dividen#view-dividen#view-dividen .dv-sum{position:relative; overflow
 html #view-dividen#view-dividen#view-dividen .dv-sum::before{content:""; position:absolute; right:-34px; top:-34px; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 35% 35%,rgba(94,242,199,.35),rgba(94,242,199,.05) 62%,transparent 70%); border:1px solid rgba(94,242,199,.25); opacity:1 !important; pointer-events:none;}
 html #view-dividen#view-dividen#view-dividen .dv-sum > *{position:relative; z-index:1;}
 html #view-dividen#view-dividen#view-dividen .dv-sum .dv-lbl{color:rgba(234,251,246,.72) !important; font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:11px;}
-html #view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#5EF2C7 !important; font-size:34px; letter-spacing:-1px; text-shadow:0 0 22px rgba(94,242,199,.45);}
-html #view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.up{color:#5EF2C7;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.down{color:#FF8A94;}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#3FAE4C !important; font-size:34px; letter-spacing:-1px; text-shadow:0 0 22px rgba(63,174,76,.45);}
+html #view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.up{color:#3FAE4C;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.down{color:#FF8A94;}
 html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stats{gap:10px; margin:14px 0;}
 html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat{background:rgba(255,255,255,.07) !important; border:1px solid rgba(255,255,255,.1); border-left:3px solid var(--sc,#2DD4BF); border-radius:12px; padding:9px 11px;}
 html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(1){--sc:#2DD4BF;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(2){--sc:#7DB8FF;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(3){--sc:#FFC857;} html #view-dividen#view-dividen#view-dividen .dv-sum .dv-stat:nth-child(4){--sc:#FF8A94;}
@@ -2515,7 +2549,8 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div class="dv-chips-lbl" id="dv-chips-lbl" style="display:none;">Saham yang kamu pegang (ketuk untuk isi otomatis)</div>
       <div class="dv-chips" id="dv-chips"></div>
       <div class="field"><label>Tanggal Diterima</label><input type="date" id="dv-tanggal"></div>
-      <div class="field"><label>Kode Saham</label><input type="text" id="dv-kode" list="dv-kode-list" placeholder="cth: BBCA, TLKM, ASII" autocapitalize="characters" autocomplete="off" maxlength="12"><datalist id="dv-kode-list"></datalist></div>
+      <div class="field"><label>Kode Saham</label><select id="dv-kode"><option value="">Pilih saham yang dimiliki</option></select><div class="meta" id="dv-kode-note" style="margin-top:4px; display:none;"></div></div>
+      <div class="dv-hist" id="dv-hist" style="display:none;"></div>
       <div class="field"><label>Jenis Dividen</label><select id="dv-jenis"><option>Final</option><option>Interim</option><option>Khusus</option><option>Saham (bonus)</option></select></div>
       <div class="field"><label>Cara Hitung</label>
         <div class="toggle-row">
@@ -5303,6 +5338,25 @@ function tkStreamBytes(stream, input){
 }
 function tkGzip(text){ return tkStreamBytes(new CompressionStream('gzip'), new TextEncoder().encode(text)); }
 function tkGunzip(bytes){ return tkStreamBytes(new DecompressionStream('gzip'), bytes).then(function(u){ return new TextDecoder().decode(u); }); }
+/* Baca isi dokumen server (gzip atau JSON biasa). Menolak dengan {tkKind:'corrupt'|'error'} supaya statusnya sama seperti dulu. */
+function tkDecodeDoc(sd){
+  if(sd.json==='GZ1' && sd.gz){
+    return tkGunzip(sd.gz.toUint8Array()).then(function(txt){
+      try{ return JSON.parse(txt); }catch(e){ throw {tkKind:'corrupt'}; }
+    }, function(){ throw {tkKind:'error'}; });
+  }
+  try{ return Promise.resolve(JSON.parse(sd.json)); }catch(e){ return Promise.reject({tkKind:'corrupt'}); }
+}
+/* Ambil dokumen server. Kalau ada salinan di HP dan internet mati / lambat (>8 dtk), balikkan {offline:true} supaya app dibuka dari salinan itu. */
+function tkFetchServer(hasMirror){
+  if(window.__tkNoSDK || (navigator.onLine===false && hasMirror)) return Promise.resolve({offline:true});
+  return new Promise(function(resolve, reject){
+    var done = false, t = null;
+    if(hasMirror) t = setTimeout(function(){ if(done) return; done = true; resolve({offline:true}); }, 8000);
+    userDocRef().get().then(function(snap){ if(done) return; done = true; clearTimeout(t); resolve({snap:snap}); },
+      function(e){ if(done) return; done = true; clearTimeout(t); if(hasMirror) resolve({offline:true}); else reject(e); });
+  });
+}
 function loadDataFromCloud(){
   CLOUD_SAFE = false;
   if(IS_GUEST){
@@ -5312,29 +5366,54 @@ function loadDataFromCloud(){
   }
   var _migrated = false;
   var _migrate = false; try{ _migrate = localStorage.getItem(GUEST_MIGRATE)==='1'; }catch(e){}
-  return userDocRef().get().then(function(snap){
-    if(snap.exists && snap.data() && snap.data().json){
-      var sd = snap.data(), parsed;
-      if(sd.json==='GZ1' && sd.gz){
-        /* Data tersimpan terkompresi (gzip) supaya muat lebih banyak di 1 dokumen Firestore */
-        return tkGunzip(sd.gz.toUint8Array()).then(function(txt){
-          try{ DATA = JSON.parse(txt); }
-          catch(e){ console.error(e); DATA = {}; applyDataDefaults(); return 'corrupt'; }
-          CLOUD_SAFE = true; applyDataDefaults(); return 'ok';
-        }).catch(function(e){ console.error(e); DATA = {}; applyDataDefaults(); return 'error'; });
+  var mkey = 'main-'+CURRENT_USER.id;
+  function mirrorClean(base){ TKM.set(mkey, {json:JSON.stringify(DATA), base:base||null, sent:null, dirty:false, at:Date.now()}); }
+  function parseLocal(mir){ try{ return JSON.parse(mir.json); }catch(e){ return null; } }
+  return TKM.get(mkey).then(function(mir){
+    if(mir && !mir.json) mir = null;
+    return tkFetchServer(!!mir).then(function(r){
+      /* ---- offline / server tidak terjangkau: pakai salinan di HP ---- */
+      if(r.offline){
+        var loc = mir ? parseLocal(mir) : null;
+        if(!loc) return 'error';
+        DATA = loc; CLOUD_SAFE = true; applyDataDefaults();
+        window.__tkBase = mir.base||null; window.__tkDirty = !!mir.dirty; window.__tkNeedCheck = true; window.__tkWasOffline = true;
+        tkSetOffline(true);
+        return 'ok';
       }
-      try{ parsed = JSON.parse(sd.json); }
-      catch(e){ console.error(e); DATA = {}; applyDataDefaults(); return 'corrupt'; }
-      DATA = parsed;
-    } else {
-      DATA = {}; /* akun baru, belum ada data */
-      if(_migrate){ try{ var gm = localStorage.getItem(GUEST_KEY); if(gm){ DATA = JSON.parse(gm)||{}; _migrated = true; } }catch(e){ DATA = {}; } }
-    }
-    try{ localStorage.removeItem(GUEST_MIGRATE); }catch(e){}
-    CLOUD_SAFE = true;
-    applyDataDefaults();
-    if(_migrated){ setTimeout(function(){ saveData(); toast('Data tamu berhasil dipindah ke akun barumu'); }, 800); }
-    return 'ok';
+      var snap = r.snap;
+      if(snap.exists && snap.data() && snap.data().json){
+        var sd = snap.data();
+        return tkDecodeDoc(sd).then(function(srv){
+          window.__tkBase = sd.updatedAt||null;
+          var loc = (mir && mir.dirty) ? parseLocal(mir) : null;
+          if(loc){
+            /* ada perubahan yang dibuat saat offline & belum terkirim */
+            var ours = (mir.base && mir.base===sd.updatedAt) || (mir.sent && mir.sent===sd.updatedAt);
+            if(ours){ DATA = loc; }
+            else { tkBackupConflict(CURRENT_USER.id, mir.json, srv); DATA = tkMergeData(srv, loc); setTimeout(function(){ toast('Perubahan offline digabung dengan data terbaru dari perangkat lain'); }, 1200); }
+            CLOUD_SAFE = true; applyDataDefaults(); window.__tkDirty = true; window.__tkNeedCheck = false; window.__tkWasOffline = true;
+            setTimeout(saveData, 400);
+            return 'ok';
+          }
+          DATA = srv; CLOUD_SAFE = true; applyDataDefaults(); window.__tkDirty = false; window.__tkNeedCheck = false;
+          mirrorClean(sd.updatedAt);
+          return 'ok';
+        }).catch(function(e){ console.error(e); DATA = {}; applyDataDefaults(); return (e && e.tkKind) || 'error'; });
+      }
+      /* belum ada dokumen di server */
+      var loc2 = (mir && mir.dirty) ? parseLocal(mir) : null;
+      if(loc2){ DATA = loc2; window.__tkBase = null; window.__tkDirty = true; setTimeout(saveData, 400); }
+      else {
+        DATA = {}; /* akun baru, belum ada data */
+        if(_migrate){ try{ var gm = localStorage.getItem(GUEST_KEY); if(gm){ DATA = JSON.parse(gm)||{}; _migrated = true; } }catch(e){ DATA = {}; } }
+      }
+      try{ localStorage.removeItem(GUEST_MIGRATE); }catch(e){}
+      CLOUD_SAFE = true;
+      applyDataDefaults();
+      if(_migrated){ setTimeout(function(){ saveData(); toast('Data tamu berhasil dipindah ke akun barumu'); }, 800); }
+      return 'ok';
+    });
   }).catch(function(e){
     console.error(e);
     DATA = {};
@@ -5489,11 +5568,10 @@ function saveData(){
     var uid = CURRENT_USER.id;
     var _js = JSON.stringify(DATA);
     var base = { nama: CURRENT_USER.nama, email: CURRENT_USER.email||'', updatedAt: Date.now() };
+    window.__tkLastTs = base.updatedAt;
     function warn(bytes){ if(bytes > 850000 && !window.__sizeWarned){ window.__sizeWarned = true; toast('Data akun hampir penuh ('+Math.round(bytes/1024)+' KB dari ~1000 KB). Kurangi/kecilkan foto kalau perlu.'); } }
-    function kirim(payload){
-      return fbDb.collection('users').doc(uid).collection('data').doc('main').set(payload)
-        .catch(function(e){ console.error(e); toast('Gagal menyimpan data ke server'); });
-    }
+    /* tkSend: simpan salinan di HP dulu (supaya aman kalau offline), lalu kirim ke server; kalau offline ditunda & dikirim otomatis nanti */
+    function kirim(payload){ return tkSend(uid, _js, payload); }
     if(tkCanGzip()){
       /* json:'GZ1' sengaja bukan JSON valid: versi aplikasi lama yang tersangkut di cache akan menolak menyimpan, bukan menimpa data. */
       tkGzip(_js).then(function(bytes){
@@ -5726,9 +5804,12 @@ function hideLoadingOverlay(){
 }
 function logout(){
   if(IS_GUEST){ guestSaveNow(); exitGuest(); showAuthScreen(); return; }
-  try{ localStorage.removeItem('tk-had-session'); }catch(e){}
+  try{ localStorage.removeItem('tk-had-session'); localStorage.removeItem('tk-last-user'); }catch(e){}
+  /* salinan data di HP dihapus saat keluar, kecuali masih ada perubahan offline yang belum terkirim */
+  try{ if(CURRENT_USER && !window.__tkDirty) TKM.del('main-'+CURRENT_USER.id); }catch(e){}
   fbAuth.signOut();
   CURRENT_USER = null;
+  tkSetOffline(window.__tkOffline, false);
   showAuthScreen();
 }
 
@@ -17316,7 +17397,7 @@ function svgPrintPerformaChart(start, end){
     var hm = yForVal(dataMasuk[i]), hk = yForVal(dataKeluar[i]);
     if(dataMasuk[i]>0){
       hm = Math.max(hm,2);
-      svg += '<path d="'+barPath(xm, pad.top+plotH-hm, barW, hm, 5)+'" fill="#0F8A5F"/>';
+      svg += '<path d="'+barPath(xm, pad.top+plotH-hm, barW, hm, 5)+'" fill="#2E7D32"/>';
       svg += '<text x="'+(xm+barW/2)+'" y="'+(pad.top+plotH-hm-4)+'" font-size="8.5" font-weight="700" fill="#0F6B4A" text-anchor="middle">'+fmtShort(dataMasuk[i])+'</text>';
     }
     if(dataKeluar[i]>0){
@@ -17421,7 +17502,7 @@ function exportLaporanPDF(){
 
   html += '<div class="pr-section"><h2><span class="n">01</span>Grafik Performa '+(perfBuckets(start,end).mode==='minggu'?'Mingguan':'Bulanan')+'</h2>'+
     '<div class="pr-chart-wrap"><div class="pr-chart-title">'+(perfBuckets(start,end).mode==='minggu'?'Per minggu':'Per bulan')+'</div>'+svgPrintPerformaChart(start, end)+
-    '<div class="pr-chart-legend"><span><span class="dot" style="background:#0F8A5F;"></span>Pemasukan <span class="pr-legend-val">'+fmtShort(totalPemasukan)+'</span></span><span><span class="dot" style="background:#C1533D;"></span>Pengeluaran <span class="pr-legend-val">'+fmtShort(totalKeluar)+'</span></span></div>'+
+    '<div class="pr-chart-legend"><span><span class="dot" style="background:#2E7D32;"></span>Pemasukan <span class="pr-legend-val">'+fmtShort(totalPemasukan)+'</span></span><span><span class="dot" style="background:#C1533D;"></span>Pengeluaran <span class="pr-legend-val">'+fmtShort(totalKeluar)+'</span></span></div>'+
     '</div></div>';
 
   html += '<div class="pr-section"><h2><span class="n">02</span>Ringkasan Kinerja Keuangan</h2><table><tbody>'+
@@ -17575,7 +17656,7 @@ function exportLaporanPDF(){
       var dsNw = [
         { label:'Total Aset', color:'#4C8DFF', data: ser.rows.map(function(r){ return r.aset; }) },
         { label:'Hutang & Titipan', color:'#C1533D', data: ser.rows.map(function(r){ return r.kewajiban; }) },
-        { label:'Kekayaan Bersih', color:'#0F8A5F', data: ser.rows.map(function(r){ return r.net; }) }
+        { label:'Kekayaan Bersih', color:'#2E7D32', data: ser.rows.map(function(r){ return r.net; }) }
       ];
       h += '<div class="pr-chart-wrap">'+svgLineChart(ser.labels, dsNw, true)+printChartLegend(dsNw, true)+'</div>';
     }
@@ -18864,7 +18945,7 @@ function init(){
     }catch(e){}
   }
   fbAuth.onAuthStateChanged(function(user){
-    try{ if(user) localStorage.setItem('tk-had-session','1'); }catch(e){}
+    try{ if(user){ localStorage.setItem('tk-had-session','1'); localStorage.setItem('tk-last-user', JSON.stringify({uid:user.uid, nama:user.displayName||'', email:user.email||''})); } }catch(e){}
     if(user){
       if(IS_GUEST || guestActive()){ IS_GUEST = false; try{ localStorage.removeItem(GUEST_FLAG); }catch(e){} }
       authWatchdogStop();
@@ -22094,7 +22175,7 @@ html[data-theme="light"] .fx-orb{opacity:.45;}
 /* bulan & hari: buka-tutup mengalir */
 .fx-on #rw-list .rw-mon{animation:fx8Row .55s cubic-bezier(.2,.8,.2,1) backwards; animation-delay:calc(var(--i,0) * 60ms);}
 .fx-on #rw-list .rw-mon-head{transition:transform .2s cubic-bezier(.2,.8,.2,1), background .25s ease, box-shadow .25s ease; border-left:4px solid transparent;}
-.fx-on #rw-list .rw-mon-head:has(.rw-day-net.pos){border-left-color:var(--lime);}
+.fx-on #rw-list .rw-mon-head:has(.rw-day-net.pos){border-left-color:var(--pos);}
 .fx-on #rw-list .rw-mon-head:has(.rw-day-net.neg){border-left-color:var(--danger);}
 .fx-on #rw-list .rw-mon-head:active, .fx-on #rw-list .rw-day-head:active{transform:scale(.985);}
 @media (hover:hover){ .fx-on #rw-list .rw-mon-head:hover{box-shadow:0 6px 18px rgba(45,212,191,.16); transform:translateY(-1px);} .fx-on #rw-list .rw-day-head:hover .rw-day-t{color:var(--primary);} }
@@ -25309,6 +25390,15 @@ html[data-theme="light"] #db-compact > .dc-t[data-goto="insight"], html[data-the
 html[data-theme="light"] #db-compact > .dc-nwh{--ac:#7B5CFA;}
 html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondisi aman (tidak ada jatuh tempo / stok aman) = hijau */
 </style>
+<style id="dv-hist-css">
+#view-dividen .dv-hist{margin:-2px 0 14px; padding:12px 14px; border-radius:14px; background:var(--primary-dim); border:1px solid var(--line); font-size:12.5px;}
+#view-dividen .dv-hist .ttl{font-weight:800; font-size:13px; margin-bottom:6px;}
+#view-dividen .dv-hist .sub{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text-2); margin:10px 0 2px;}
+#view-dividen .dv-hist .r{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:4px 0;}
+#view-dividen .dv-hist .r small{color:var(--text-2); font-size:11px; font-weight:600;}
+#view-dividen .dv-hist .r.t{border-top:1px dashed var(--line); margin-top:4px; padding-top:7px; font-weight:800;}
+#view-dividen .dv-hist .neg{color:var(--danger);}
+</style>
 <script id="dv-js">
 /* ============ DIVIDEN SAHAM ============
    Dividen disimpan sebagai Pemasukan (sumber "Dividen Saham", jumlah = bersih diterima) + rincian di field `dividen`.
@@ -25380,7 +25470,7 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     if(dvMode==='dps' && c.lembar>0 && c.dps>0) h += '<div class="r"><span>'+fmtDec(c.lembar)+' lembar × Rp'+fmtDec(c.dps)+'</span><span class="mono">'+fmt(c.bruto)+'</span></div>';
     else h += '<div class="r"><span>Dividen kotor</span><span class="mono">'+fmt(c.bruto)+'</span></div>';
     h += '<div class="r"><span>Pajak'+(c.bruto>0 ? ' ('+fmtDec(Math.round(c.pajak/c.bruto*10000)/100)+'%)' : '')+'</span><span class="mono">− '+fmt(c.pajak)+'</span></div>';
-    h += '<div class="r t"><span>Bersih diterima</span><span class="mono" style="color:#12B886;">'+fmt(c.neto)+'</span></div>';
+    h += '<div class="r t"><span>Bersih diterima</span><span class="mono" style="color:var(--pos);">'+fmt(c.neto)+'</span></div>';
     $('dv-calc').innerHTML = h;
   }
 
@@ -25409,10 +25499,11 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     $('dv-jenis').selectedIndex = 0; $('dv-platform').value = '';
     $('dv-save').textContent = 'Simpan Dividen'; $('dv-cancel').style.display = 'none';
     $('dv-form-title').textContent = 'Catat Dividen Masuk';
-    dvDefaultRekening(); dvSetMode('dps');
+    dvDefaultRekening(); dvSetMode('dps'); dvHist();
   }
 
   function dvFillKode(kode){
+    dvHist();
     var h = dvHoldings()[nk(kode)];
     if(!h) return;
     if(h.lot>0 && !$('dv-jml').value){ $('dv-jml').value = String(h.lot); $('dv-unit').value = 'lot'; }
@@ -25425,8 +25516,59 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     $('dv-chips').innerHTML = ks.map(function(k){
       return '<span class="dv-chip" data-dvk="'+esc(k)+'">'+esc(k)+'<small>'+fmtDec(h[k].lot)+' lot</small></span>';
     }).join('');
-    var dl = Object.keys(h).sort().map(function(k){ return '<option value="'+esc(k)+'">'; }).join('');
-    $('dv-kode-list').innerHTML = dl;
+    var sel = $('dv-kode'), cur = sel.value;
+    var opts = '<option value="">'+esc(ks.length ? L('Pilih saham yang dimiliki','Select a stock you own') : L('Belum ada saham di portofolio','No stocks in portfolio yet'))+'</option>';
+    opts += ks.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+' \u2022 '+fmtDec(h[k].lot)+' lot</option>'; }).join('');
+    sel.innerHTML = opts;
+    if(cur && ks.indexOf(cur)===-1 && cur){ var o = document.createElement('option'); o.value = cur; o.textContent = cur+' ('+L('sudah tidak dimiliki','no longer held')+')'; sel.appendChild(o); }
+    sel.value = cur || '';
+    var note = $('dv-kode-note');
+    note.style.display = ks.length ? 'none' : '';
+    note.textContent = ks.length ? '' : L('Catat dulu pembelian saham di menu Pembelian Investasi (instrumen Saham) supaya muncul di sini.','Record a stock purchase under Investment Purchases (instrument: Stock) first so it shows up here.');
+    dvHist();
+  }
+
+  /* riwayat dividen + return untuk saham terpilih */
+  function dvHist(){
+    var box = $('dv-hist'); if(!box) return;
+    var k = nk($('dv-kode').value);
+    if(!k){ box.style.display = 'none'; box.innerHTML = ''; return; }
+    var h = dvHoldings()[k] || {lot:0, modal:0};
+    var byYear = {}, nDiv = 0, totDiv = 0;
+    dvRecords().forEach(function(r){
+      var d = r.p.dividen; if(nk(d.kode)!==k) return;
+      var y = String(r.p.tanggal||'').slice(0,4) || '-';
+      var o = byYear[y] || (byYear[y] = {neto:0, n:0, dps:0});
+      o.neto += r.p.jumlah||0; o.n++; o.dps += d.dps||0; nDiv++; totDiv += r.p.jumlah||0;
+    });
+    var realized = 0, nJual = 0, totBeli = 0;
+    (DATA.invjual||[]).forEach(function(x){
+      if(x.instrumen!=='Saham' || nk(x.kode)!==k) return;
+      var mod = (x.modal!==undefined && x.modal!==null && x.modal!=='') ? x.modal : (x.jumlah||0);
+      realized += (x.untungRugi!==undefined ? x.untungRugi : ((x.jumlah||0)-mod-(x.fee||0))); nJual++;
+    });
+    (DATA.invbeli||[]).forEach(function(x){ if(x.instrumen==='Saham' && nk(x.kode)===k) totBeli += x.jumlah||0; });
+    var lembar = h.lot*100, avg = lembar>0 ? h.modal/lembar : 0;
+    function sg(v){ return '<b class="mono '+(v>0?'pos':(v<0?'neg':''))+'">'+(v>0?'+':(v<0?'\u2212':''))+fmt(Math.abs(v))+'</b>'; }
+    var yrs = Object.keys(byYear).sort().reverse();
+    var rows = yrs.map(function(y){
+      var o = byYear[y], yoc = h.modal>0 ? ' \u2022 '+fmtDec(Math.round(o.neto/h.modal*10000)/100)+'%' : '';
+      return '<div class="r"><span>'+esc(y)+' <small>'+o.n+'x'+(o.dps>0 ? ' \u2022 Rp'+fmtDec(o.dps)+'/'+L('lbr','shr') : '')+yoc+'</small></span>'+sg(o.neto)+'</div>';
+    }).join('');
+    var totalReturn = totDiv + realized;
+    var yocAll = totBeli>0 ? Math.round(totalReturn/totBeli*10000)/100 : null;
+    box.innerHTML =
+      '<div class="ttl">'+esc(k)+' \u2022 '+L('Portofolio & riwayat return','Portfolio & return history')+'</div>'+
+      '<div class="r"><span>'+L('Kepemilikan','Holding')+'</span><b class="mono">'+(h.lot>0 ? fmtDec(h.lot)+' lot ('+fmtDec(lembar)+' '+L('lembar','shares')+')' : L('sudah habis dijual','fully sold'))+'</b></div>'+
+      (h.lot>0 && h.modal>0 ? '<div class="r"><span>'+L('Modal / harga rata-rata','Cost / average price')+'</span><b class="mono">'+fmt(h.modal)+' \u2022 Rp'+fmtDec(avg)+'</b></div>' : '')+
+      '<div class="sub">'+L('Dividen diterima (bersih)','Dividends received (net)')+'</div>'+
+      (rows || '<div class="r"><span><small>'+L('Belum ada dividen dicatat untuk saham ini.','No dividends recorded for this stock yet.')+'</small></span></div>')+
+      '<div class="sub">'+L('Total return tercatat','Recorded total return')+'</div>'+
+      '<div class="r"><span>'+L('Total dividen','Total dividends')+'</span>'+sg(totDiv)+'</div>'+
+      (nJual ? '<div class="r"><span>'+L('Untung/rugi terealisasi','Realized gain/loss')+' <small>'+nJual+'x '+L('jual','sell')+'</small></span>'+sg(realized)+'</div>' : '')+
+      '<div class="r t"><span>'+L('Total return','Total return')+(yocAll!==null ? ' <small>'+(yocAll>=0?'+':'')+fmtDec(yocAll)+'% '+L('dari total pembelian','of total purchases')+'</small>' : '')+'</span>'+sg(totalReturn)+'</div>'+
+      '<div class="meta" style="margin-top:6px;">'+L('Belum termasuk untung/rugi harga pasar yang belum dijual.','Excludes unrealized market gains/losses on shares still held.')+'</div>';
+    box.style.display = '';
   }
 
   function dvRecords(){
@@ -25477,7 +25619,7 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     var thisMonth = isCur ? monthly[now.getMonth()] : null;
     $('dv-sum').innerHTML =
       '<div class="dv-lbl">Dividen bersih '+esc(dvYear)+'</div>'+
-      '<div class="dv-big mono" style="color:#12B886;">'+fmt(neto)+'</div>'+(deltaHtml ? '<div style="font-size:12px; margin-top:2px;">'+deltaHtml+'</div>' : '')+
+      '<div class="dv-big mono" style="color:#3FAE4C;">'+fmt(neto)+'</div>'+(deltaHtml ? '<div style="font-size:12px; margin-top:2px;">'+deltaHtml+'</div>' : '')+
       '<div class="dv-stats">'+
         '<div class="dv-stat"><span class="dv-lbl">Rata-rata / bulan</span><b class="mono">'+fmt(avg)+'</b></div>'+
         '<div class="dv-stat"><span class="dv-lbl">'+(isCur ? 'Bulan ini' : 'Jumlah pembayaran')+'</span><b class="mono">'+(isCur ? fmt(thisMonth) : yr.length+'x')+'</b></div>'+
@@ -25528,7 +25670,9 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     go('dividen');
     var d = p.dividen;
     dvEditIdx = idx;
-    $('dv-tanggal').value = p.tanggal; $('dv-kode').value = d.kode||'';
+    $('dv-tanggal').value = p.tanggal;
+    (function(){ var sel = $('dv-kode'), kk = nk(d.kode); if(kk && !sel.querySelector('option[value="'+kk.replace(/"/g,'')+'"]')){ var o = document.createElement('option'); o.value = kk; o.textContent = kk+' ('+L('sudah tidak dimiliki','no longer held')+')'; sel.appendChild(o); } sel.value = kk; })();
+    dvHist();
     try{ $('dv-jenis').value = d.jenis||'Final'; }catch(e){}
     $('dv-pajak').value = String(d.pajakPct!=null ? d.pajakPct : 10).replace('.',',');
     $('dv-platform').value = d.platform||''; $('dv-metode').value = p.metode; $('dv-ket').value = p.ket||'';
@@ -25701,7 +25845,7 @@ html[data-theme="light"] .view:not(#view-dashboard):not(#view-catat):not(#view-w
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen main > .section-title,html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum{background:linear-gradient(135deg,#0B0B0B,#2B2B2B) !important; border:1px solid #000 !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen main > .section-title > [data-icon]:first-child{background:#2DD4BF !important; color:#0D0D0D !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum::before{display:none !important;}
-html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#2DD4BF !important; text-shadow:none !important;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#3FAE4C !important; text-shadow:none !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum .dv-sub{color:#2DD4BF;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum .dv-bar i{background:#2DD4BF !important; box-shadow:none !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen .dv-sum .dv-row .tr i{background:#2DD4BF !important;}
@@ -25808,7 +25952,7 @@ html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .d
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum::before{background:radial-gradient(circle at 35% 35%,rgba(15,157,142,.14),rgba(15,157,142,.03) 62%,transparent 70%); border:1px solid rgba(15,157,142,.2);}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-lbl{color:#000000 !important;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-big{color:#000000 !important; text-shadow:none;}
-html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.up{color:#0F9D8E;}
+html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.up{color:#3FAE4C;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-delta.down{color:#D6455D;}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-stat{background:#F6F6F3 !important; border:1px solid #DDDDD8; border-left:3px solid var(--sc,#2DD4BF);}
 html[data-theme="light"] #view-dividen#view-dividen#view-dividen#view-dividen .dv-sum .dv-stat .dv-lbl{color:#000000 !important;}
@@ -26003,6 +26147,35 @@ html:not([data-theme="light"]) .profile-info .lnk.danger{background:color-mix(in
 .view .section-title, html[data-theme="light"] .view .section-title{box-shadow:none !important;}
 html body #view-dividen#view-dividen#view-dividen#view-dividen .btn{box-shadow:none !important;}
 html body :is(#view-atur-budget,#view-inventaris,#view-goals) .section-title, html[data-theme="light"] body :is(#view-atur-budget,#view-inventaris,#view-goals) .section-title{box-shadow:none !important;}
+/* ===== Dashboard: bentuk & ukuran tombol tema gelap disamakan dengan tema terang ===== */
+/* Tombol aksi cepat (Transfer, Masuk, Keluar, Lainnya): ubin gelap, ikon gradasi berwarna, label putih */
+html:not([data-theme="light"]) .grid4:not(.catat-grid) .qa{background:linear-gradient(160deg,#0B0B0B,#262626) !important; border:1px solid rgba(255,255,255,.14) !important; border-radius:14px; padding:14px 6px; box-shadow:none;}
+html:not([data-theme="light"]) .grid4:not(.catat-grid) .qa .lb{color:#fff; font-size:11px; font-weight:700;}
+html:not([data-theme="light"]) .grid4 .qa .ic{width:38px; height:38px; border-radius:12px; color:#fff !important; box-shadow:0 6px 14px -6px rgba(0,0,0,.5);}
+html:not([data-theme="light"]) .grid4 .qa:nth-child(1) .ic{background:linear-gradient(135deg,#5AC0EE,#2E8FD8) !important;}
+html:not([data-theme="light"]) .grid4 .qa:nth-child(2) .ic{background:linear-gradient(135deg,#4CD08A,#2E9D5B) !important;}
+html:not([data-theme="light"]) .grid4 .qa:nth-child(3) .ic{background:linear-gradient(135deg,#FF7A8A,#E04458) !important;}
+html:not([data-theme="light"]) .grid4 .qa:nth-child(4) .ic{background:linear-gradient(135deg,#8B6BFF,#5B3FD6) !important;}
+/* Ringkasan Hari Ini: blok Pengeluaran & Pemasukan berbentuk sama (pil bergaris aksen kiri) */
+html:not([data-theme="light"]) #db-today-btn-keluar, html:not([data-theme="light"]) #db-today-btn-masuk{background:linear-gradient(135deg,#2A2A2A,#1F1F1F); border-radius:14px; padding:10px 12px; border:1px solid rgba(255,255,255,.10); box-sizing:border-box;}
+html:not([data-theme="light"]) #db-today-btn-keluar{box-shadow:inset 4px 0 0 #E14B54;}
+html:not([data-theme="light"]) #db-today-btn-masuk{box-shadow:inset 4px 0 0 #19B894;}
+/* ===== Audit konsistensi: geometri komponen tema gelap disamakan dengan tema terang ===== */
+/* Judul halaman + ikonnya */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title{padding:11px 14px !important; margin:2px 0 14px; border-radius:16px !important; border:1px solid rgba(255,255,255,.14);}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > [data-icon]:first-child{width:32px; height:32px; border-radius:11px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) main > .section-title > [data-icon]:first-child svg{width:17px; height:17px;}
+/* Tombol Kembali & kartu hero */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .back-row{padding:6px 13px 6px 9px; font-weight:700; border:1px solid rgba(255,255,255,.14);}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .hero-card{border:1px solid rgba(255,255,255,.14);}
+/* Baris riwayat transaksi */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .txn-row.v2{padding:12px !important; border-radius:14px !important;}
+/* Tombol di kartu profil (Ubah Nama, Ubah Foto, Hapus Foto) */
+html:not([data-theme="light"]) .profile-info .lnk{padding:5px 10px; border-radius:20px;}
+/* Ketebalan garis tombol: semua 1px seperti tema terang */
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(.btn.ghost,.ap-btn){border-width:1px !important;}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) :is(.btn:not(.ghost),.toggle,.icon-btn,.maps-chip,.cancel,.p-cancel,.p-danger,.nw-chip.active,.cvt-btn.active,.sr-chip.on,[class*="chip"].active,[class*="chip"].on){border:1px solid rgba(255,255,255,.14);}
+html:not([data-theme="light"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .toggle{font-weight:700;}
 </style>
 <script id="tk-widep-js">
 /* Sidebar otomatis ringkas di HP potret (kecuali user pernah memilih "lebar"); kembali normal saat lanskap */
@@ -26017,6 +26190,194 @@ html body :is(#view-atur-budget,#view-inventaris,#view-goals) .section-title, ht
   window.addEventListener('resize', fit); window.addEventListener('orientationchange', function(){ setTimeout(fit,250); });
   new MutationObserver(fit).observe(document.documentElement,{attributes:true,attributeFilter:['data-wide-p']});
 })();
+</script>
+<style id="tk-txn-compact">
+/* ===== Kartu transaksi ringkas & konsisten (pengeluaran, pemasukan, transfer, dst; tema terang & gelap) =====
+   Satu baris judul + badge + nominal; ikon kecil; catatan 1 baris; keterangan + tombol aksi dalam satu baris. */
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2{padding:7px 10px !important; margin:0 0 6px !important; gap:9px !important; border-radius:12px !important; align-items:center !important; min-height:0 !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 > .acc-badge{width:32px !important; height:32px !important; border-radius:10px !important; margin:0 !important; flex-shrink:0;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 > .acc-badge svg{width:16px !important; height:16px !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 > .acc-badge img{width:100%; height:100%; object-fit:cover; border-radius:inherit;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-body{gap:1px !important; min-width:0;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-top{display:flex !important; flex-wrap:nowrap !important; align-items:center !important; gap:5px !important; row-gap:0 !important; min-width:0;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-top .txn-title{display:block !important; flex:1 1 auto !important; min-width:0 !important; max-width:none !important; font-size:13.5px !important; font-weight:700 !important; line-height:1.25; white-space:normal !important; overflow:hidden !important; text-overflow:ellipsis !important; display:-webkit-box !important; -webkit-box-orient:vertical; -webkit-line-clamp:2 !important; overflow-wrap:anywhere;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-top .badge{flex-shrink:0; margin:0 !important; font-size:9.5px !important; padding:1px 6px !important; line-height:1.4;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-top .amt{flex-shrink:0; margin-left:auto !important; padding-left:4px !important; font-size:13.5px !important; font-weight:800 !important; white-space:nowrap !important; line-height:1.25;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-note{margin:1px 0 0 !important; padding-left:7px !important; font-size:11.5px !important; line-height:1.3 !important; -webkit-line-clamp:1 !important; border-left-width:2px !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-sub{margin:0 !important; font-size:11px !important; line-height:1.3 !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-bottom{margin:0 !important; padding:0 !important; border-top:0 !important; gap:6px !important; min-height:0;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-bottom > .txn-sub:first-child{max-width:none !important; flex:1 1 auto; min-width:0; padding:0 !important; background:none !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-actions{gap:3px !important; margin-left:0 !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-bottom .icon-btn, html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-actions .icon-btn{width:24px !important; height:24px !important; border-radius:7px !important; padding:0 !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.v2 .txn-actions .icon-btn svg{width:13px !important; height:13px !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .rw-day-body{padding:2px 0 2px !important;}
+/* baris daftar sederhana (piutang/hutang, patungan, hasil panen): ikut diringkas supaya seragam */
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row:not(.v2){padding:7px 10px !important; margin:0 0 6px !important; border-radius:12px !important; gap:8px;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row:not(.v2) .meta{margin-top:0 !important; line-height:1.3;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row:not(.v2) .amt{font-size:13px !important;}
+html body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .txn-row.tt-row{gap:4px !important;}
+/* Kartu pembungkus yang isinya hanya satu baris menu (mis. "Lihat Semua Grafik"): baris menu sudah punya kotak sendiri, jadi pembungkus dibuat polos supaya tidak ada kotak menimpa kotak */
+html body .view:not(#tkz1):not(#tkz2):not(#tkz3) .card:has(> .menu-row:only-child){background:none !important; background-image:none !important; border:0 !important; box-shadow:none !important; padding:0 !important; overflow:visible !important; backdrop-filter:none !important;}
+html body .view:not(#tkz1):not(#tkz2):not(#tkz3) .card:has(> .menu-row:only-child)::before, html body .view:not(#tkz1):not(#tkz2):not(#tkz3) .card:has(> .menu-row:only-child)::after{display:none !important;}
+html body .view:not(#tkz1):not(#tkz2):not(#tkz3) .card:has(> .menu-row:only-child) > .menu-row{margin-bottom:0 !important;}
+/* Mode gelap: baris menu disamakan dengan mode terang (sudut 14px, garis tepi, aksen tebal di kiri; di gelap aksennya teal) */
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tkz) .menu-row{border:1px solid rgba(255,255,255,.12) !important; border-radius:14px !important; box-shadow:inset 4px 0 0 #2DD4BF !important;}
+</style>
+<script id="tk-offline-js">
+/* ============ MODE OFFLINE ============
+   - Tiap simpan, salinan data ditaruh di HP (IndexedDB) -> app bisa dibuka & dipakai tanpa internet.
+   - Transaksi yang dicatat saat offline ditandai "belum terkirim" dan dikirim otomatis begitu internet kembali.
+   - Kalau perangkat lain sempat mengubah data selama itu, hasilnya digabung (bukan ditimpa). */
+var TKM = (function(){
+  var dbp = null;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise(function(res, rej){
+      try{
+        var r = indexedDB.open('tk-offline', 1);
+        r.onupgradeneeded = function(){ r.result.createObjectStore('m'); };
+        r.onsuccess = function(){ res(r.result); };
+        r.onerror = function(){ rej(r.error); };
+        r.onblocked = function(){ rej(new Error('blocked')); };
+      }catch(e){ rej(e); }
+    });
+    return dbp;
+  }
+  function tx(mode, fn){
+    return open().then(function(db){
+      return new Promise(function(res, rej){
+        var t = db.transaction('m', mode), out = fn(t.objectStore('m'));
+        t.oncomplete = function(){ res(out && out.result !== undefined ? out.result : true); };
+        t.onerror = function(){ rej(t.error); };
+        t.onabort = function(){ rej(t.error); };
+      });
+    });
+  }
+  return {
+    get: function(k){ return tx('readonly', function(s){ return s.get(k); }).then(function(v){ return v || null; }).catch(function(){ return null; }); },
+    set: function(k, v){ return tx('readwrite', function(s){ return s.put(v, k); }).catch(function(){ return false; }); },
+    del: function(k){ return tx('readwrite', function(s){ return s.delete(k); }).catch(function(){ return false; }); }
+  };
+})();
+
+/* Gabungkan data server (srv) dengan data lokal (loc): daftar disatukan tanpa duplikat, isian tunggal memakai versi lokal. */
+function tkMergeData(srv, loc){
+  var out = JSON.parse(JSON.stringify(srv || {}));
+  Object.keys(loc || {}).forEach(function(k){
+    var a = out[k], b = loc[k];
+    if(a === undefined){ out[k] = b; }
+    else if(Array.isArray(a) && Array.isArray(b)){
+      var seen = {};
+      a.forEach(function(x){ seen[JSON.stringify(x)] = 1; });
+      b.forEach(function(x){ var s = JSON.stringify(x); if(!seen[s]){ seen[s] = 1; a.push(x); } });
+    }
+    else if(a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)){ out[k] = Object.assign({}, a, b); }
+    else out[k] = b;
+  });
+  return out;
+}
+/* simpan kedua versi sebelum digabung, jaga-jaga kalau hasil gabungan tidak sesuai harapan */
+function tkBackupConflict(uid, localJson, srv){
+  try{ TKM.set('conflict-'+uid, { at:Date.now(), local:localJson, server:(typeof srv === 'string' ? srv : JSON.stringify(srv)) }); }catch(e){}
+}
+
+/* ---- banner status ---- */
+function tkSetOffline(off, dirty){
+  window.__tkOffline = !!off;
+  if(dirty !== undefined) window.__tkDirty = !!dirty;
+  tkBanner();
+}
+function tkBanner(){
+  var el = document.getElementById('tk-offline-bar');
+  var off = window.__tkOffline || navigator.onLine === false;
+  var dirty = !!window.__tkDirty, txt = '', clickable = false;
+  if(window.__tkNoSDK && navigator.onLine !== false){ txt = 'Sudah online. Ketuk di sini untuk muat ulang & sinkronkan'; clickable = true; }
+  else if(!window.CURRENT_USER && off){ txt = 'Offline. Login pertama kali butuh internet'; }
+  else if(off){ txt = dirty ? 'Offline. Perubahan tersimpan di HP, dikirim otomatis saat online' : 'Mode offline. Kamu tetap bisa mencatat transaksi'; }
+  else if(dirty && window.CURRENT_USER){ txt = 'Menyinkronkan perubahan...'; }
+  if(!txt){ if(el) el.style.display = 'none'; return; }
+  if(!el){
+    el = document.createElement('div'); el.id = 'tk-offline-bar';
+    el.style.cssText = 'position:fixed; top:calc(env(safe-area-inset-top,0px) + 6px); left:50%; transform:translateX(-50%); z-index:99990; max-width:88vw; padding:5px 12px; border-radius:999px; font:600 11px/1.35 system-ui,sans-serif; text-align:center; background:#3A2A00; color:#FFD27A; border:1px solid #FFB020; box-shadow:0 4px 14px rgba(0,0,0,.35);';
+    el.addEventListener('click', function(){ if(el.getAttribute('data-reload')==='1') location.reload(); });
+    document.body.appendChild(el);
+  }
+  el.textContent = txt; el.setAttribute('data-reload', clickable ? '1' : '0');
+  el.style.cursor = clickable ? 'pointer' : 'default'; el.style.display = '';
+}
+
+/* ---- kirim ke server (dipanggil saveData) ---- */
+var _tkSoftToastAt = 0;
+function tkSend(uid, js, payload){
+  var ts = payload.updatedAt, mkey = 'main-'+uid;
+  window.__tkDirty = true;
+  TKM.set(mkey, { json:js, base:window.__tkBase||null, sent:ts, dirty:true, at:Date.now() });
+  if(window.__tkNoSDK || navigator.onLine === false){
+    window.__tkNeedCheck = true; window.__tkWasOffline = true; tkSetOffline(true, true);
+    return Promise.resolve();
+  }
+  var ref = fbDb.collection('users').doc(uid).collection('data').doc('main');
+  function ack(){
+    window.__tkBase = ts; (window.__tkSent = window.__tkSent || []).push(ts);
+    if(window.__tkSent.length > 30) window.__tkSent.shift();
+    if(window.__tkLastTs === ts){
+      window.__tkDirty = false; window.__tkNeedCheck = false;
+      TKM.set(mkey, { json:js, base:ts, sent:null, dirty:false, at:Date.now() });
+      tkSetOffline(false, false);
+      if(window.__tkWasOffline){ window.__tkWasOffline = false; toast('Perubahan offline sudah tersinkron'); }
+    }
+  }
+  function fail(e){
+    console.error(e);
+    window.__tkNeedCheck = true;
+    var net = navigator.onLine === false || (e && (e.code === 'unavailable' || e.code === 'deadline-exceeded'));
+    if(net){
+      window.__tkWasOffline = true; tkSetOffline(true, true);
+      if(Date.now() - _tkSoftToastAt > 60000){ _tkSoftToastAt = Date.now(); toast('Tidak ada koneksi. Perubahan disimpan di HP dan dikirim otomatis nanti'); }
+    } else { tkSetOffline(false, true); toast('Gagal menyimpan data ke server'); }
+  }
+  function push(){ return ref.set(payload).then(ack, fail); }
+  if(window.__tkNeedCheck){
+    /* sebelum mengirim hasil kerja offline, pastikan perangkat lain tidak menulis di sela waktu itu */
+    return ref.get({source:'server'}).then(function(snap){
+      var sd = snap.exists ? snap.data() : null;
+      var mine = window.__tkSent || [];
+      if(sd && sd.updatedAt && window.__tkBase && sd.updatedAt !== window.__tkBase && sd.updatedAt !== ts && mine.indexOf(sd.updatedAt) === -1){
+        return tkDecodeDoc(sd).then(function(srv){
+          tkBackupConflict(uid, js, srv);
+          DATA = tkMergeData(srv, JSON.parse(js)); applyDataDefaults();
+          window.__tkBase = sd.updatedAt; window.__tkNeedCheck = false;
+          toast('Perubahan offline digabung dengan data terbaru dari perangkat lain');
+          try{ rebuildAccounts(); refreshAccountSelectsAfterChange(); renderDashboard(); renderAkunInfo(); }catch(e){}
+          saveData();
+        });
+      }
+      return push();
+    }, fail);
+  }
+  return push();
+}
+
+/* ---- sinkron ulang saat internet kembali ---- */
+function tkSyncNow(){
+  tkBanner();
+  if(!window.CURRENT_USER || window.IS_GUEST || !window.CLOUD_SAFE || window.__tkNoSDK) return;
+  if(navigator.onLine === false) return;
+  if(window.__tkDirty) saveData();
+}
+window.addEventListener('online', function(){ tkBanner(); setTimeout(tkSyncNow, 800); });
+window.addEventListener('offline', function(){ tkSetOffline(true); });
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') tkSyncNow(); });
+setInterval(function(){ if(window.__tkDirty) tkSyncNow(); }, 30000);
+document.addEventListener('DOMContentLoaded', tkBanner);
+
+/* ---- service worker: supaya halaman & library tetap terbuka offline (hanya jalan kalau sw.js ada di folder yang sama, lewat https) ---- */
+try{
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+}catch(e){}
+
 </script>
 </body>
 </html>
