@@ -328,6 +328,30 @@
   .balance-line{font-size:12px; opacity:.8; margin-bottom:2px;}
   .balance-num{font-size:28px; font-weight:800; letter-spacing:-0.02em;}
   .hero-ptg{background:#7048E8;}
+
+  /* Detail aset: daftar rapi (label kiri, nilai kanan, garis tipis), aman untuk mode gelap & terang */
+  #view-inventaris-detail .invd-r{display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:13px 2px; border-bottom:1px solid color-mix(in srgb,var(--text) 10%,transparent);}
+  #view-inventaris-detail .invd-r:first-child{padding-top:6px;}
+  #view-inventaris-detail .invd-r:last-child{border-bottom:none; padding-bottom:4px;}
+  #view-inventaris-detail .invd-k{flex:0 0 auto; max-width:44%; font-size:13px; font-weight:600; color:var(--text-2); line-height:1.35;}
+  #view-inventaris-detail .invd-v{flex:1; min-width:0; text-align:right; font-size:14.5px; font-weight:700; color:var(--text); line-height:1.4; overflow-wrap:anywhere;}
+  #view-inventaris-detail .invd-v .invd-sub{display:block; margin-top:2px; font-size:11.5px; font-weight:500; color:var(--text-2);}
+  #view-inventaris-detail .invd-r.hl .invd-v{color:var(--primary); font-size:15.5px;}
+  #view-inventaris-detail .invd-r.muted .invd-v{color:var(--text-2); font-weight:500;}
+  #view-patungan .hero-ptg{display:flex; align-items:center; gap:12px; padding:14px 16px;}
+  #view-patungan .hero-ptg .hero-ic{width:40px; height:40px; margin-bottom:0; flex-shrink:0;}
+  #view-patungan .hero-ptg .hero-sub{margin-top:2px; max-width:100%;}
+  .ptg-steps{display:flex; gap:8px; margin-bottom:14px;}
+  .ptg-steps>div{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; font-size:11.5px; font-weight:700; color:var(--text-2); background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 4px;}
+  .ptg-steps b{width:22px; height:22px; border-radius:50%; background:var(--primary); color:var(--on-primary,#06201C); display:flex; align-items:center; justify-content:center; font-size:12px;}
+  .ptg-seg{display:flex; gap:4px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:14px;}
+  .ptg-seg button{flex:1; border:none; background:none; color:var(--text-2); font:700 13px var(--font-body); padding:10px 6px; border-radius:10px; cursor:pointer;}
+  .ptg-seg button.on{background:var(--primary); color:var(--on-primary,#06201C);}
+  .ptg-pane[hidden]{display:none;}
+  .ptg-chips{display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 14px;}
+  .ptg-chip{border:1px solid color-mix(in srgb,var(--primary) 35%,var(--line)); background:var(--primary-dim); color:var(--text-2); font:600 12px var(--font-body); padding:6px 12px; border-radius:999px; cursor:pointer;}
+  #view-patungan .field input:focus{border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 25%,transparent); outline:none;}
+  #view-patungan .btn:disabled{opacity:.45; cursor:not-allowed; filter:saturate(.6);}
   .catat-grid .qa[data-goto="patungan"] .ic{background:#7048E8;}
   #db-mode-switch{display:inline-flex; gap:2px; padding:3px; margin:6px 0 4px; border-radius:999px; background:rgba(255,255,255,0.14);}
   #db-mode-switch button{border:0; background:transparent; color:inherit; font:inherit; font-size:12px; font-weight:700; padding:5px 14px; border-radius:999px; cursor:pointer; opacity:.75;}
@@ -3320,8 +3344,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="back-row" data-goto="catat"><span data-icon="chevronLeft"></span><span>Kembali</span></div>
     <div class="hero-card hero-ptg">
       <div class="hero-ic">🤝</div>
-      <div class="hero-title">Dana Patungan</div>
-      <div class="hero-sub">Kantong uang bersama untuk dua akun berbeda. Setoran kamu dan pasanganmu masuk ke satu saldo yang sama, dan bisa dilihat di Beranda lewat tombol Pribadi / Patungan.</div>
+      <div><div class="hero-title">Dana Patungan</div><div class="hero-sub">Satu saldo bersama untuk kamu dan pasanganmu.</div></div>
     </div>
     <div id="ptg-body"></div>
   </main></div>
@@ -13557,8 +13580,9 @@ function bukaInventarisDetail(id){
   INVD_ID = id;
   go('inventaris-detail');
 }
-function invdRow(label, value){
-  return '<div class="acc-row"><span class="acc-name">'+escapeHtml(label)+'</span><span class="acc-val" style="text-align:right; max-width:60%;">'+value+'</span></div>';
+function invdRow(label, value, cls){
+  var c = 'invd-r' + (cls ? ' '+cls : '') + (String(value).indexOf('Belum diisi')>-1 ? ' muted' : '');
+  return '<div class="'+c+'"><span class="invd-k">'+escapeHtml(label)+'</span><span class="invd-v">'+value+'</span></div>';
 }
 function renderInventarisDetail(){
   var item = DATA.inventaris.filter(function(x){ return x.id===INVD_ID; })[0];
@@ -13607,9 +13631,9 @@ function renderInventarisDetail(){
     if(item.tglPinjam) rowsHtml += invdRow('Tanggal Dipinjam', escapeHtml(item.tglPinjam));
   }
   rowsHtml += invdRow('Tahun Perolehan', item.tahun ? String(item.tahun) : '-');
-  rowsHtml += invdRow('Harga Beli', fmt(item.harga||0));
+  rowsHtml += invdRow('Harga Beli', fmt(item.harga||0), 'hl');
   if(item.penyusutan) rowsHtml += invdRow('Penyusutan/Tahun', item.penyusutan+'%');
-  if(item.penyusutan) rowsHtml += invdRow('Estimasi Harga Wajar', fmt(hargaWajar)+' <span style="color:var(--text-2); font-weight:500; font-size:12px;">(sejak '+item.tahun+' • '+hitungUmurAset(item)+' th)</span>');
+  if(item.penyusutan) rowsHtml += invdRow('Estimasi Harga Wajar', fmt(hargaWajar)+'<span class="invd-sub">sejak '+item.tahun+' • '+hitungUmurAset(item)+' th</span>', 'hl');
   rowsHtml += invdRow(item.tempatBeli && invAsalNonBeli(item.tempatBeli) ? 'Asal' : 'Tempat Beli / Asal', escapeHtml(item.tempatBeli||'Belum diisi'));
   rowsHtml += invdRow('Lokasi Keberadaan', escapeHtml(item.lokasi||'Belum diisi'));
   var itemMapsLink = getLokasiMapsLink(item.lokasi) || item.lokasiMaps;
@@ -13625,7 +13649,7 @@ function renderInventarisDetail(){
     jualCard.style.display = '';
     jualRowsEl.innerHTML =
       invdRow('Tanggal Terjual', item.tanggalJual||'-')+
-      invdRow('Harga Jual', fmt(item.hargaJual||0))+
+      invdRow('Harga Jual', fmt(item.hargaJual||0), 'hl')+
       (item.untungRugiJual!==undefined ? invdRow('Untung/Rugi', '<span style="color:'+(item.untungRugiJual>=0?'var(--pos)':'var(--danger)')+'; font-weight:700;">'+(item.untungRugiJual>=0?'Untung ':'Rugi ')+fmt(Math.abs(item.untungRugiJual))+'</span> <span style="color:var(--text-2); font-size:11.5px;">(vs nilai wajar '+fmt(item.nilaiWajarSaatJual||0)+')</span>') : '')+
       invdRow('Rekening Penerimaan', escapeHtml(item.rekeningJual||'-'))+
       invdRow('Status Pembayaran', item.statusPembayaran==='Piutang'
@@ -20084,7 +20108,7 @@ if(document.readyState==='loading'){
  "Transaksi yang kamu hapus disimpan di sini selama 7 hari, lengkap dengan catatan terkait (mis. pengeluaran tertaut atau titipan dari transfer). Ketuk": "Transactions you delete are kept here for 7 days, along with related records (e.g. linked spending or held funds from a transfer). Tap",
  "untuk mengembalikannya ke tempat semula. Setelah 7 hari, atau kalau tempat sampah penuh, yang paling lama dihapus otomatis.": "to put it back where it was. After 7 days, or if the trash is full, the oldest are deleted automatically."
 });
-  (function(extra){ for(var k in extra) D[k]=extra[k]; })({"Dana Patungan": "Shared Fund", "Kantong uang bersama untuk dua akun berbeda. Setoran kamu dan pasanganmu masuk ke satu saldo yang sama, dan bisa dilihat di Beranda lewat tombol Pribadi / Patungan.": "A shared money pocket for two different accounts. Your deposits and your partner's go into one shared balance, which you can view on Home with the Personal / Shared switch.", "Saldo Dana Patungan": "Shared Fund Balance"});
+  (function(extra){ for(var k in extra) D[k]=extra[k]; })({"Dana Patungan": "Shared Fund", "Kantong uang bersama untuk dua akun berbeda. Setoran kamu dan pasanganmu masuk ke satu saldo yang sama, dan bisa dilihat di Beranda lewat tombol Pribadi / Patungan.": "A shared money pocket for two different accounts. Your deposits and your partner's go into one shared balance, which you can view on Home with the Personal / Shared switch.", "Saldo Dana Patungan": "Shared Fund Balance", "Satu saldo bersama untuk kamu dan pasanganmu.": "One shared balance for you and your partner."});
   (function(extra){ for(var k in extra) D[k]=extra[k]; })({
  "Jual Pulsa": "Sell Airtime",
  "Cari": "Search",
@@ -20461,8 +20485,21 @@ if(document.readyState==='loading'){
     if(m){ var n=m[0]; return n.length>=4 ? "'"+n.slice(-2) : n.slice(0,3); } /* tahun 2027 -> '27, angka lain utuh */
     return (t.charAt(0)||'•').toUpperCase();
   }
+  /* cari badge rekening: dari teks opsi, teks tanpa "(label)", teks tanpa akhiran " · saldo" (mis. "OVO · Rp0"),
+     lalu dari nilai opsi (nama rekening asli); rekening turunan memakai logo induknya */
+  function badgeFor(t,v,B){
+    var par=/\s*\(.*\)\s*$/, base=String(t).split(' \u00B7 ')[0].trim();
+    var cands=[t, String(t).replace(par,'').trim(), base, base.replace(par,'').trim(), v];
+    for(var i=0;i<cands.length;i++){ var c=cands[i]; if(c && B[c]) return B[c]; }
+    try{
+      var cu=(window.DATA&&DATA.accountsCustom)||[];
+      for(var j=0;j<cands.length;j++){ var n=cands[j]; if(!n) continue;
+        for(var k=0;k<cu.length;k++){ if(cu[k].nama===n && cu[k].induk && B[cu[k].induk]) return B[cu[k].induk]; } }
+    }catch(_){}
+    return undefined;
+  }
   function icon(t,v,opt){
-    var B=window.ACCOUNT_BADGE||{}, b=B[t]||B[t.replace(/\s*\(.*\)\s*$/,'').trim()];
+    var B=window.ACCOUNT_BADGE||{}, b=badgeFor(t,v,B);
     if(/^My XL\b/.test(t) && typeof window.getAccountBadge==='function'){ try{ b=getAccountBadge('My XL')||b; }catch(_){} }
     var d=document.createElement('span'); d.className='pk-ic'+((b&&b.img)?'':' pk-g');
     var jk=(!b && window.JENIS_ICON && window.ICONS) ? (JENIS_ICON[v]||JENIS_ICON[t]) : null;
@@ -22890,24 +22927,25 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
     });
     var held = [], sold = [];
     Object.keys(map).forEach(function(k){ var r = map[k]; r.sisa = r.beli - r.jual;
-      /* Instrumen berbasis lot (Saham, ETF): pembelian yang tidak mengisi jumlah lot dianggap 1 lot per transaksi
-         (pembelian BEI umumnya genap 1 lot). Penjualan tanpa lot diperkirakan dari modal terjual / modal per lot. */
+      /* Instrumen berbasis lot (Saham, ETF): satu pembelian bisa berisi banyak lot, jadi pembelian yang tidak mengisi lot
+         TIDAK ditebak. Selama masih ada pembelian tanpa lot, jumlah lot & harga rata-rata dianggap belum lengkap.
+         Penjualan tanpa lot hanya diperkirakan (modal terjual / modal per lot) kalau semua pembelian sudah ada lotnya. */
       var cu = unitCfg(r.instrumen);
       if(cu && cu.u==='lot'){
-        if(r.nBeliTanpaUnit>0){ r.uB += r.nBeliTanpaUnit*1e8; r.approx = true; }
-        if(r.jualTanpaUnit.length && r.uB>0){
+        if(r.nBeliTanpaUnit>0){ r.unitIncomplete = true; }
+        else if(r.jualTanpaUnit.length && r.uB>0){
           var perLot = r.beli / (r.uB/1e8);
           r.jualTanpaUnit.forEach(function(m){ r.uJ += Math.max(1, Math.round(m/perLot))*1e8; });
           r.approx = true;
         }
       }
-      r.unitSisa = Math.max(0, (r.uB - r.uJ)/1e8); (r.sisa > 0.5 ? held : sold).push(r); });
+      r.unitSisa = r.unitIncomplete ? 0 : Math.max(0, (r.uB - r.uJ)/1e8); (r.sisa > 0.5 ? held : sold).push(r); });
     return {held:held, sold:sold};
   }
   function keyOf(x){ return [x.instrumen||'-', x.platform||'-', x.kode||'(tanpa kode)'].join('|'); }
   function beliSub(x){
     var c = unitCfg(x.instrumen);
-    if(c && c.u==='lot' && !(x.unit>0)) return ' \u2022 1 lot*';
+    if(c && c.u==='lot' && !(x.unit>0)) return ' \u2022 lot belum dicatat';
     return unitSub(x);
   }
   function detailHtml(key){
@@ -22929,13 +22967,17 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   var PAL = ['#2DD4BF','#8B7CF6','#FFB020','#F472B6','#4DA3FF','#7BD88F'];
   function ini(k){ var t=String(k||'?').replace(/[^A-Za-z0-9]/g,''); return (t.slice(0,2)||'?').toUpperCase(); }
   function unitChip(r, isSold){
-    var c = unitCfg(r.instrumen); if(isSold || !c || !(r.unitSisa>0)) return '';
+    var c = unitCfg(r.instrumen);
+    if(!isSold && c && r.unitIncomplete) return ' <i class="pf-unit" title="Ada '+r.nBeliTanpaUnit+' pembelian tanpa jumlah lot">lot belum lengkap</i>';
+    if(isSold || !c || !(r.unitSisa>0)) return '';
     var avg = r.sisa / (r.unitSisa * c.mult);
     return ' <i class="pf-unit" title="Rata-rata '+escapeHtml(fmt(Math.round(avg)))+' per '+c.hl+'">'+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+(r.approx?'*':'')+'</i>';
   }
   function avgLine(r, isSold){
-    var c = unitCfg(r.instrumen); if(isSold || !c || !(r.unitSisa>0)) return '';
-    return '<span>Dimiliki '+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+' &bull; rata-rata '+fmt(Math.round(r.sisa/(r.unitSisa*c.mult)))+'/'+c.hl+(r.approx?' &bull; *asumsi 1 lot per pembelian tanpa jumlah lot':'')+'</span>';
+    var c = unitCfg(r.instrumen);
+    if(!isSold && c && r.unitIncomplete) return '<span>Lot belum dicatat di '+r.nBeliTanpaUnit+' pembelian, jadi jumlah lot dan harga rata-rata belum dihitung. Edit pembelian lalu isi lotnya.</span>';
+    if(isSold || !c || !(r.unitSisa>0)) return '';
+    return '<span>Dimiliki '+escapeHtml(fmtUnit(r.unitSisa,c))+' '+c.u+' &bull; rata-rata '+fmt(Math.round(r.sisa/(r.unitSisa*c.mult)))+'/'+c.hl+(r.approx?' &bull; *lot terjual diperkirakan dari modal':'')+'</span>';
   }
   function rowHtml(r, isSold, color, pct){
     var urTxt = r.nJual ? (' • Untung/rugi '+(r.ur>=0?'+':'-')+fmt(Math.abs(r.ur))) : '';
@@ -23006,11 +23048,24 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   function conn(){ return DATA && DATA.patunganPool && DATA.patunganPool.id ? DATA.patunganPool : null; }
   function mode(){ var m='pribadi'; try{ m = localStorage.getItem(MODE_KEY)==='patungan' ? 'patungan' : 'pribadi'; }catch(e){} return (m==='patungan' && conn()) ? 'patungan' : 'pribadi'; }
   function setMode(m){ try{ localStorage.setItem(MODE_KEY, m); }catch(e){} if(typeof renderDashboard==='function') renderDashboard(); }
+  var KODE_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  /* ambil kode undangan dari teks apa pun (kode saja, atau seluruh kalimat undangan yang dibagikan) */
+  function ekstrakKode(text){
+    var t = String(text||'').toUpperCase();
+    var m = t.match(/KODE\s*:?\s*([A-Z0-9]{6,12})\b/);
+    if(m) return m[1];
+    var toks = t.split(/[^A-Z0-9]+/).filter(function(x){ return x.length===8 && x.split('').every(function(c){ return KODE_CH.indexOf(c)>-1; }); });
+    if(toks.length) return toks[toks.length-1];
+    var plain = t.replace(/[^A-Z0-9]/g,'');
+    return plain.length<=12 ? plain : '';
+  }
   function genKode(){ var ch='ABCDEFGHJKMNPQRSTUVWXYZ23456789', o=''; for(var i=0;i<8;i++) o+=ch.charAt(Math.floor(Math.random()*ch.length)); return o; }
   function poolRef(id){ return fbDb.collection('patungan').doc(id); }
+  var NAMA_MAKS = 40;
+  function namaKantong(){ var c = conn(); return (S.pool && S.pool.nama) || (c && c.nama) || ''; }
   function errMsg(e){
     var c = e && e.code || '';
-    if(c==='permission-denied') return T('Izin ditolak oleh Firestore. Pasang Rules untuk koleksi "patungan" (lihat catatan di halaman ini).','Permission denied by Firestore. Add Rules for the "patungan" collection (see the note on this page).');
+    if(c==='permission-denied') return T('Izin ditolak oleh Firestore. Pastikan Rules untuk koleksi "patungan" sudah dipasang di Firebase Console.','Permission denied by Firestore. Make sure the Rules for the "patungan" collection are published in Firebase Console.');
     return (e && e.message) ? e.message : String(e);
   }
 
@@ -23047,6 +23102,8 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
     S.unsubPool = poolRef(c.id).onSnapshot(function(d){
       if(!d.exists){ S.status='error'; S.err=T('Kantong patungan tidak ditemukan.','Shared pocket not found.'); refresh(); return; }
       var x = d.data(); x._id = d.id; S.pool = x; S.status='ok'; S.err='';
+      /* nama kantong bisa diubah oleh anggota lain: samakan salinan lokal supaya Dashboard ikut berubah */
+      try{ if(x.nama && DATA.patunganPool && DATA.patunganPool.id===d.id && DATA.patunganPool.nama!==x.nama){ DATA.patunganPool.nama = x.nama; saveData(); } }catch(e){}
       if(S.pool.memberIds.indexOf(CURRENT_USER.id)===-1){ S.status='error'; S.err=T('Kamu bukan anggota kantong ini.','You are not a member of this pocket.'); }
       refresh();
     }, function(e){ S.status='error'; S.err=errMsg(e); refresh(); });
@@ -23074,7 +23131,7 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
     }).catch(function(e){ toast(errMsg(e)); });
   }
   function gabung(){
-    var kode = ($('ptg-kode').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+    var kode = ekstrakKode($('ptg-kode').value);
     if(kode.length<6){ toast(T('Masukkan kode undangan yang benar','Enter a valid invite code')); return; }
     var me = CURRENT_USER;
     poolRef(kode).get().then(function(d){
@@ -23127,6 +23184,28 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
       }).catch(function(e){ toast(errMsg(e)); });
     }, T('Ya, Hapus','Yes, Delete'));
   }
+  function ubahNama(){
+    var c = conn(); if(!c || S.status!=='ok'){ toast(T('Belum terhubung ke kantong patungan','Not connected to the shared pocket yet')); return; }
+    var inp = $('ptg-nama-edit'); if(!inp) return;
+    var nama = (inp.value||'').replace(/\s+/g,' ').trim();
+    if(!nama){ toast(T('Isi nama kantong dulu','Enter the pocket name first')); return; }
+    if(nama.length>NAMA_MAKS){ toast(T('Nama maksimal '+NAMA_MAKS+' karakter','Name can be at most '+NAMA_MAKS+' characters')); return; }
+    if(nama===namaKantong()){ inp.removeAttribute('data-dirty'); toast(T('Nama tidak berubah','Name unchanged')); return; }
+    var btn = $('ptg-nama-simpan'); if(btn) btn.disabled = true;
+    poolRef(c.id).update({ nama:nama }).then(function(){
+      DATA.patunganPool.nama = nama; saveData();
+      inp.removeAttribute('data-dirty');
+      toast(T('Nama kantong diperbarui','Pocket name updated'));
+      if(typeof renderDashboard==='function') renderDashboard();
+      refresh();
+    }).catch(function(e){ toast(errMsg(e)); }).then(function(){ var b=$('ptg-nama-simpan'); if(b) b.disabled=false; });
+  }
+  function salinKodeSaja(){
+    var c = conn(); if(!c) return;
+    function ok(){ toast(T('Kode '+c.id+' disalin','Code '+c.id+' copied')); }
+    function fb(){ try{ var ta=document.createElement('textarea'); ta.value=c.id; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); ok(); }catch(e){ toast(c.id); } }
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c.id).then(ok, fb); else fb();
+  }
   function salinKode(){
     var c = conn(); if(!c) return;
     var teks = T('Gabung ke dana patungan "'+c.nama+'" di Tumbuh Kaya. Kode: '+c.id, 'Join the shared fund "'+c.nama+'" in Tumbuh Kaya. Code: '+c.id);
@@ -23135,23 +23214,37 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   }
 
   /* ---------- tampilan halaman ---------- */
+  var TAB = 'buat';
+  function setTab(t){
+    TAB = t; var root = $('ptg-body'); if(!root) return;
+    Array.prototype.forEach.call(root.querySelectorAll('[data-ptg-tab]'), function(x){ x.classList.toggle('on', x.getAttribute('data-ptg-tab')===t); });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-ptg-pane]'), function(x){ x.hidden = x.getAttribute('data-ptg-pane')!==t; });
+  }
   function namaAnggota(uid){ var p=S.pool; return (p && p.anggota && p.anggota[uid] && p.anggota[uid].nama) || T('Anggota','Member'); }
   function renderView(){
     var el = $('ptg-body'); if(!el) return;
     var c = conn(), h='';
+    var _pn = $('ptg-nama'), keepPn = _pn ? _pn.value : '';
+    var _ne = $('ptg-nama-edit'), keepNama = (_ne && _ne.getAttribute('data-dirty')==='1') ? _ne.value : null, hadFocus = !!(_ne && document.activeElement===_ne);
     if(!c){
-      h += '<div class="card"><h3><span class="dot"></span>'+T('Buat Kantong Patungan','Create a Shared Pocket')+'</h3>'+
-        '<div class="hint" style="margin-bottom:8px;">'+T('Kantong uang bersama untuk dua akun. Setoran dari kamu dan pasanganmu masuk ke satu saldo yang sama.','A shared money pocket for two accounts. Deposits from you and your partner go into one shared balance.')+'</div>'+
+      h += '<div class="ptg-steps"><div><b>1</b>'+T('Buat kantong','Create pocket')+'</div><div><b>2</b>'+T('Bagikan kode','Share the code')+'</div><div><b>3</b>'+T('Setor bareng','Deposit together')+'</div></div>'+
+        '<div class="ptg-seg"><button type="button" data-ptg-tab="buat" class="'+(TAB==='buat'?'on':'')+'">'+T('Buat baru','Create new')+'</button><button type="button" data-ptg-tab="gabung" class="'+(TAB==='gabung'?'on':'')+'">'+T('Gabung dengan kode','Join with code')+'</button></div>'+
+        '<div class="ptg-pane" data-ptg-pane="buat"'+(TAB==='buat'?'':' hidden')+'><div class="card"><h3><span class="dot"></span>'+T('Buat Kantong Patungan','Create a Shared Pocket')+'</h3>'+
         '<div class="field"><label>'+T('Nama Kantong','Pocket Name')+'</label><input type="text" id="ptg-nama" placeholder="'+T('cth: Dana Nikah, Liburan Berdua','e.g. Wedding Fund, Trip for Two')+'"></div>'+
-        '<button class="btn" id="ptg-buat" type="button">'+T('Buat Kantong','Create Pocket')+'</button></div>'+
-        '<div class="card"><h3><span class="dot"></span>'+T('Gabung dengan Kode','Join with a Code')+'</h3>'+
+        '<div class="ptg-chips">'+
+          '<button type="button" class="ptg-chip" data-ptg-chip="'+T('Dana Nikah','Wedding Fund')+'">'+T('Dana Nikah','Wedding Fund')+'</button>'+
+          '<button type="button" class="ptg-chip" data-ptg-chip="'+T('Liburan Berdua','Trip for Two')+'">'+T('Liburan Berdua','Trip for Two')+'</button>'+
+          '<button type="button" class="ptg-chip" data-ptg-chip="'+T('Tabungan Rumah','House Savings')+'">'+T('Tabungan Rumah','House Savings')+'</button>'+
+        '</div>'+
+        '<button class="btn" id="ptg-buat" type="button" disabled>'+T('Buat Kantong','Create Pocket')+'</button></div></div>'+
+        '<div class="ptg-pane" data-ptg-pane="gabung"'+(TAB==='gabung'?'':' hidden')+'><div class="card"><h3><span class="dot"></span>'+T('Gabung dengan Kode','Join with a Code')+'</h3>'+
         '<div class="hint" style="margin-bottom:8px;">'+T('Minta kode undangan dari pasanganmu yang sudah membuat kantong, lalu tempel di sini.','Ask your partner who created the pocket for the invite code, then paste it here.')+'</div>'+
-        '<div class="field"><label>'+T('Kode Undangan','Invite Code')+'</label><input type="text" id="ptg-kode" maxlength="12" autocapitalize="characters" placeholder="ABCD2345" style="text-transform:uppercase; letter-spacing:.12em;"></div>'+
-        '<button class="btn ghost" id="ptg-gabung" type="button">'+T('Gabung','Join')+'</button></div>';
+        '<div class="field"><label>'+T('Kode Undangan','Invite Code')+'</label><input type="text" id="ptg-kode" autocapitalize="characters" placeholder="ABCD2345" style="text-transform:uppercase; letter-spacing:.12em;"></div>'+
+        '<button class="btn ghost" id="ptg-gabung" type="button">'+T('Gabung','Join')+'</button></div></div>';
     } else {
       var p = S.pool, saldo = saldoPool();
       h += '<div class="card" style="text-align:center;">'+
-        '<div class="hint" style="margin:0;">'+esc(c.nama)+'</div>'+
+        '<div class="hint" style="margin:0;">'+esc(namaKantong())+'</div>'+
         '<div class="mono" style="font-size:30px; font-weight:800; margin:4px 0 2px;">'+(S.status==='ok'?maskOrFmt(saldo):'…')+'</div>'+
         '<div class="hint" style="margin:0;">'+T('Saldo dana patungan','Shared fund balance')+'</div>'+
         (S.status==='error' ? '<div class="hint" style="color:var(--danger); margin-top:8px;">'+esc(S.err)+'</div>' : '')+
@@ -23164,11 +23257,15 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
         });
         if(p.memberIds.length < (p.maksAnggota||MAKS_ANGGOTA)){
           h += '<div class="hint" style="margin-top:10px;">'+T('Menunggu satu akun lagi. Bagikan kode undangan:','Waiting for one more account. Share the invite code:')+'</div>'+
-            '<div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><span class="mono" style="font-size:20px; letter-spacing:.14em; font-weight:800; flex:1;">'+esc(c.id)+'</span><button class="btn ghost" id="ptg-share" type="button" style="width:auto; padding:8px 14px;">'+T('Bagikan','Share')+'</button></div>';
+            '<div style="display:flex; gap:8px; align-items:center; margin-top:6px;"><span class="mono" style="font-size:20px; letter-spacing:.14em; font-weight:800; flex:1;">'+esc(c.id)+'</span><button class="btn ghost" id="ptg-salin" type="button" style="width:auto; padding:8px 14px;">'+T('Salin Kode','Copy Code')+'</button><button class="btn ghost" id="ptg-share" type="button" style="width:auto; padding:8px 14px;">'+T('Bagikan','Share')+'</button></div>';
         } else {
-          h += '<div class="hint" style="margin-top:10px;">'+T('Kode undangan:','Invite code:')+' <b class="mono">'+esc(c.id)+'</b></div>';
+          h += '<div style="display:flex; gap:8px; align-items:center; margin-top:10px;"><span class="hint" style="margin:0;">'+T('Kode undangan:','Invite code:')+' <b class="mono">'+esc(c.id)+'</b></span><button class="btn ghost" id="ptg-salin" type="button" style="width:auto; padding:6px 12px; margin:0 0 0 auto;">'+T('Salin Kode','Copy Code')+'</button></div>';
         }
         h += '</div>';
+        h += '<div class="card"><h3><span class="dot"></span>'+T('Nama Kantong','Pocket Name')+'</h3>'+
+          '<div class="hint" style="margin-bottom:8px;">'+T('Nama ini terlihat oleh semua anggota kantong.','This name is visible to all members of the pocket.')+'</div>'+
+          '<div class="field"><label>'+T('Nama Kantong','Pocket Name')+'</label><input type="text" id="ptg-nama-edit" maxlength="'+NAMA_MAKS+'" value="'+esc(namaKantong())+'" autocomplete="off"></div>'+
+          '<button class="btn ghost" id="ptg-nama-simpan" type="button">'+T('Simpan Nama','Save Name')+'</button></div>';
         h += '<div class="card"><h3><span class="dot"></span>'+T('Setor / Tarik','Deposit / Withdraw')+'</h3>'+
           '<div class="field"><label>'+T('Aksi','Action')+'</label><select id="ptg-tipe"><option value="setor">'+T('Setor ke patungan','Deposit to pocket')+'</option><option value="tarik">'+T('Tarik dari patungan','Withdraw from pocket')+'</option></select></div>'+
           '<div class="field"><label>'+T('Rekening Saya','My Account')+'</label><select id="ptg-rekening"></select></div>'+
@@ -23190,10 +23287,9 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
       }
       h += '<button class="btn ghost" id="ptg-putus" type="button" style="margin-top:4px;">'+T('Putuskan Sambungan','Disconnect')+'</button>';
     }
-    h += '<div class="card"><h3><span class="dot"></span>'+T('Catatan Pengaturan Firestore','Firestore Setup Note')+'</h3>'+
-      '<div class="hint" style="margin-bottom:8px;">'+T('Fitur ini memakai koleksi baru "patungan". Satu kali saja, tambahkan Rules ini di Firebase Console → Firestore → Rules (di dalam match /databases/{database}/documents):','This feature uses a new "patungan" collection. Once only, add these Rules in Firebase Console → Firestore → Rules (inside match /databases/{database}/documents):')+'</div>'+
-      '<pre id="ptg-rules" style="white-space:pre-wrap; font-size:10.5px; background:var(--input-bg); padding:10px; border-radius:10px; overflow:auto; user-select:all;">'+esc(RULES)+'</pre></div>';
     el.innerHTML = h;
+    if(keepPn){ var pn = $('ptg-nama'); if(pn){ pn.value = keepPn; var pb = $('ptg-buat'); if(pb) pb.disabled = !keepPn.trim(); } }
+    if(keepNama!==null){ var ne = $('ptg-nama-edit'); if(ne){ ne.value = keepNama; ne.setAttribute('data-dirty','1'); if(hadFocus){ try{ ne.focus(); }catch(e){} } } }
     fillRek();
   }
   function fillRek(){
@@ -23202,7 +23298,6 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
     sel.innerHTML = ACCOUNTS.map(function(a){ return '<option value="'+esc(a)+'">'+esc(accountOptionLabel(a))+' · '+maskOrFmt(saldoAkun(a))+'</option>'; }).join('');
     if(cur) sel.value = cur;
   }
-  var RULES = "match /patungan/{pid} {\n  allow get: if request.auth != null;\n  allow create: if request.auth != null\n    && request.resource.data.memberIds == [request.auth.uid];\n  allow update: if request.auth != null && (\n    request.auth.uid in resource.data.memberIds\n    || (resource.data.memberIds.size() < resource.data.maksAnggota\n        && request.auth.uid in request.resource.data.memberIds\n        && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1\n        && request.resource.data.memberIds.hasAll(resource.data.memberIds)\n        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds','anggota'])));\n  match /mutasi/{mid} {\n    allow read, create: if request.auth != null\n      && request.auth.uid in get(/databases/$(database)/documents/patungan/$(pid)).data.memberIds;\n    allow delete: if request.auth != null\n      && resource.data.uid == request.auth.uid;\n  }\n}";
 
   /* ---------- Dashboard: switch Pribadi / Patungan ---------- */
   function renderDash(){
@@ -23245,13 +23340,24 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   document.addEventListener('click', function(e){
     var t = e.target; if(!t || !t.closest) return;
     var b;
-    if((b=t.closest('#ptg-buat'))) buat();
+    if((b=t.closest('[data-ptg-tab]'))) setTab(b.getAttribute('data-ptg-tab'));
+    else if((b=t.closest('[data-ptg-chip]'))){ var ni = $('ptg-nama'); if(ni){ ni.value = b.getAttribute('data-ptg-chip'); ni.dispatchEvent(new Event('input',{bubbles:true})); } }
+    else if((b=t.closest('#ptg-buat'))) buat();
     else if((b=t.closest('#ptg-gabung'))) gabung();
     else if((b=t.closest('#ptg-putus'))) putus();
     else if((b=t.closest('#ptg-simpan'))) simpanMutasi();
     else if((b=t.closest('#ptg-share'))) salinKode();
+    else if((b=t.closest('#ptg-salin'))) salinKodeSaja();
+    else if((b=t.closest('#ptg-nama-simpan'))) ubahNama();
     else if((b=t.closest('[data-ptg-del]'))){ e.preventDefault(); hapusMutasi(b.getAttribute('data-ptg-del')); }
   });
+  document.addEventListener('input', function(e){
+    var t = e.target; if(!t) return;
+    if(t.id==='ptg-nama-edit') t.setAttribute('data-dirty','1');
+    else if(t.id==='ptg-nama'){ var bb = $('ptg-buat'); if(bb) bb.disabled = !(t.value||'').trim(); }
+    else if(t.id==='ptg-kode'){ var v = t.value; if(v.length>12 || /[^A-Za-z0-9]/.test(v)){ var k = ekstrakKode(v); if(k) t.value = k; } }
+  });
+  document.addEventListener('keydown', function(e){ var t = e.target; if(t && t.id==='ptg-nama-edit' && e.key==='Enter'){ e.preventDefault(); ubahNama(); } });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', injectDash); else injectDash();
 
   window.PTG = { mode:mode, start:start, renderView:renderView, renderDash:renderDash, efekAkun:efekAkun, shareAt:shareAt, state:S };
@@ -25449,17 +25555,18 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     (DATA.invbeli||[]).forEach(function(b){
       if(b.instrumen!=='Saham') return; var k = nk(b.kode); if(!k) return;
       var o = h[k] || (h[k] = {kode:k, lot:0, modal:0, platform:'', unitOk:true, held:false});
-      /* pembelian tanpa jumlah lot dianggap 1 lot (pembelian BEI umumnya genap 1 lot) */
+      /* pembelian tanpa jumlah lot TIDAK ditebak (satu pembelian bisa banyak lot): ditandai unitOk=false */
       o.modal += b.jumlah||0; if(b.platform) o.platform = b.platform;
-      if(b.unit>0) o.lot += b.unit; else { o.lot += 1; o.unitOk = false; }
+      if(b.unit>0) o.lot += b.unit; else { o.tanpaLot = (o.tanpaLot||0)+1; o.unitOk = false; }
     });
     (DATA.invjual||[]).forEach(function(s){
       if(s.instrumen!=='Saham') return; var k = nk(s.kode); if(!k || !h[k]) return;
       var mj = (s.modal!==undefined && s.modal!==null && s.modal!=='') ? s.modal : (s.jumlah||0);
       if(s.unit>0) h[k].lot -= s.unit;
       else { /* penjualan tanpa lot: perkirakan dari modal terjual / modal per lot */
-        var perLot = h[k].lot>0 ? h[k].modal/h[k].lot : 0;
-        h[k].lot -= perLot>0 ? Math.max(1, Math.round(mj/perLot)) : 0; h[k].unitOk = false;
+        var perLot = (h[k].lot>0 && !h[k].tanpaLot) ? h[k].modal/h[k].lot : 0;
+        if(perLot>0) h[k].lot -= Math.max(1, Math.round(mj/perLot));
+        h[k].unitOk = false;
       }
       h[k].modal -= mj;
     });
@@ -25541,12 +25648,13 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     dvHist();
     var h = dvHoldings()[nk(kode)];
     if(!h) return;
-    if(h.lot>0 && !$('dv-jml').value){ $('dv-jml').value = String(h.lot); $('dv-unit').value = 'lot'; }
+    if(h.lot>0 && h.unitOk && !$('dv-jml').value){ $('dv-jml').value = String(h.lot); $('dv-unit').value = 'lot'; }
     if(h.platform && !$('dv-platform').value){ try{ $('dv-platform').value = h.platform; }catch(e){} }
   }
 
   function dvLotTxt(o){
-    if(o.lot>0) return fmtDec(o.lot)+' lot'+(o.unitOk ? '' : '*');
+    if(o.lot>0 && o.unitOk) return fmtDec(o.lot)+' lot';
+    if(o.lot>0) return fmtDec(o.lot)+' lot*'; /* * = ada pembelian tanpa lot, jumlah belum lengkap */
     return L('lot belum dicatat','lot not recorded');
   }
   function dvRenderChips(){
@@ -25600,7 +25708,7 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
       realized += (x.untungRugi!==undefined ? x.untungRugi : ((x.jumlah||0)-mod-(x.fee||0))); nJual++;
     });
     (DATA.invbeli||[]).forEach(function(x){ if(x.instrumen==='Saham' && nk(x.kode)===k) totBeli += x.jumlah||0; });
-    var lembar = h.lot*100, avg = lembar>0 ? h.modal/lembar : 0;
+    var lembar = h.lot*100, avg = (lembar>0 && h.unitOk!==false) ? h.modal/lembar : 0;
     function sg(v){ return '<b class="mono '+(v>0?'pos':(v<0?'neg':''))+'">'+(v>0?'+':(v<0?'\u2212':''))+fmt(Math.abs(v))+'</b>'; }
     var yrs = Object.keys(byYear).sort().reverse();
     var rows = yrs.map(function(y){
@@ -25611,8 +25719,8 @@ html[data-theme="light"] #db-compact > .dc-t:has(.dc-ok){--ac:#19B894;} /* kondi
     var yocAll = totBeli>0 ? Math.round(totalReturn/totBeli*10000)/100 : null;
     box.innerHTML =
       '<div class="ttl">'+esc(k)+' \u2022 '+L('Portofolio & riwayat return','Portfolio & return history')+'</div>'+
-      '<div class="r"><span>'+L('Kepemilikan','Holding')+'</span><b class="mono">'+(h.lot>0 ? fmtDec(h.lot)+' lot ('+fmtDec(lembar)+' '+L('lembar','shares')+')' : L('sudah habis dijual','fully sold'))+'</b></div>'+
-      (h.lot>0 && h.modal>0 ? '<div class="r"><span>'+L('Modal / harga rata-rata','Cost / average price')+'</span><b class="mono">'+fmt(h.modal)+' \u2022 Rp'+fmtDec(avg)+'</b></div>' : '')+
+      '<div class="r"><span>'+L('Kepemilikan','Holding')+'</span><b class="mono">'+(h.lot>0 ? fmtDec(h.lot)+' lot ('+fmtDec(lembar)+' '+L('lembar','shares')+')'+(h.unitOk===false ? '*' : '') : (h.modal>0.01 ? L('lot belum dicatat','lot not recorded') : L('sudah habis dijual','fully sold')))+'</b></div>'+
+      (h.lot>0 && h.modal>0 && h.unitOk!==false ? '<div class="r"><span>'+L('Modal / harga rata-rata','Cost / average price')+'</span><b class="mono">'+fmt(h.modal)+' \u2022 Rp'+fmtDec(avg)+'</b></div>' : '')+
       '<div class="sub">'+L('Dividen diterima (bersih)','Dividends received (net)')+'</div>'+
       (rows || '<div class="r"><span><small>'+L('Belum ada dividen dicatat untuk saham ini.','No dividends recorded for this stock yet.')+'</small></span></div>')+
       '<div class="sub">'+L('Total return tercatat','Recorded total return')+'</div>'+
@@ -26244,6 +26352,28 @@ html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):
 html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn:not(.ghost):not(.danger) svg{color:#06332E !important; stroke:currentColor;}
 html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .btn.ghost{
   background:linear-gradient(135deg,#34E0C8 0%,#1FC2AB 100%) !important; color:#06332E !important;}
+
+/* ===== Mode Desktop: angka total saldo diseragamkan dengan angka saldo per rekening =====
+   Kartu "Saldo per rekening": total kartu (.dc-tot, 12.5px) dan total tiap grup (.accg-total, 13px)
+   disamakan dengan angka saldo per rekening (.acc-val, 14px, tebal 700). */
+html[data-layout="desktop"] #db-compact .dc-tot,
+html[data-layout="desktop"] #db-compact .accg-total,
+html[data-layout="desktop"] #view-dashboard .accg-total{font-size:14px !important; font-weight:700 !important;}
+
+/* ===== Beranda: kartu Perlu perhatian / Jatuh tempo, Stok perlu dibeli, Insight dirapikan (mode gelap & terang) =====
+   - gelembung hiasan di pojok kartu dimatikan di 3 kartu ini (menimpa isi)
+   - kartu stok di HP tersusun 2 kolom, tidak lagi digeser & terpotong
+   - nama panjang boleh turun 2 baris, bukan dipotong titik-titik
+   - tiga kotak statistik Insight tinggi labelnya sama */
+#view-dashboard #db-reminder-wrap::before,#view-dashboard #db-stok-wrap::before,#view-dashboard #db-insight-card::before{display:none !important;}
+html:not([data-layout="desktop"]) .sk-chips{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; overflow:visible; padding:0; -webkit-mask-image:none; mask-image:none;}
+html:not([data-layout="desktop"]) .sk-chip,html:not([data-layout="desktop"]) .sk-more{width:auto; min-width:0; flex:none;}
+html:not([data-layout="desktop"]) .sk-more{min-height:64px;}
+.sk-n{overflow-wrap:anywhere; word-break:break-word;}
+.rm-t strong{white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere;}
+.rm-t small{white-space:normal; overflow-wrap:anywhere;}
+.ins-stat{justify-content:space-between;}
+.ins-stat span{min-height:2.5em; display:flex; align-items:center; justify-content:center;}
 </style>
 <script id="tk-widep-js">
 /* Sidebar otomatis ringkas di HP potret (kecuali user pernah memilih "lebar"); kembali normal saat lanskap */
