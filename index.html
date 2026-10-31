@@ -329,6 +329,15 @@
   .balance-num{font-size:28px; font-weight:800; letter-spacing:-0.02em;}
   .hero-ptg{background:#7048E8;}
 
+  /* Target selesai: terlipat di bawah daftar aktif */
+  .gs-wrap{margin:6px 0 14px;}
+  .gs-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-radius:14px; cursor:pointer; font-size:14px; font-weight:700; color:var(--text); background:color-mix(in srgb,var(--text) 6%,transparent); border:1px solid color-mix(in srgb,var(--text) 12%,transparent); -webkit-tap-highlight-color:transparent;}
+  .gs-head .sub{font-size:12px; font-weight:500; color:var(--text-2); margin-top:1px;}
+  .gs-head svg{flex-shrink:0; transition:transform .15s;}
+  .gs-wrap.open .gs-head svg{transform:rotate(180deg);}
+  .gs-body{display:none; margin-top:10px;}
+  .gs-wrap.open .gs-body{display:block;}
+
   /* Master item: ringkas, dikelompokkan per kategori */
   .itm-filter{display:flex; gap:8px; margin-bottom:6px;}
   .itm-filter .field{margin:0; min-width:0; flex:1;}
@@ -2490,7 +2499,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div style="font-size:11.5px; color:var(--text-2); margin-top:4px;">Kalau 1 Renceng isinya 10 Pcs, isi 10 lalu pilih Pcs. Stok jadi dihitung per Pcs, jadi bisa dikeluarkan 1 Pcs tanpa menghabiskan 1 Renceng. Berlaku juga untuk 1 Kg = beberapa butir. Kosongkan kalau tidak perlu.</div>
       </div>
       <div class="field bl-single"><label>Harga per Item (Rp, opsional)</label><input type="text" class="money-input" id="bl-harga-satuan" placeholder="0" inputmode="numeric">
-        <div style="font-size:11.5px; color:var(--text-2); margin-top:4px;">Isi ini biar Jumlah (Rp) di bawah otomatis kehitung dari Qty × Harga per Item. Jumlah (Rp) tetap bisa diubah manual kalau ada diskon dll.</div>
+        <div style="font-size:11.5px; color:var(--text-2); margin-top:4px;">Harga per Item dan Jumlah (Rp) saling terhubung: isi salah satu, yang lain otomatis kehitung dari Qty. Kalau ada diskon, ubah Jumlah (Rp) saja, harga per item ikut menyesuaikan.</div>
       </div>
       <div class="field"><label style="display:flex; align-items:center; justify-content:space-between;"><span>Lokasi Keberadaan</span><span data-goto="kelola-kategori" data-kk="lokasiInventaris" style="font-size:11.5px; font-weight:700; color:var(--primary); cursor:pointer;">Kelola Kategori</span></label><select id="bl-lokasi"></select>
         <div id="bl-lokasi-maps-preview" style="font-size:11.5px; color:var(--text-2); margin-top:4px;"></div>
@@ -7527,14 +7536,24 @@ function onItemChange(){
 }
 /* Qty x Harga per Item -> otomatis isi Jumlah (Rp). Jumlah tetap bisa diubah manual (cth: diskon),
    tapi begitu Qty atau Harga per Item diubah lagi, Jumlah dihitung ulang dari situ. */
-function blRecalcJumlah(){
-  var hargaEl = document.getElementById('bl-harga-satuan');
-  if(!hargaEl) return;
-  var harga = parseMoneyValue(hargaEl.value);
-  if(!harga) return; // belum diisi harga satuan, biarkan Jumlah diisi manual
-  var qty = stokBulat(parseFloat(document.getElementById('bl-qty').value));
-  if(!qty || qty<=0) qty = 1;
-  document.getElementById('bl-jumlah').value = formatMoneyValue(Math.round(harga * qty));
+/* Harga per Item <-> Jumlah (Rp) saling terhubung dua arah.
+   src: kolom yang baru diubah ('harga' | 'jumlah' | 'qty'). 'anchor' = kolom yang terakhir diisi langsung: kalau Qty berubah,
+   kolom lainnya dihitung ulang dari anchor itu (jadi Jumlah yang sudah dikoreksi karena diskon tidak tertimpa). Mengembalikan anchor baru. */
+function hjLink(hargaEl, jmlEl, qtyEl, src, anchor){
+  var qty = stokBulat(parseFloat(qtyEl.value)); if(!qty || qty<=0) qty = 1;
+  var harga = parseMoneyValue(hargaEl.value), jml = parseMoneyValue(jmlEl.value);
+  if(src==='qty') src = (anchor==='jumlah' && jml>0) ? 'jumlah' : 'harga'; else anchor = src;
+  if(src==='harga'){ if(harga>0) jmlEl.value = formatMoneyValue(Math.round(harga * qty)); }
+  else { hargaEl.value = jml>0 ? formatMoneyValue(Math.round(jml / qty)) : ''; }
+  return anchor;
+}
+var blAnchor = 'harga';
+function blRecalcJumlah(ev){
+  var hargaEl = document.getElementById('bl-harga-satuan'), jmlEl = document.getElementById('bl-jumlah'), qtyEl = document.getElementById('bl-qty');
+  if(!hargaEl || !jmlEl || !qtyEl) return;
+  var id = ev && ev.target ? ev.target.id : '';
+  var src = id==='bl-jumlah' ? 'jumlah' : (id==='bl-harga-satuan' ? 'harga' : 'qty');
+  blAnchor = hjLink(hargaEl, jmlEl, qtyEl, src, blAnchor);
 }
 var piPelunasan = 'dibayar';
 function setPelunasan(val){
@@ -8360,7 +8379,10 @@ function blMultiInit(){
   wrap.addEventListener('input', function(ev){
     var t = ev.target, row = t.closest('.bl-mrow');
     if(!row) return;
-    if(t.classList.contains('bl-m-qty') || t.classList.contains('bl-m-harga')) blMultiRecalcRow(row);
+    if(t.classList.contains('bl-m-qty') || t.classList.contains('bl-m-harga') || t.classList.contains('bl-m-jml')){
+      var srcM = t.classList.contains('bl-m-jml') ? 'jumlah' : (t.classList.contains('bl-m-harga') ? 'harga' : 'qty');
+      row._anchor = hjLink(row.querySelector('.bl-m-harga'), row.querySelector('.bl-m-jml'), row.querySelector('.bl-m-qty'), srcM, row._anchor || 'harga');
+    }
     blMultiUpdateTotal();
   });
   wrap.addEventListener('change', function(ev){
@@ -8467,7 +8489,7 @@ function submitBelanja(){
   document.getElementById('bl-jumlah').value=''; document.getElementById('bl-ket').value=''; setMerchant('bl','');
   document.getElementById('bl-qty').value='1';
   if(document.getElementById('bl-isi')) document.getElementById('bl-isi').value='';
-  document.getElementById('bl-harga-satuan').value='';
+  document.getElementById('bl-harga-satuan').value=''; blAnchor = 'harga';
   renderBelanjaProgress(); renderBelanjaList();
   renderStokBarangList(); renderStokRiwayatList();
   if(!isEdit) openStruk('belanja', DATA.belanja.length-1);
@@ -9699,7 +9721,7 @@ function renderTodaySummary(){
 }
 function openTodayModal(kind){
   var t = todayISO(), all = buildAllTransactions().filter(function(x){ return x.tanggal===t; });
-  var keluarTipe = {Keluar:1, Belanja:1, Tagihan:1}, list, total, note = '';
+  var keluarTipe = {Keluar:1, Belanja:1, Tagihan:1, 'Cicilan Hutang':1}, list, total, note = '';
   if(kind==='masuk'){
     list = all.filter(function(x){ return x.type==='pemasukan'; });
     total = todayPemasukanTotal();
@@ -9707,9 +9729,15 @@ function openTodayModal(kind){
     document.getElementById('today-modal-total').textContent = 'Total '+maskOrFmt(total)+' \u2022 '+list.length+' transaksi';
   } else {
     list = all.filter(function(x){ return keluarTipe[x.tipe]; });
+    /* Pelunasan hutang sekaligus hari ini (sisa pinjaman dibayar penuh, bukan lewat cicilan) */
+    DATA.hutang.forEach(function(x, i){
+      var sisa = sisaPinjamAkhir(x);
+      if(x.status==='Lunas' && x.tglLunasAt===t && sisa>0) list.push({ tanggal:t, jumlah:sisa, tipe:'Bayar Hutang', label:(x.untuk||'-')+' \u2022 '+accountOptionLabel(x.metodeBayar||x.metode), sign:-1, type:'hutang', index:i, ket:x.ket||'' });
+    });
+    var bayarHutang = 0; list.forEach(function(x){ if(x.type==='hutang') bayarHutang += (x.jumlah||0); });
     var a = akunTotals(t, t);
     document.getElementById('today-modal-title').textContent = 'Pengeluaran Hari Ini';
-    document.getElementById('today-modal-total').textContent = 'Beban '+maskOrFmt(a.beban)+(a.modal+a.persed>0 ? ' \u2022 + '+maskOrFmt(a.modal+a.persed)+' jadi aset/stok' : '')+' \u2022 '+list.length+' transaksi';
+    document.getElementById('today-modal-total').textContent = 'Beban '+maskOrFmt(a.beban)+(a.modal+a.persed>0 ? ' \u2022 + '+maskOrFmt(a.modal+a.persed)+' jadi aset/stok' : '')+(bayarHutang>0 ? ' \u2022 '+L('Bayar hutang ','Debt payments ')+maskOrFmt(bayarHutang) : '')+' \u2022 '+list.length+' transaksi';
     if(a.pakai>0) note = '<div class="meta-sub" style="margin-top:8px;">Beban juga mencakup pemakaian stok '+maskOrFmt(a.pakai)+' (dihitung dari stok yang dikeluarkan, bukan transaksi di atas).</div>';
   }
   var el = document.getElementById('today-modal-list');
@@ -11202,6 +11230,21 @@ function insightWrapHtml(emoji, bodyHtml){
     '<span style="flex-shrink:0; width:30px; height:30px; border-radius:10px; background:var(--primary-dim); display:flex; align-items:center; justify-content:center; font-size:15px;">'+emoji+'</span>'+
     '<div style="flex:1; min-width:0; padding-top:3px;">'+bodyHtml+'</div></div>';
 }
+/* Seberapa lengkap data pembanding (bulan lalu, tgl 1..dSama)? Mencegah persentase menyesatkan kalau aplikasi baru mulai dipakai / bulan lalu jarang dicatat */
+function insightCoverage(py, pm, dSama){
+  var s = firstDayStr(py, pm), e = py+'-'+String(pm).padStart(2,'0')+'-'+String(dSama).padStart(2,'0');
+  var days = {}, first = '';
+  ['pengeluaran','belanja','tagihan','pemasukan','transfer'].forEach(function(k){
+    (DATA[k]||[]).forEach(function(x){
+      var t = x && x.tanggal; if(!t) return;
+      if(!first || t<first) first = t;
+      if((k==='pengeluaran' || k==='belanja' || k==='tagihan') && t>=s && t<=e) days[t] = 1;
+    });
+  });
+  var cak = 1;
+  if(first && first>s){ cak = first.slice(0,7)===s.slice(0,7) ? Math.max(0, (dSama - parseInt(first.slice(8,10),10) + 1)/dSama) : 0; }
+  return { hariCatat:Object.keys(days).length, cakupan:cak };
+}
 function renderInsight(currentTotal, opt){
   opt = opt || {};
   var card = opt.el ? {style:{}} : document.getElementById('db-insight-card');
@@ -11235,6 +11278,10 @@ function renderInsight(currentTotal, opt){
   } else if(lastSame === 0){
     st = 'nodata';
     msg = L('Belum ada pengeluaran tercatat pada tanggal 1–'+dSama+' bulan lalu buat dibandingkan.', 'No spending was recorded on days 1–'+dSama+' of last month to compare.');
+  } else if((function(){ var c = insightCoverage(prevY, prevM, dSama); return c.hariCatat<5 || c.cakupan<0.8; })()){
+    var cv = insightCoverage(prevY, prevM, dSama);
+    st = 'nodata';
+    msg = L('Data bulan lalu masih sedikit ('+cv.hariCatat+' hari tercatat), jadi belum dibandingkan biar angkanya tidak menyesatkan.', 'Last month has little data ('+cv.hariCatat+' days recorded), so no comparison yet to avoid a misleading number.');
   } else {
     diff = thisMonth - lastSame;
     pct = Math.round(Math.abs(diff) / lastSame * 100);
@@ -12019,6 +12066,10 @@ function renderBelanjaProgress(){
   if(!btT.closed && (new Date().getDate()>=25 || btT.sekarang)){
     html += '<div class="bt-banner" data-goto="atur-budget"><span>\uD83D\uDDD3\uFE0F Waktunya tutup budget <b>'+btLabel(btT.key)+'</b> dan atur limit baru</span><span>\u203A</span></div>';
   }
+  var btNx = DATA.budgetNext;
+  if(btNx && btNx.mulai){
+    html += '<div class="bt-banner" style="cursor:default;"><span>\u2705 Limit '+btLabel(btNx.mulai)+' sudah disiapkan dan aktif otomatis tanggal 1. Angka di bawah masih memakai limit lama.</span><button type="button" class="bt-q" data-bt-now="1" style="flex-shrink:0;">Pakai sekarang</button></div>';
+  }
   DATA.kategoriBelanja.forEach(function(k){
     var total = totals[k]||0;
     var st = budgetStatusFor(k, total);
@@ -12104,7 +12155,7 @@ function renderBudgetTutup(){
   var h = '<h3><span class="dot"></span>Tutup Bulan &amp; Limit Baru</h3>';
   if(!BT_OPEN){
     h += '<div class="bt-note" style="margin-top:0;">'+lbl+(sm.n ? ' \u2022 '+sm.ok+' dari '+sm.n+' kategori masih dalam limit' : ' \u2022 belum ada limit yang diatur')+'</div>';
-    if(pend && pend.mulai) h += '<div class="bt-note">\u2705 Limit baru sudah disiapkan dan berlaku otomatis mulai 1 '+btLabel(pend.mulai)+'.</div>';
+    if(pend && pend.mulai) h += '<div class="bt-note">\u2705 Limit baru sudah disiapkan dan berlaku otomatis mulai 1 '+btLabel(pend.mulai)+'. Sampai tanggal itu, limit yang tampil di Belanja masih limit lama.</div>';
     h += '<button class="btn" id="bt-open" type="button">'+(t.closed ? 'Ubah limit '+nlbl : 'Tutup '+lbl+' &amp; atur limit baru')+'</button>';
   } else {
     h += '<div class="bt-sec" style="margin-top:0;">Hasil '+lbl+'</div>';
@@ -12165,6 +12216,18 @@ function renderBudgetTutup(){
     }, 'Ya, Tutup');
   });
 }
+function btPakaiSekarang(){
+  var nx = DATA.budgetNext; if(!nx || !nx.limit) return;
+  showConfirm('Pakai limit '+btLabel(nx.mulai)+' sekarang? Pemakaian bulan ini akan dibandingkan dengan limit baru.', function(){
+    (DATA.kategoriBelanja||[]).forEach(function(k){ DATA.budgetBelanja[k] = nx.limit[k] || 0; });
+    DATA.budgetNext = null; saveData(); toast('Limit baru sudah aktif');
+    renderBelanjaProgress(); if(document.getElementById('set-budget')) renderAturBudget();
+  }, 'Ya, Pakai');
+}
+document.addEventListener('click', function(ev){
+  var b = ev.target && ev.target.closest ? ev.target.closest('[data-bt-now]') : null;
+  if(b) btPakaiSekarang();
+});
 function tambahKategoriBelanja(){
   var input = document.getElementById('kat-baru-input');
   var nama = (input.value||'').trim();
@@ -13242,18 +13305,19 @@ function goalRingkasanHtml(){
     return { target:t, kumpul:k, sisa:Math.max(0,t-k), n:n, done:done, pct: t>0 ? Math.min(100, Math.round(k/t*100)) : 0 };
   }
   function bar(pct, color){ return '<div class="budget-bar-track" style="margin-top:6px;"><div class="budget-bar-fill" style="width:'+pct+'%; background:'+color+';"></div></div>'; }
-  var all = hitung(DATA.goals);
+  var aktif = DATA.goals.filter(function(g){ return !g.dibeli; }), nSelesai = DATA.goals.length - aktif.length;
+  var all = hitung(aktif);
   var tOpen = !!GOAL_OPEN['__total'];
   var h = '<div class="card goal-card goal-acc'+(tOpen?' open':'')+'" style="--goal-color:var(--primary);">'+
     '<div class="goal-sum" data-goal-toggle="__total" role="button" tabindex="0" aria-expanded="'+tOpen+'">'+
-      '<div class="goal-sum-main"><div class="goal-name">Total Semua Target</div><div class="meta mono">'+fmt(all.kumpul)+' / '+fmt(all.target)+' &bull; '+all.n+' target</div></div>'+
+      '<div class="goal-sum-main"><div class="goal-name">Total Semua Target</div><div class="meta mono">'+fmt(all.kumpul)+' / '+fmt(all.target)+' &bull; '+all.n+' target aktif</div></div>'+
       '<span class="goal-pct-chip" style="background:var(--primary);">'+all.pct+'%</span><span class="goal-caret" aria-hidden="true"></span></div>'+
     bar(all.pct,'var(--primary)')+
-    '<div class="goal-detail"><div class="meta">'+all.done+' sudah tercapai &bull; masih kurang <b class="mono">'+fmt(all.sisa)+'</b></div>'+
+    '<div class="goal-detail"><div class="meta">'+all.done+' sudah tercapai &bull; masih kurang <b class="mono">'+fmt(all.sisa)+'</b>'+(nSelesai>0 ? ' &bull; '+nSelesai+' sudah dibeli (tidak dihitung)' : '')+'</div>'+
     '<div style="border-top:1px solid var(--border, rgba(128,128,128,.25)); margin:10px 0 4px;"></div>'+
     '<div class="meta" style="font-weight:700; margin-bottom:4px;">Per Kategori</div>';
   cats.forEach(function(c){
-    var r = hitung(DATA.goals.filter(function(g){ return goalJenisOf(g)===c[0]; }));
+    var r = hitung(aktif.filter(function(g){ return goalJenisOf(g)===c[0]; }));
     if(r.n===0) return;
     h += '<div data-goal-cat="'+c[0]+'" style="padding:8px 0; cursor:pointer;">'+
       '<div class="budget-row-top"><span style="font-weight:600;">'+c[1]+' <span class="meta">('+r.n+')</span></span><span class="goal-pct-chip" style="background:var(--primary);">'+r.pct+'%</span></div>'+
@@ -13278,8 +13342,11 @@ function renderGoals(){
   var rekG = []; DATA.goals.forEach(function(g){ if(g.rekeningTujuan && rekG.indexOf(g.rekeningTujuan)===-1) rekG.push(g.rekeningTujuan); });
   var fg = lfSetup('gl', el, { ph:'cari nama target, kantong, atau tanggal...', aLabel:'Status', aOpts: lfUnique(DATA.goals.map(goalStatus)), bLabel:'Kantong', bOpts: rekG.map(function(r){ return [r, accountOptionLabel(r)]; }), hasData: DATA.goals.length>0 }, renderGoals);
   if(DATA.goals.length===0){ el.innerHTML = '<div class="card"><div class="empty">Belum ada target nabung. Yuk bikin satu di atas 🎯</div></div>'; return; }
-  var html = '', adaKartu = false, nGoalShown = 0;
-  DATA.goals.forEach(function(g, i){
+  var html = '', adaKartu = false, nGoalShown = 0, doneHtml = '', nDone = 0, nMain = 0;
+  /* Target yang sudah dibeli dipisah ke bagian "Selesai" (terlipat), kecuali pengguna sedang mencari / memfilter status itu */
+  var pisah = (fg.a!=='Sudah dibeli') && !fg.q;
+  goalUrutan().forEach(function(i){
+    var g = DATA.goals[i];
     if(GOAL_FILTER!=='semua' && goalJenisOf(g)!==GOAL_FILTER) return;
     if(fg.a!=='all' && goalStatus(g)!==fg.a) return;
     if(fg.b!=='all' && g.rekeningTujuan!==fg.b) return;
@@ -13289,6 +13356,7 @@ function renderGoals(){
     var tercapai = g.terkumpul >= g.target;
     adaKartu = true;
     if(GOAL_EDIT && GOAL_EDIT.idx===i){ html += goalEditHtml(g, i); return; }
+    var gStart = html.length;
     var accent = GOAL_PALETTE[i % GOAL_PALETTE.length];
     var color = tercapai ? 'var(--pos)' : (pct>=60 ? 'var(--primary)' : 'var(--warn)');
     var gk = goalKey(g), gOpen = !!GOAL_OPEN[gk];
@@ -13323,10 +13391,42 @@ function renderGoals(){
           '</div>'+
         '</div>')+
       '</div></div>';
+    if(pisah && g.dibeli){ doneHtml += html.slice(gStart); html = html.slice(0, gStart); nDone++; } else nMain++;
   });
   if(!adaKartu) html = '<div class="card"><div class="empty">'+(fg.active ? 'Tidak ada target yang cocok.' : 'Belum ada target di kelompok ini.')+'</div></div>';
   lfCount('gl', nGoalShown, DATA.goals.length, 'target');
+  if(nDone>0){
+    if(nMain===0) html = '<div class="card"><div class="empty">Semua target aktif sudah selesai 🎉 Buat target baru di atas.</div></div>';
+    html += '<div class="gs-wrap'+(GS_OPEN?' open':'')+'">'+
+      '<div class="gs-head" data-gs-toggle="1" role="button" tabindex="0" aria-expanded="'+GS_OPEN+'"><span>✅ Selesai ('+nDone+')<span class="sub" style="display:block;">Target yang sudah dibeli</span></span>'+
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>'+
+      '<div class="gs-body">'+
+        '<button type="button" class="btn ghost" data-goal-action="bersihkan" style="margin:0 0 10px; height:40px;">Bersihkan yang selesai</button>'+
+        doneHtml+'</div></div>';
+  }
   el.innerHTML = goalRingkasanHtml() + html;
+}
+var GS_OPEN = false;
+function goalUrutan(){
+  var idx = DATA.goals.map(function(g, i){ return i; });
+  function rank(g){ return g.dibeli ? 2 : (g.terkumpul>=g.target ? 0 : 1); }
+  idx.sort(function(a, b){
+    var ga = DATA.goals[a], gb = DATA.goals[b], ra = rank(ga), rb = rank(gb);
+    if(ra!==rb) return ra-rb;
+    var da = ga.tanggalTarget || '9999-12-31', db = gb.tanggalTarget || '9999-12-31';
+    if(da!==db) return da<db ? -1 : 1;
+    return a-b;
+  });
+  return idx;
+}
+function goalBersihkan(){
+  var n = DATA.goals.filter(function(g){ return g.dibeli; }).length;
+  if(!n){ toast('Belum ada target selesai'); return; }
+  showConfirm('Hapus '+n+' target yang sudah selesai dari daftar? Setoran dan pembelian asetnya tetap tercatat (saldo tidak berubah).', function(){
+    DATA.goals = DATA.goals.filter(function(g){ return !g.dibeli; });
+    GOAL_EDIT = null; GOAL_BUY = null; GS_OPEN = false;
+    saveData(); toast(n+' target selesai dibersihkan'); renderGoals();
+  }, 'Ya, Bersihkan');
 }
 
 /* Kartu lipat Target & Tabungan: ketuk ringkasan untuk buka/tutup (tanpa render ulang, input yang sudah diketik tidak hilang) */
@@ -13341,6 +13441,20 @@ function goalToggleCard(sum){
 document.addEventListener('click', function(ev){
   var sum = ev.target && ev.target.closest ? ev.target.closest('[data-goal-toggle]') : null;
   if(sum) goalToggleCard(sum);
+});
+function goalToggleSelesai(h){
+  var w = h.closest('.gs-wrap'); if(!w) return;
+  GS_OPEN = !w.classList.contains('open');
+  w.classList.toggle('open', GS_OPEN); h.setAttribute('aria-expanded', GS_OPEN ? 'true' : 'false');
+}
+document.addEventListener('click', function(ev){
+  var h = ev.target && ev.target.closest ? ev.target.closest('[data-gs-toggle]') : null;
+  if(h) goalToggleSelesai(h);
+});
+document.addEventListener('keydown', function(ev){
+  if(ev.key!=='Enter' && ev.key!==' ') return;
+  var h = ev.target && ev.target.closest ? ev.target.closest('[data-gs-toggle]') : null;
+  if(h && ev.target===h){ ev.preventDefault(); goalToggleSelesai(h); }
 });
 document.addEventListener('keydown', function(ev){
   if(ev.key!=='Enter' && ev.key!==' ') return;
@@ -16241,6 +16355,7 @@ function startEdit(type, index){
     document.getElementById('bl-qty').value = item.qty || 1;
     var qtyEdit = item.qty || 1;
     document.getElementById('bl-harga-satuan').value = (qtyEdit>0 && item.jumlah) ? formatMoneyValue(Math.round(item.jumlah/qtyEdit)) : '';
+    blAnchor = 'jumlah';
     var satEl = document.getElementById('bl-satuan');
     if(satEl) satEl.value = item.satuan || 'Pcs';
     var isiE = document.getElementById('bl-isi'), isiSE = document.getElementById('bl-isi-satuan');
@@ -18691,6 +18806,7 @@ function wireEvents(){
       if(gact.getAttribute('data-goal-action')==='setor') setorGoal(gidx);
       else if(gact.getAttribute('data-goal-action')==='hapus') hapusGoal(gidx);
       else if(gact.getAttribute('data-goal-action')==='edit-buka') goalEditOpen(gidx);
+      else if(gact.getAttribute('data-goal-action')==='bersihkan') goalBersihkan();
       else if(gact.getAttribute('data-goal-action')==='edit-batal'){ GOAL_EDIT = null; renderGoals(); }
       else if(gact.getAttribute('data-goal-action')==='edit-simpan') goalEditSimpan(gidx);
       else if(gact.getAttribute('data-goal-action')==='beli-buka') goalBuyOpen(gidx);
@@ -18757,6 +18873,7 @@ function wireEvents(){
   blMultiInit();
   document.getElementById('bl-qty').addEventListener('input', blRecalcJumlah);
   document.getElementById('bl-harga-satuan').addEventListener('input', blRecalcJumlah);
+  document.getElementById('bl-jumlah').addEventListener('input', blRecalcJumlah);
   document.getElementById('btn-invbeli').addEventListener('click', submitInvBeli);
   document.getElementById('btn-invjual').addEventListener('click', submitInvJual);
   document.getElementById('btn-tagihan').addEventListener('click', submitTagihan);
@@ -20268,7 +20385,7 @@ if(document.readyState==='loading'){
  "Transaksi yang kamu hapus disimpan di sini selama 7 hari, lengkap dengan catatan terkait (mis. pengeluaran tertaut atau titipan dari transfer). Ketuk": "Transactions you delete are kept here for 7 days, along with related records (e.g. linked spending or held funds from a transfer). Tap",
  "untuk mengembalikannya ke tempat semula. Setelah 7 hari, atau kalau tempat sampah penuh, yang paling lama dihapus otomatis.": "to put it back where it was. After 7 days, or if the trash is full, the oldest are deleted automatically."
 });
-  (function(extra){ for(var k in extra) D[k]=extra[k]; })({"Dana Patungan": "Shared Fund", "Kantong uang bersama untuk dua akun berbeda. Setoran kamu dan pasanganmu masuk ke satu saldo yang sama, dan bisa dilihat di Beranda lewat tombol Pribadi / Patungan.": "A shared money pocket for two different accounts. Your deposits and your partner's go into one shared balance, which you can view on Home with the Personal / Shared switch.", "Saldo Dana Patungan": "Shared Fund Balance", "Satu saldo bersama untuk kamu dan pasanganmu.": "One shared balance for you and your partner.", "Boleh sama dengan rekening tujuan: uang tidak dipindah, hanya disisihkan sebagai dana target di rekening itu.": "Can be the same as the destination account: money is not moved, it is only set aside as goal funds in that account."});
+  (function(extra){ for(var k in extra) D[k]=extra[k]; })({"Dana Patungan": "Shared Fund", "Kantong uang bersama untuk dua akun berbeda. Setoran kamu dan pasanganmu masuk ke satu saldo yang sama, dan bisa dilihat di Beranda lewat tombol Pribadi / Patungan.": "A shared money pocket for two different accounts. Your deposits and your partner's go into one shared balance, which you can view on Home with the Personal / Shared switch.", "Saldo Dana Patungan": "Shared Fund Balance", "Satu saldo bersama untuk kamu dan pasanganmu.": "One shared balance for you and your partner.", "Harga per Item dan Jumlah (Rp) saling terhubung: isi salah satu, yang lain otomatis kehitung dari Qty. Kalau ada diskon, ubah Jumlah (Rp) saja, harga per item ikut menyesuaikan.": "Price per Item and Amount (Rp) are linked: fill in either one and the other is calculated from Qty. For a discount, just change Amount (Rp) and the price per item adjusts.", "Boleh sama dengan rekening tujuan: uang tidak dipindah, hanya disisihkan sebagai dana target di rekening itu.": "Can be the same as the destination account: money is not moved, it is only set aside as goal funds in that account."});
   (function(extra){ for(var k in extra) D[k]=extra[k]; })({
  "Jual Pulsa": "Sell Airtime",
  "Cari": "Search",
