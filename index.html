@@ -7053,12 +7053,26 @@ function unitUi(p){
 function unitLink(p, src){
   var insEl = document.getElementById(p+'-instrumen'); var c = insEl ? unitCfg(insEl.value) : null; if(!c) return;
   var uEl = document.getElementById(p+'-unit'), hEl = document.getElementById(p+'-harga'), jEl = document.getElementById(p+'-jumlah');
+  /* Kolom yang diisi otomatis (dari total) ditandai data-auto, supaya tidak dianggap input manual.
+     Dulu: ketik total 278000 satu digit demi satu -> pada digit pertama "2" harga otomatis jadi 0,02,
+     lalu dianggap isian manual sehingga unit melonjak jadi 139000 lot. */
+  if(!uEl.value) delete uEl.dataset.auto;
+  if(!hEl.value) delete hEl.dataset.auto;
+  if(src==='unit') delete uEl.dataset.auto;
+  if(src==='harga') delete hEl.dataset.auto;
   var u = parseUnit(uEl.value), h = parseUnit(hEl.value), j = parseMoneyValue(jEl.value);
+  var uAuto = uEl.dataset.auto==='1', hAuto = hEl.dataset.auto==='1';
+  function hitungHargaDariTotal(){ hEl.value = fmtUnitInput(Math.round(j/(u*c.mult)*100)/100); hEl.dataset.auto = '1'; }
+  function hitungUnitDariTotal(){ var nu = unitRound(j/(h*c.mult), c); uEl.value = nu>0 ? fmtUnitInput(nu) : ''; uEl.dataset.auto = '1'; }
   if(src==='jumlah'){
-    if(p==='ib' && h>0 && j>0){ var nu = unitRound(j/(h*c.mult), c); uEl.value = nu>0 ? fmtUnitInput(nu) : ''; }
-    else if(u>0 && j>0 && !(h>0)){ hEl.value = fmtUnitInput(Math.round(j/(u*c.mult)*100)/100); }
-  } else if(u>0 && h>0){
-    jEl.value = formatMoneyValue(Math.round(u*c.mult*h));
+    if(p==='ib' && h>0 && !hAuto && j>0){ hitungUnitDariTotal(); }
+    else if(u>0 && !uAuto && j>0 && (!(h>0) || hAuto)){ hitungHargaDariTotal(); }
+  } else if(src==='unit'){
+    if(u>0 && j>0 && (!(h>0) || hAuto)){ hitungHargaDariTotal(); }
+    else if(u>0 && h>0){ jEl.value = formatMoneyValue(Math.round(u*c.mult*h)); }
+  } else {
+    if(p==='ib' && u>0 && h>0 && uAuto && j>0){ hitungUnitDariTotal(); }
+    else if(u>0 && h>0){ jEl.value = formatMoneyValue(Math.round(u*c.mult*h)); }
   }
   if(p==='ij') updateUntungRugi();
 }
@@ -8640,6 +8654,12 @@ function submitInvJual(){
       var sisaJ = getUnitTersisa(document.getElementById('ij-instrumen').value, document.getElementById('ij-kode').value, (editState.type==='invjual' ? editState.index : -1), document.getElementById('ij-platform').value);
       if(sisaJ>0 && unitJ>sisaJ+1e-9){ toast('Maksimal yang bisa dijual: '+fmtUnit(sisaJ,cJ)+' '+cJ.u); return; }
       if(!(hargaJ>0)) hargaJ = Math.round(jumlah/(unitJ*cJ.mult)*100)/100;
+    } else {
+      /* Tanpa jumlah lot/unit, modal ikut berkurang tapi sisa unit tidak, jadi data portofolio tidak sinkron.
+         Wajib diisi kalau jumlah yang dimiliki sudah tercatat (transaksi lama tanpa unit yang diedit tetap boleh). */
+      var oldIj = (editState.type==='invjual') ? DATA.invjual[editState.index] : null;
+      var sisaK = getUnitTersisa(document.getElementById('ij-instrumen').value, document.getElementById('ij-kode').value, (oldIj ? editState.index : -1), document.getElementById('ij-platform').value);
+      if(sisaK>0 && (!oldIj || oldIj.unit>0)){ toast('Isi jumlah '+cJ.u+' yang dijual, atau tekan "Jual semua"'); return; }
     }
   }
   var existingId = (editState.type==='invjual' && DATA.invjual[editState.index]) ? DATA.invjual[editState.index].id : null;
@@ -16499,7 +16519,7 @@ function startEdit(type, index){
     document.getElementById('ib-jumlah').value = formatMoneyValue(item.jumlah);
     document.getElementById('ib-fee').value = item.fee ? formatMoneyValue(item.fee) : '';
     document.getElementById('ib-ket').value = item.ket||'';
-    unitUi('ib'); document.getElementById('ib-unit').value = item.unit>0 ? fmtUnitInput(item.unit) : ''; document.getElementById('ib-harga').value = item.hargaSatuan>0 ? fmtUnitInput(item.hargaSatuan) : '';
+    unitUi('ib'); ['ib-unit','ib-harga'].forEach(function(i){ delete document.getElementById(i).dataset.auto; }); document.getElementById('ib-unit').value = item.unit>0 ? fmtUnitInput(item.unit) : ''; document.getElementById('ib-harga').value = item.hargaSatuan>0 ? fmtUnitInput(item.hargaSatuan) : '';
   } else if(type==='invjual'){
     document.getElementById('ij-tanggal').value = item.tanggal;
     document.getElementById('ij-instrumen').value = item.instrumen;
@@ -16512,7 +16532,7 @@ function startEdit(type, index){
     document.getElementById('ij-fee').value = item.fee ? formatMoneyValue(item.fee) : '';
     updateUntungRugi();
     document.getElementById('ij-ket').value = item.ket||'';
-    ijInfoRefresh(false); document.getElementById('ij-unit').value = item.unit>0 ? fmtUnitInput(item.unit) : ''; document.getElementById('ij-harga').value = item.hargaSatuan>0 ? fmtUnitInput(item.hargaSatuan) : '';
+    ijInfoRefresh(false); ['ij-unit','ij-harga'].forEach(function(i){ delete document.getElementById(i).dataset.auto; }); document.getElementById('ij-unit').value = item.unit>0 ? fmtUnitInput(item.unit) : ''; document.getElementById('ij-harga').value = item.hargaSatuan>0 ? fmtUnitInput(item.hargaSatuan) : '';
   } else if(type==='tagihan'){
     document.getElementById('tg-tanggal').value = item.tanggal;
     document.getElementById('tg-jenis').value = item.jenis;
