@@ -13151,13 +13151,13 @@ function setorGoal(idx){
   var g = DATA.goals[idx];
   if(!g) return;
   if(!g.id) g.id = genId('goal');
-  var akun = goalSumberAkun(g) || (akunSel ? akunSel.value : '');
+  var akun = (akunSel && akunSel.value) ? akunSel.value : goalSumberAkun(g);
   if(!akun){ toast('Pilih rekening buat motong setoran dulu'); return; }
   if(!g.rekeningTujuan){ g.rekeningTujuan = akun; }
   /* Rekening sumber boleh sama dengan kantong tujuan: uang tidak dipindah (tanpa transfer), cukup disisihkan
      sebagai dana target di rekening itu (terkumpul dihitung sebagai dana mengendap lewat goalDisisihkanAkun). */
   var sama = (akun===g.rekeningTujuan);
-  if(!g.rekeningAsal) g.rekeningAsal = akun;
+  g.rekeningAsal = akun; /* rekening terakhir dipakai jadi pilihan awal setoran berikutnya (tidak dikunci) */
   var prevPct = (g.terkumpul/g.target)*100;
   g.terkumpul += jumlah;
   if(!sama) DATA.transfer.push({
@@ -13376,7 +13376,7 @@ function goalEditOpen(idx){
   GOAL_BUY = null;
   GOAL_EDIT = { idx:idx, nama:g.nama, target:Math.round(g.target).toLocaleString('id-ID'), tanggal:g.tanggalTarget||'', jenis:g.jenis||goalJenisOf(g),
     sumber:g.asetSumber||'baru', pick:g.asetPick||'', kat:g.asetKat||'', qty:String(g.stokQty||1), satuan:g.stokSatuan||'Pcs',
-    untuk:g.untuk||'', jenisPg:g.jenisPg||'', instrumen:g.instrumen||'', platform:g.platform||'', kode:g.kode||'', rekTujuan:g.rekeningTujuan||'', rekAsal:g.rekeningAsal||'' };
+    untuk:g.untuk||'', jenisPg:g.jenisPg||'', instrumen:g.instrumen||'', platform:g.platform||'', kode:g.kode||'', rekTujuan:g.rekeningTujuan||'', rekAsal:goalSumberAkun(g) };
   renderGoals();
 }
 function goalEditReadDraft(){
@@ -13385,7 +13385,7 @@ function goalEditReadDraft(){
   Object.keys(map).forEach(function(k){ var el = document.getElementById(map[k]); if(el) GOAL_EDIT[k] = el.value; });
 }
 function goalEditHtml(g, i){
-  var d = GOAL_EDIT, dibeli = !!g.dibeli, rekLock = dibeli || g.terkumpul>0, asalKunci = dibeli ? (g.rekeningAsal||'') : goalSumberAkun(g);
+  var d = GOAL_EDIT, dibeli = !!g.dibeli, rekLock = dibeli || g.terkumpul>0, asalKunci = dibeli ? (g.rekeningAsal||'') : '';
   var fld = function(label, inner){ return '<div class="field" style="margin-bottom:10px;"><label>'+label+'</label>'+inner+'</div>'; };
   var opt = function(list, sel){ return list.map(function(x){ return '<option value="'+escapeHtml(x)+'"'+(x===sel?' selected':'')+'>'+escapeHtml(x)+'</option>'; }).join(''); };
   var h = '<div class="card goal-card" style="--goal-color:var(--primary);"><div class="goal-name" style="margin-bottom:10px;">Edit target</div>'+
@@ -13426,7 +13426,7 @@ function goalEditSimpan(idx){
   if(!nama){ toast('Isi nama target dulu'); return; }
   if(!dibeli && !(target>0)){ toast('Isi jumlah target dulu'); return; }
   var rekTujuan = (dibeli || g.terkumpul>0) ? g.rekeningTujuan : d.rekTujuan;
-  var asalKunci = dibeli ? (g.rekeningAsal||'') : goalSumberAkun(g);
+  var asalKunci = dibeli ? (g.rekeningAsal||'') : '';
   var rekAsal = asalKunci ? (g.rekeningAsal||'') : (d.rekAsal||'');
   if(!rekTujuan){ toast('Pilih rekening tujuan dulu'); return; }
   var jenis = d.jenis, upd = {};
@@ -13540,12 +13540,10 @@ function renderGoals(){
       (tercapai ? goalTercapaiHtml(g, i) :
         '<div class="goal-setor-wrap">'+
           (function(){
-            var kunciAsal = goalSumberAkun(g);
-            if(kunciAsal) return '<select class="goal-setor-akun" data-idx="'+i+'" disabled style="margin-top:0; margin-bottom:4px; opacity:.75;"><option value="'+escapeHtml(kunciAsal)+'" selected>🔒 '+escapeHtml(accountOptionLabel(kunciAsal))+'</option></select>'+
-              '<div class="meta" style="margin-bottom:8px;">Rekening asal terkunci sesuai setoran pertama.</div>';
+            var asalDef = goalSumberAkun(g);
             return '<select class="goal-setor-akun" data-idx="'+i+'" style="margin-top:0; margin-bottom:8px;">'+
               '<option value="">Potong dari rekening...</option>'+
-              ACCOUNTS.map(function(a){ return '<option value="'+escapeHtml(a)+'">'+escapeHtml(accountOptionLabel(a))+'</option>'; }).join('')+
+              ACCOUNTS.map(function(a){ return '<option value="'+escapeHtml(a)+'"'+(a===asalDef?' selected':'')+'>'+escapeHtml(accountOptionLabel(a))+'</option>'; }).join('')+
             '</select>';
           })()+
           '<div style="display:flex; gap:8px;">'+
@@ -22976,7 +22974,7 @@ input.ap-sw:checked::after{transform:translateX(18px);}
 <style id="set-polish-css">
 /* Halaman Atur: tampilan lebih rapi, aman untuk tema terang/gelap dan layout HP/desktop */
 #view-pengaturan .pg-l > .card:first-child{position:relative; overflow:hidden; padding:0 18px 16px; margin-bottom:14px; border-radius:20px;}
-#view-pengaturan .pg-l > .card:first-child::before{content:""; display:block; height:64px; margin:0 -18px 0; background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 34%,transparent),color-mix(in srgb,#8B7CF6 26%,transparent) 70%,transparent);}
+#view-pengaturan .pg-l > .card:first-child::before{content:""; display:block; position:relative; right:auto; bottom:auto; width:auto; opacity:1; -webkit-mask-image:none; mask-image:none; height:64px; margin:0 -18px 0; background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 34%,transparent),color-mix(in srgb,#8B7CF6 26%,transparent) 70%,transparent);}
 #view-pengaturan .profile-row{margin-top:-34px; padding:0 0 14px; align-items:flex-end; gap:14px;}
 #view-pengaturan .profile-avatar{width:84px; height:84px; border:3px solid var(--primary); box-shadow:0 0 0 4px var(--surface), 0 8px 20px -8px color-mix(in srgb,var(--primary) 60%,transparent);}
 #view-pengaturan .profile-avatar-cam{width:28px; height:28px; border-width:3px;}
@@ -27144,6 +27142,28 @@ try{
   }
 }catch(e){}
 
+</script>
+
+<style id="tk-collision-fix">
+/* Halaman Atur: garis aksen lurus (bukan sabit di sudut membulat) */
+html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan .pg-l > .card:first-child, html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan details.set-acc{box-shadow:var(--shadow) !important;}
+html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan details.set-acc[open]{box-shadow:var(--shadow), 0 10px 26px -16px color-mix(in srgb,var(--ac,#2DD4BF) 70%,transparent) !important;}
+html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan details.set-acc::after, html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan .pg-l > .card:first-child::after{content:""; display:block; position:absolute; top:0; left:22px; right:22px; height:3px; border-radius:0 0 3px 3px; background-color:var(--ac,#2DD4BF) !important; background-image:none; opacity:1 !important; animation:none !important; transform:none !important; width:auto; bottom:auto; pointer-events:none; z-index:2;}
+html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan .menu-row, html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan #set-akun-info .acc-row{box-shadow:none !important; position:relative;}
+html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan .menu-row::before, html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan #set-akun-info .acc-row::before{content:""; display:block; position:absolute; left:0; top:22%; bottom:22%; width:3px; border-radius:3px; background-color:var(--ac,#2DD4BF); pointer-events:none;}
+/* Tombol mata: menyingkir saat scroll ke bawah supaya tidak menutupi isi */
+#tk-eye-fab{transition:transform .25s ease, opacity .25s ease;}
+#tk-eye-fab.tk-eye-away{transform:translateY(-70px) !important; opacity:0 !important; pointer-events:none !important;}
+</style>
+<script id="tk-collision-fix-js">
+(function(){
+  var last=window.scrollY||0;
+  window.addEventListener('scroll',function(){
+    var y=window.scrollY||0, f=document.getElementById('tk-eye-fab')||document.querySelector('.tk-eye-fab');
+    if(f){ if(y>last+4 && y>80) f.classList.add('tk-eye-away'); else if(y<last-4 || y<=80) f.classList.remove('tk-eye-away'); }
+    last=y;
+  },{passive:true});
+})();
 </script>
 </body>
 </html>
