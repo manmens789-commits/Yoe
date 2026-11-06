@@ -2938,6 +2938,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
 
     <div class="card">
       <div class="field" style="margin-bottom:0;"><label>Tahun</label><select id="gr-tahun"></select></div>
+      <div id="gr-range" style="margin-top:12px;"></div>
     </div>
 
     <div class="card">
@@ -2959,7 +2960,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       </div>
     </div>
 
-    <div class="card lp-chart-panel" data-lp-key="networth"><h3><span class="dot"></span>Kekayaan Bersih (Net Worth)<span class="chart-view-toggle" data-key="networth"><button type="button" class="cvt-btn active" data-mode="trend">Tren</button><button type="button" class="cvt-btn" data-mode="rincian">Aset vs Hutang</button></span></h3><div id="networth-range"></div><div id="networth-summary"></div><div class="chart-wrap" id="chart-networth"></div><div id="networth-breakdown"></div></div>
+    <div class="card lp-chart-panel" data-lp-key="networth"><h3><span class="dot"></span>Kekayaan Bersih (Net Worth)<span class="chart-view-toggle" data-key="networth"><button type="button" class="cvt-btn active" data-mode="trend">Tren</button><button type="button" class="cvt-btn" data-mode="rincian">Aset vs Hutang</button></span></h3><div id="networth-summary"></div><div class="chart-wrap" id="chart-networth"></div><div id="networth-breakdown"></div></div>
     <div class="card lp-chart-panel" data-lp-key="saldo"><h3><span class="dot"></span>Saldo per Rekening<span class="chart-view-toggle" data-key="saldo"><button type="button" class="cvt-btn active" data-mode="trend">Tren</button><button type="button" class="cvt-btn" data-mode="pie">Pie</button></span></h3><div class="chart-wrap" id="chart-saldo"></div></div>
     <div class="card lp-chart-panel" data-lp-key="ph" style="display:none;"><h3><span class="dot"></span>Piutang & Hutang<span class="chart-view-toggle" data-key="ph"><button type="button" class="cvt-btn active" data-mode="trend">Tren</button><button type="button" class="cvt-btn" data-mode="pie">Pie</button></span></h3><div class="chart-wrap" id="chart-ph"></div></div>
     <div class="card lp-chart-panel" data-lp-key="titipan" style="display:none;"><h3><span class="dot"></span>Dana Titipan<span class="chart-view-toggle" data-key="titipan"><button type="button" class="cvt-btn active" data-mode="trend">Tren</button><button type="button" class="cvt-btn" data-mode="pie">Pie</button></span></h3><div class="chart-wrap" id="chart-titipan"></div></div>
@@ -2977,6 +2978,11 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   <div class="view" id="view-pengaturan"><main>
     <div class="section-title"><span data-icon="idCard"></span>Detail Akun</div>
     <div class="pg-cols"><div class="pg-l"><div class="card">
+      <div class="profile-cover-btns">
+        <span class="pc-btn" data-akun-action="pilih-sampul" role="button" aria-label="Ubah foto sampul"><span data-icon="camera"></span></span>
+        <span class="pc-btn" id="profil-hapus-sampul" data-akun-action="hapus-sampul" role="button" aria-label="Hapus foto sampul" style="display:none;"><span data-icon="trash"></span></span>
+      </div>
+      <input type="file" id="profil-sampul-input" accept="image/*" style="display:none;">
       <div class="profile-row">
         <div class="profile-avatar-wrap">
           <div class="profile-avatar" id="profil-avatar">?</div>
@@ -5089,6 +5095,17 @@ function akunTotals(start, end){
 }
 /* pintasan: Beban Operasional pada rentang tanggal (dipakai dashboard, kesehatan keuangan, insight) */
 function bebanOperasional(start, end){ return akunTotals(start, end).beban; }
+/* Biaya hasil investasi (Kerugian Investasi + Fee Beli/Jual Investasi). "Keuntungan Investasi" dikeluarkan dari pemasukan rutin,
+   jadi sisi biayanya juga harus keluar dari beban rutin; kalau tidak, rasio menabung berat sebelah (rugi menurunkan, untung tidak menaikkan). */
+function bebanInvestasi(start, end){
+  var s = 0;
+  DATA.pengeluaran.forEach(function(p){
+    if(p.tanggal>=start && p.tanggal<=end && String(p.untuk||'').toLowerCase()==='investasi' && String(akunOfPengeluaran(p)).charAt(0)==='5') s += p.jumlah||0;
+  });
+  return s;
+}
+/* Beban rutin = Beban Operasional tanpa biaya investasi. Dipakai HANYA untuk ukuran yang dibandingkan dengan pemasukan rutin (skor kesehatan, dana darurat, insight tahunan). */
+function bebanRutin(start, end){ return Math.max(0, bebanOperasional(start, end) - bebanInvestasi(start, end)); }
 /* kunci "jenis" untuk laporan: pembelian aset dikelompokkan per akun supaya tidak muncul satu baris per barang */
 function akunJenisKey(p){
   var ak = akunOfPengeluaran(p);
@@ -6011,16 +6028,14 @@ function renderAuth(){
     // default: login
     html += logo;
     html += '<div class="auth-card">';
-    html += '<div class="auth-title">Masuk\u200b</div><div class="auth-sub">Masuk ke akun Tumbuh Kaya kamu</div>';
+    html += '<div class="auth-hello">Selamat datang kembali</div>';
     html += '<div class="field"><input type="email" id="auth-email-input" inputmode="email" placeholder="Email" value="'+escapeHtml(authState.pendingEmail||'')+'"></div>';
     html += pwFieldHtml('auth-password-input', 'Password', 'current-password');
     if(authState.err){ html += '<div class="auth-err">'+escapeHtml(authState.err)+'</div>'; }
+    html += '<div class="auth-forgot" data-auth="forgot-password">Lupa Password?</div>';
     html += '<button class="btn" data-auth="submit-login">Masuk\u200b</button>';
-    html += '<div class="auth-link" data-auth="forgot-password">Lupa Password?</div>';
-    html += '<div class="auth-divider">atau</div>';
-    html += '<button class="btn ghost" data-auth="goto-register" style="display:flex;align-items:center;justify-content:center;gap:8px;">'+ICONS.plus+'Buat Akun Baru</button>';
-    html += '<button class="btn ghost guest-btn" data-auth="guest" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;">'+ICONS.users+'Coba sebagai Tamu</button>';
-    html += '<div class="guest-note">Tanpa akun. Data hanya tersimpan di HP ini.</div>';
+    html += '<div class="auth-alt"><span>Belum punya akun?</span> <span class="lk" data-auth="goto-register">Daftar di sini</span></div>';
+    html += '<div class="auth-alt auth-guest"><span class="lk soft" data-auth="guest">Coba tanpa akun</span><small>Data hanya tersimpan di HP ini.</small></div>';
     html += '</div>';
   }
   el.innerHTML = html;
@@ -6407,6 +6422,32 @@ function renderProfilFoto(){
   if(avEl) avEl.innerHTML = avatarMarkup(u && u.foto, (u && u.nama) || (CURRENT_USER && CURRENT_USER.nama));
   if(hapusEl) hapusEl.style.display = (u && u.foto) ? 'inline' : 'none';
   renderDashboardAvatar();
+  renderProfilSampul();
+}
+/* ===== Foto sampul (latar belakang kartu profil) ===== */
+function renderProfilSampul(){
+  var card = document.querySelector('#view-pengaturan .pg-l > .card:first-child');
+  if(!card) return;
+  var url = DATA && DATA.profil && DATA.profil.cover;
+  card.classList.toggle('has-cover', !!url);
+  if(url) card.style.setProperty('--cover', 'url("'+url+'")'); else card.style.removeProperty('--cover');
+  var h = document.getElementById('profil-hapus-sampul');
+  if(h) h.style.display = url ? 'flex' : 'none';
+}
+function pilihSampulProfil(){ var i = document.getElementById('profil-sampul-input'); if(i) i.click(); }
+function handleProfilSampulFile(file){
+  openCropper(file, {ratio:3, ratios:[['3:1',3]], maxDim:720, quality:0.75, maxBytes:30000, minPx:480}, function(dataUrl){ saveProfilSampul(dataUrl); });
+}
+function saveProfilSampul(dataUrl){
+  if(!CURRENT_USER) return;
+  if(!DATA.profil) DATA.profil = {};
+  if(dataUrl) DATA.profil.cover = dataUrl; else delete DATA.profil.cover;
+  saveData();
+  renderProfilSampul();
+  toast(dataUrl ? 'Foto sampul diperbarui' : 'Foto sampul dihapus');
+}
+function hapusSampulProfil(){
+  showConfirm('Hapus foto sampul?', function(){ saveProfilSampul(null); });
 }
 function renderDashboardAvatar(){
   var el = document.getElementById('db-avatar');
@@ -6431,7 +6472,7 @@ function openCropper(file, opts, onDone){
 }
 function buildCropper(img, opts, onDone){
   var round = !!opts.round, maxDim = opts.maxDim || 640, quality = opts.quality || 0.75;
-  var ratios = round ? [['1:1',1]] : [['1:1',1],['4:3',4/3],['3:4',3/4],['16:9',16/9]];
+  var ratios = round ? [['1:1',1]] : (opts.ratios || [['1:1',1],['4:3',4/3],['3:4',3/4],['16:9',16/9]]);
   var ratio = round ? 1 : (opts.ratio || 4/3);
   var zoom = 1, ox = 0, oy = 0, cw = 0, ch = 0;
   var ov = document.createElement('div');
@@ -6587,6 +6628,7 @@ function fallbackCopy(text, done){
 function tkFotoList(){
   var L = [];
   if(DATA.profil && DATA.profil.foto) L.push({ get:function(){ return DATA.profil.foto; }, set:function(v){ DATA.profil.foto = v; }, dim:256, max:12000, min:160, round:true });
+  if(DATA.profil && DATA.profil.cover) L.push({ get:function(){ return DATA.profil.cover; }, set:function(v){ DATA.profil.cover = v; }, dim:720, max:30000, min:480 });
   (DATA.inventaris||[]).forEach(function(it){ if(it && it.foto) L.push({ get:function(){ return it.foto; }, set:function(v){ it.foto = v; }, dim:720, max:35000, min:320 }); });
   return L;
 }
@@ -9349,7 +9391,7 @@ function ksLiquidSaldo(){
   return s;
 }
 function ksPengeluaranBulan(year, month){
-  return bebanOperasional(firstDayStr(year, month), lastDayStr(year, month)); /* Beban Operasional (tanpa pembelian aset/stok) */
+  return bebanRutin(firstDayStr(year, month), lastDayStr(year, month)); /* Beban rutin (tanpa pembelian aset/stok dan biaya investasi) */
 }
 /* Pemasukan non-rutin: hasil jual aset/stok (harga penuh) dan keuntungan investasi. Tidak dihitung sebagai penghasilan rutin. */
 var PEMASUKAN_NON_RUTIN_RE = /^(Jual |Keuntungan Investasi)/;
@@ -9421,7 +9463,7 @@ function ksMonthSamples(){
     r = {expense:[], income:[], pairs:[], current:true, insufficient:true, faktor:1, div:0};
     if(hari>=7){
       var st = firstDayStr(y,m), td = todayISO(), f = dim/hari;
-      var e = bebanOperasional(st, td)*f, inc = sumInRange(DATA.pemasukan,'jumlah',st,td,function(x){ return !isPemasukanNonRutin(x); });
+      var e = bebanRutin(st, td)*f, inc = sumInRange(DATA.pemasukan,'jumlah',st,td,function(x){ return !isPemasukanNonRutin(x); });
       r.insufficient = false; r.faktor = f; r.div = dvPasifStats(st, td).neto*f;
       if(e>0) r.expense.push(e);
       if(inc>0){ r.income.push(inc); r.pairs.push({inc:inc, e:e}); }
@@ -11289,14 +11331,16 @@ function renderMutasiRekening(){
   var listEl = document.getElementById('mr-list');
   var sumEl = document.getElementById('mr-summary');
   sumEl.textContent = all.length+' mutasi';
-  var totMasuk = 0, totKeluar = 0;
-  all.forEach(function(t){ if(t.sign>0) totMasuk += (t.jumlah||0); else if(t.sign<0) totKeluar += (t.jumlah||0); });
+  var totMasuk = 0, totKeluar = 0, totKor = 0, adaKor = false;
+  /* Koreksi Saldo (hasil rekonsiliasi) BUKAN pemasukan/pengeluaran: dipisah dari Total masuk/keluar */
+  all.forEach(function(t){ if(t.type==='koreksi'){ adaKor = true; totKor += (t.sign||0)*(t.jumlah||0); } else if(t.sign>0) totMasuk += (t.jumlah||0); else if(t.sign<0) totKeluar += (t.jumlah||0); });
   var totEl = document.getElementById('mr-total');
   if(totEl){
     if(all.length){
       totEl.style.display = 'flex';
       totEl.innerHTML = '<div style="flex:1; background:var(--primary-dim); border-radius:12px; padding:9px 12px;"><div style="font-size:10.5px; color:var(--text-2);">Total masuk</div><div class="mono pos" style="font-size:13px; font-weight:700;">'+maskOrFmt(totMasuk)+'</div></div>'+
-        '<div style="flex:1; background:var(--primary-dim); border-radius:12px; padding:9px 12px;"><div style="font-size:10.5px; color:var(--text-2);">Total keluar</div><div class="mono neg" style="font-size:13px; font-weight:700;">'+maskOrFmt(totKeluar)+'</div></div>';
+        '<div style="flex:1; background:var(--primary-dim); border-radius:12px; padding:9px 12px;"><div style="font-size:10.5px; color:var(--text-2);">Total keluar</div><div class="mono neg" style="font-size:13px; font-weight:700;">'+maskOrFmt(totKeluar)+'</div></div>'+
+        (adaKor ? '<div style="flex:1; background:var(--primary-dim); border-radius:12px; padding:9px 12px;"><div style="font-size:10.5px; color:var(--text-2);">Koreksi saldo</div><div class="mono '+(totKor<0?'neg':'pos')+'" style="font-size:13px; font-weight:700;">'+(totKor<0?'-':'+')+maskOrFmt(Math.abs(totKor))+'</div></div>' : '');
     } else { totEl.style.display = 'none'; totEl.innerHTML = ''; }
   }
 
@@ -13781,17 +13825,29 @@ function generateInvId(){ return 'inv_'+Date.now()+'_'+Math.random().toString(36
    dihitung dari selisih TAHUN PEROLEHAN (bukan tahun input/dicatatnya aset ke aplikasi, dan
    bukan cuma "tahun ini" doang) ke tahun sekarang. Kalau tahun/persentase kosong,
    Harga Wajar dianggap sama dengan Harga Beli (belum ada dasar buat menyusutkannya). */
-function hitungUmurAset(item){
-  if(!item.tahun) return 0;
-  var umur = new Date().getFullYear() - item.tahun;
-  if(umur < 0) umur = 0;
-  return umur;
+/* Penyusutan berbasis TANGGAL (umur pecahan tahun), bukan selisih tahun kalender, supaya nilai tidak melonjak turun tiap 1 Januari.
+   Tanggal perolehan, urutan prioritas: (1) tanggal pengeluaran pembelian tertaut, bila tahunnya sama dengan tahun perolehan;
+   (2) tanggal dicatat, bila tahun dicatat = tahun perolehan; (3) 1 Juli tahun perolehan (bulan tidak tersimpan, jadi dipakai titik tengah tahun). */
+function invTglPerolehan(x){
+  if(!x || !x.tahun) return null;
+  var th = parseInt(x.tahun,10); if(!th) return null;
+  var beli = x.id ? nwTglBeli(x.id, 'inv-beli') : null;
+  if(beli && parseInt(String(beli).slice(0,4),10)===th) return String(beli).slice(0,10);
+  if(x.dicatatPada && parseInt(String(x.dicatatPada).slice(0,4),10)===th) return String(x.dicatatPada).slice(0,10);
+  return th+'-07-01';
 }
-function hitungHargaWajar(item){
+function invUmurTahun(x, iso){
+  var t0 = invTglPerolehan(x); if(!t0) return 0;
+  var d = (nwTime(iso || todayISO()) - nwTime(t0)) / 86400000;
+  return d>0 ? d/365.25 : 0;
+}
+function hitungUmurAset(item){ return Math.round(invUmurTahun(item)*10)/10; }
+function fmtUmurTh(u){ return String(u).replace('.', ','); }
+function hitungHargaWajar(item, onDate){
   var harga = item.harga || 0;
   var rate = item.penyusutan || 0;
   if(!item.tahun || !rate) return harga;
-  var umur = hitungUmurAset(item);
+  var umur = invUmurTahun(item, onDate);
   var wajar = harga * Math.pow(1 - (rate/100), umur);
   if(!isFinite(wajar) || wajar < 0) wajar = 0;
   return Math.round(wajar);
@@ -13806,7 +13862,7 @@ function invUpdateWajarPreview(){
   if(!tahun || !rate){ el.textContent = 'Estimasi Harga Wajar: '+fmt(harga)+' (sama dengan Harga Beli, isi Tahun Perolehan & Penyusutan buat hitung otomatis)'; return; }
   var wajar = hitungHargaWajar({harga:harga, tahun:tahun, penyusutan:rate});
   var umur = hitungUmurAset({tahun:tahun});
-  el.textContent = 'Estimasi Harga Wajar sekarang: '+fmt(wajar)+' (disusutkan sejak tahun '+tahun+' • usia '+umur+' tahun)';
+  el.textContent = 'Estimasi Harga Wajar sekarang: '+fmt(wajar)+' (disusutkan sejak tahun '+tahun+' • usia '+fmtUmurTh(umur)+' tahun)';
 }
 function invHandleFotoFile(file){
   openCropper(file, {ratio:4/3, maxDim:720, quality:0.6, maxBytes:35000, minPx:320}, function(dataUrl){ INV_FOTO_TEMP = dataUrl; invRenderFotoPreview(); });
@@ -14076,7 +14132,7 @@ function renderInventarisDetail(){
   rowsHtml += invdRow('Tahun Perolehan', item.tahun ? String(item.tahun) : '-');
   rowsHtml += invdRow('Harga Beli', fmt(item.harga||0), 'hl');
   if(item.penyusutan) rowsHtml += invdRow('Penyusutan/Tahun', item.penyusutan+'%');
-  if(item.penyusutan) rowsHtml += invdRow('Estimasi Harga Wajar', fmt(hargaWajar)+'<span class="invd-sub">sejak '+item.tahun+' • '+hitungUmurAset(item)+' th</span>', 'hl');
+  if(item.penyusutan) rowsHtml += invdRow('Estimasi Harga Wajar', fmt(hargaWajar)+'<span class="invd-sub">sejak '+item.tahun+' • '+fmtUmurTh(hitungUmurAset(item))+' th</span>', 'hl');
   rowsHtml += invdRow(item.tempatBeli && invAsalNonBeli(item.tempatBeli) ? 'Asal' : 'Tempat Beli / Asal', escapeHtml(item.tempatBeli||'Belum diisi'));
   rowsHtml += invdRow('Lokasi Keberadaan', escapeHtml(item.lokasi||'Belum diisi'));
   var itemMapsLink = getLokasiMapsLink(item.lokasi) || item.lokasiMaps;
@@ -14265,9 +14321,9 @@ function simpanKeluarkanAset(){
 function invNilaiRugi(x){
   if(typeof x.nilaiSaatKeluar==='number') return x.nilaiSaatKeluar;
   /* data lama (belum ada nilai tersimpan): hitung pada tahun dikeluarkan, sama seperti rumus kekayaan bersih, bukan tahun ini */
-  var harga = x.harga||0, rate = x.penyusutan||0, th = x.tanggalKeluar ? parseInt(String(x.tanggalKeluar).slice(0,4),10) : new Date().getFullYear();
-  if(!x.tahun || !rate || !th) return harga;
-  var n = Math.pow(1-rate/100, Math.max(0, th-x.tahun));
+  var harga = x.harga||0, rate = x.penyusutan||0;
+  if(!x.tahun || !rate) return harga;
+  var n = Math.pow(1-rate/100, invUmurTahun(x, x.tanggalKeluar || todayISO()));
   return Math.round(isFinite(n) && n>0 ? harga*n : 0);
 }
 function invRugiBersih(x){
@@ -14481,11 +14537,11 @@ function renderInventarisList(){
     var displayHarga = (INV_NILAI_MODE==='wajar') ? hargaWajar : (x.harga||0);
     var subValueLine = (INV_NILAI_MODE==='wajar')
       ? 'Harga beli: '+fmt(x.harga||0)
-      : (x.penyusutan ? 'Estimasi harga wajar: '+fmt(hargaWajar)+' (sejak '+x.tahun+' • '+hitungUmurAset(x)+' th)' : '');
+      : (x.penyusutan ? 'Estimasi harga wajar: '+fmt(hargaWajar)+' (sejak '+x.tahun+' • '+fmtUmurTh(hitungUmurAset(x))+' th)' : '');
     var kvRows = [];
     if(!selesai){
       if(INV_NILAI_MODE==='wajar') kvRows.push(['Harga beli', fmt(x.harga||0)]);
-      else if(x.penyusutan) kvRows.push(['Est. wajar', fmt(hargaWajar)+' <small>sejak '+x.tahun+' • '+hitungUmurAset(x)+' th</small>']);
+      else if(x.penyusutan) kvRows.push(['Est. wajar', fmt(hargaWajar)+' <small>sejak '+x.tahun+' • '+fmtUmurTh(hitungUmurAset(x))+' th</small>']);
       var mInfo = x.merchant ? merchantByName(x.merchant) : null;
       var mChip = x.merchant
         ? '<span class="inv-mchip">'+(mInfo ? '<span class="acc-badge img-square" style="width:18px;height:18px;border-radius:6px;background:'+mInfo.bg+'"><img src="'+mInfo.img+'" alt=""></span>' : '<span style="width:6px;"></span>')+escapeHtml(merchantCanon(x.merchant))+'</span>'
@@ -16997,7 +17053,7 @@ function generateInsights(year){
   var totalInvBeli = sumInRange(DATA.invbeli, 'jumlah', start, end);
   var totalInvJual = sumInRange(DATA.invjual, 'jumlah', start, end);
   var atYear = akunTotals(start, end);
-  var totalKeluar = atYear.beban; /* Beban Operasional; pembelian aset/stok dipisah */
+  var totalKeluar = Math.max(0, atYear.beban - bebanInvestasi(start, end)); /* Beban rutin; pembelian aset/stok dan biaya investasi dipisah */
 
   var hasAnyData = totalPemasukanAll>0 || totalKeluar>0 || totalInvBeli>0 || totalInvJual>0 ||
     DATA.piutang.length>0 || DATA.hutang.length>0 || DATA.titipan.length>0;
@@ -17013,7 +17069,7 @@ function generateInsights(year){
   }
   if(totalPemasukan>0 || totalKeluar>0){
     var selisih = totalPemasukan - totalKeluar;
-    insightPush(items, 'info', '💰', L('Sepanjang '+year+': pemasukan rutin <b>'+fmt(totalPemasukan)+'</b>'+(nonRutinY>0?' (belum termasuk '+fmt(nonRutinY)+' dari penjualan aset/stok & keuntungan investasi)':'')+', beban operasional (tanpa pembelian aset & stok) <b>'+fmt(totalKeluar)+'</b>.', 'Throughout '+year+': regular income <b>'+fmt(totalPemasukan)+'</b>'+(nonRutinY>0?' (excluding '+fmt(nonRutinY)+' from asset/stock sales & investment gains)':'')+', operating expenses (excluding asset & stock purchases) <b>'+fmt(totalKeluar)+'</b>.'));
+    insightPush(items, 'info', '💰', L('Sepanjang '+year+': pemasukan rutin <b>'+fmt(totalPemasukan)+'</b>'+(nonRutinY>0?' (belum termasuk '+fmt(nonRutinY)+' dari penjualan aset/stok & keuntungan investasi)':'')+', beban operasional (tanpa pembelian aset & stok, kerugian & fee investasi) <b>'+fmt(totalKeluar)+'</b>.', 'Throughout '+year+': regular income <b>'+fmt(totalPemasukan)+'</b>'+(nonRutinY>0?' (excluding '+fmt(nonRutinY)+' from asset/stock sales & investment gains)':'')+', operating expenses (excluding asset & stock purchases, investment losses & fees) <b>'+fmt(totalKeluar)+'</b>.'));
     if(totalPemasukan>0){
       var rasio = Math.round((totalKeluar/totalPemasukan)*100);
       var rateSimpan = Math.round((selisih/totalPemasukan)*100);
@@ -17038,9 +17094,9 @@ function generateInsights(year){
     perEN = ', same period (1 Jan–'+nowY.getDate()+' '+MONTHS_EN_ABBR[nowY.getMonth()]+')';
   }
   var cmpPemasukan = sumInRange(DATA.pemasukan, 'jumlah', start, cmpEnd) - sumInRange(DATA.pemasukan, 'jumlah', start, cmpEnd, isPemasukanNonRutin);
-  var cmpKeluar = bebanOperasional(start, cmpEnd);
+  var cmpKeluar = bebanRutin(start, cmpEnd);
   var prevPemasukan = sumInRange(DATA.pemasukan, 'jumlah', prevStart, prevEnd) - sumInRange(DATA.pemasukan, 'jumlah', prevStart, prevEnd, isPemasukanNonRutin);
-  var prevKeluar = bebanOperasional(prevStart, prevEnd);
+  var prevKeluar = bebanRutin(prevStart, prevEnd);
   if(prevPemasukan>0 && cmpPemasukan>0){
     var pctInc = Math.round(((cmpPemasukan-prevPemasukan)/prevPemasukan)*100);
     insightPush(items, pctInc>=0?'positive':'warning', pctInc>=0?'📈':'📉',
@@ -17638,7 +17694,7 @@ function renderPieLegend(containerEl, items){
 /* ============ DRILL-DOWN GRAFIK INSTRUMEN INVESTASI (klik instrumen -> pie rincian per kode/produk) ============ */
 /* sourceArray: DATA.invbeli atau DATA.invjual. judulPrefix: "Pembelian" / "Penjualan". */
 function openInstrumenDrilldown(instrumen, sourceArray, year, judulPrefix){
-  var start = firstDayStr(year, 1), end = lastDayStr(year, 12);
+  var start = GR_CTX.tahun ? firstDayStr(year, 1) : GR_CTX.from, end = GR_CTX.tahun ? lastDayStr(year, 12) : GR_CTX.to;
   var map = {}, order = [];
   sourceArray.forEach(function(x){
     if(x.instrumen !== instrumen) return;
@@ -17651,10 +17707,10 @@ function openInstrumenDrilldown(instrumen, sourceArray, year, judulPrefix){
   var items = order.map(function(kode, i){ return { label:kode, color:paletteColor(i, order.length), value:map[kode] }; });
 
   document.getElementById('instrumen-drill-title').textContent = instrumen;
-  document.getElementById('instrumen-drill-sub').textContent = judulPrefix+' per Kode/Produk • Tahun '+year;
+  document.getElementById('instrumen-drill-sub').textContent = judulPrefix+' per Kode/Produk • '+(GR_CTX.tahun ? 'Tahun '+year : grRangeText());
   var chartEl = document.getElementById('instrumen-drill-chart');
   if(items.length===0){
-    chartEl.innerHTML = '<div style="padding:24px 4px; text-align:center; font-size:12.5px; color:var(--text-2);">Belum ada transaksi '+escapeHtml(instrumen)+' di tahun '+year+'.</div>';
+    chartEl.innerHTML = '<div style="padding:24px 4px; text-align:center; font-size:12.5px; color:var(--text-2);">Belum ada transaksi '+escapeHtml(instrumen)+(GR_CTX.tahun ? ' di tahun '+year : ' pada rentang ini')+'.</div>';
   } else {
     chartEl.innerHTML = svgPieChart(items);
     renderPieLegend(chartEl, items);
@@ -18414,7 +18470,7 @@ function nwInventarisNilai(upToDate){
     }
     var rate = x.penyusutan||0, nilai = harga;
     if(x.tahun && rate){
-      var umur = Math.max(0, yD - x.tahun);
+      var umur = invUmurTahun(x, D);
       nilai = harga * Math.pow(1 - rate/100, umur);
       if(!isFinite(nilai) || nilai<0) nilai = 0;
     }
@@ -18536,8 +18592,8 @@ function nwRangeSeries(from, to){
   });
   return { rows:rows, labels:labels };
 }
-function nwRenderRange(year, onChange){
-  var el = document.getElementById('networth-range'); if(!el) return;
+function nwRenderRange(year, onChange, elId){
+  var el = document.getElementById(elId || 'networth-range'); if(!el) return;
   var today = todayISO(), R = NW_RANGE;
   var from = R.from, to = R.to;
   if(R.preset==='tahun'){ from = year+'-01-01'; to = (year===new Date().getFullYear()) ? today : year+'-12-31'; }
@@ -18696,22 +18752,54 @@ function chartFixGray(datasets){
     return copy;
   });
 }
+/* ===== Filter rentang waktu untuk semua grafik & pie di halaman Grafik =====
+   Pakai state NW_RANGE (sama dengan grafik Kekayaan Bersih). preset 'tahun' = 12 bulan pada tahun terpilih;
+   selain itu rentang bebas Dari-Sampai: harian (<=31 hari), mingguan (<=200 hari), selain itu per bulan. */
+var GR_CTX = {tahun:true, from:'', to:'', keep:12, year:new Date().getFullYear()};
+function grRangeText(){ return GR_CTX.tahun ? 'Tahun '+GR_CTX.year : nwFmtTgl(GR_CTX.from)+' \u2013 '+nwFmtTgl(GR_CTX.to); }
+function grBuckets(year){
+  var R = NW_RANGE, today = todayISO(), out = {labels:[], bk:[], tahun:false, from:'', to:'', year:year}, m;
+  if(R.preset==='tahun' || !R.from || !R.to){
+    out.tahun = true; out.from = year+'-01-01'; out.to = year+'-12-31';
+    for(m=1;m<=12;m++){ out.bk.push({start:firstDayStr(year,m), end:lastDayStr(year,m)}); out.labels.push(MONTHS_ID[m-1]); }
+  } else {
+    var from = R.from, to = R.to, a = nwParse(from), b = nwParse(to), days = Math.round((b-a)/864e5), d, long = days>366;
+    out.from = from; out.to = to;
+    if(days <= 31){
+      for(d=new Date(a); d<=b; d.setDate(d.getDate()+1)){ var di = nwIso(d); out.bk.push({start:di, end:di}); out.labels.push(d.getDate()+' '+MONTHS_ID[d.getMonth()]); }
+    } else if(days <= 200){
+      for(d=new Date(a); d<=b; d.setDate(d.getDate()+7)){
+        var e = new Date(d); e.setDate(e.getDate()+6);
+        out.bk.push({start:nwIso(d), end: e>b ? to : nwIso(e)}); out.labels.push(d.getDate()+' '+MONTHS_ID[d.getMonth()]);
+      }
+    } else {
+      var cur = new Date(a);
+      while(cur<=b){
+        var y = cur.getFullYear(), mo = cur.getMonth()+1, mEnd = lastDayStr(y, mo);
+        out.bk.push({start:nwIso(cur), end: mEnd<to ? mEnd : to}); out.labels.push(MONTHS_ID[mo-1]+(long ? ' '+String(y).slice(2) : ''));
+        cur = new Date(y, mo, 1);
+      }
+    }
+  }
+  out.keep = out.bk.filter(function(x){ return x.start<=today; }).length;
+  return out;
+}
 function renderChartPanel(key, elId, labels, datasets, kind){
   var el = document.getElementById(elId);
   datasets = chartFixGray(datasets);
   var mode = LP_CHART_MODE[key] || (kind==='line' ? 'trend' : 'bar');
-  /* Tahun berjalan: potong bulan yang belum terjadi, biar garis berhenti di bulan ini
-     (bukan lanjut datar sampai Desember seolah-olah sudah terjadi) */
-  if(kind==='line'){
-    var selYear = parseInt((document.getElementById('gr-tahun')||{}).value, 10);
-    var nowD = new Date();
-    if(selYear === nowD.getFullYear()){
-      var keep = nowD.getMonth()+1;
-      datasets = datasets.map(function(ds){
-        return { label:ds.label, color:ds.color, data: ds.data.slice(0, keep) };
-      });
-    }
+  /* Potong titik yang belum terjadi (tahun berjalan / rentang sampai masa depan), biar garis berhenti di hari ini */
+  if(kind==='line' && datasets.length && GR_CTX.keep < datasets[0].data.length){
+    datasets = datasets.map(function(ds){ return { label:ds.label, color:ds.color, data: ds.data.slice(0, GR_CTX.keep) }; });
   }
+  /* Total pada rentang terpilih (hanya untuk grafik arus: pemasukan, pengeluaran, belanja, investasi, tagihan) */
+  (function(){
+    var tEl = document.getElementById(elId+'-total');
+    if(kind==='line'){ if(tEl && tEl.parentNode) tEl.parentNode.removeChild(tEl); return; }
+    var tot = 0; datasets.forEach(function(ds){ ds.data.forEach(function(v){ tot += v||0; }); });
+    if(!tEl){ tEl = document.createElement('div'); tEl.id = elId+'-total'; tEl.className = 'gr-total'; el.parentNode.insertBefore(tEl, el); }
+    tEl.innerHTML = '<span>Total '+escapeHtml(grRangeText())+'</span><b>'+maskOrFmt(tot)+'</b>';
+  })();
   var chartW = Math.round((el.clientWidth || el.parentNode.clientWidth || (window.innerWidth-72)) || 320);
   if(mode==='pie'){
     var items = datasets.map(function(ds){
@@ -18745,7 +18833,10 @@ function renderLaporan(){
 function renderGrafik(){
   applyLpChartVisibility(); /* tampilkan panel terpilih dulu supaya lebarnya bisa diukur */
   var year = parseInt(document.getElementById('gr-tahun').value, 10);
-  var labels = MONTHS_ID;
+  if(NW_RANGE.year !== year){ NW_RANGE.year = year; NW_RANGE.preset = 'tahun'; } /* ganti tahun = kembali ke tampilan tahun */
+  var GB = grBuckets(year), BK = GB.bk, labels = GB.labels;
+  GR_CTX = {tahun:GB.tahun, from:GB.from, to:GB.to, keep:GB.keep, year:year};
+  nwRenderRange(year, renderGrafik, 'gr-range');
   var _selG = (document.getElementById('lp-chart-pilih')||{}).value || 'networth';
   function want(k){ return _selG===k; }
   _nwBeliCache = {};
@@ -18755,7 +18846,7 @@ function renderGrafik(){
   // 1. Saldo per rekening
   var dsAkun = ACCOUNTS.map(function(acc,i){
     return { label:acc, color:paletteColor(i, ACCOUNTS.length),
-      data: labels.map(function(_,mi){ return saldoAkun(acc, lastDayStr(year, mi+1)); }) };
+      data: BK.map(function(b){ return saldoAkun(acc, b.end); }) };
   });
   renderChartPanel('saldo', 'chart-saldo', labels, dsAkun, 'line');
 
@@ -18768,8 +18859,8 @@ function renderGrafik(){
   if(want('ph')){
   // 2. Piutang & Hutang
   var dsPH = [
-    { label:'Piutang Berjalan', color:'#F2545B', data: labels.map(function(_,mi){ return totalPiutang(lastDayStr(year, mi+1)); }) },
-    { label:'Hutang Belum Lunas', color:'#E8A33D', data: labels.map(function(_,mi){ return totalHutang(lastDayStr(year, mi+1)); }) }
+    { label:'Piutang Berjalan', color:'#F2545B', data: BK.map(function(b){ return totalPiutang(b.end); }) },
+    { label:'Hutang Belum Lunas', color:'#E8A33D', data: BK.map(function(b){ return totalHutang(b.end); }) }
   ];
   renderChartPanel('ph', 'chart-ph', labels, dsPH, 'line');
 
@@ -18777,7 +18868,7 @@ function renderGrafik(){
   if(want('titipan')){
   // 2b. Dana Titipan (terpisah dari Piutang & Hutang)
   var dsTitipan = [
-    { label:'Dana Titipan Aktif', color:'#1E8A5E', data: labels.map(function(_,mi){ return totalTitipan(lastDayStr(year, mi+1)); }) }
+    { label:'Dana Titipan Aktif', color:'#1E8A5E', data: BK.map(function(b){ return totalTitipan(b.end); }) }
   ];
   renderChartPanel('titipan', 'chart-titipan', labels, dsTitipan, 'line');
 
@@ -18786,8 +18877,8 @@ function renderGrafik(){
   // 3. Pemasukan per kategori/sumber (bulanan, bukan kumulatif)
   var dsPemasukan = DATA.sumberPemasukan.map(function(sumber,i){
     return { label:sumber, color:paletteColor(i, DATA.sumberPemasukan.length),
-      data: labels.map(function(_,mi){
-        var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+      data: BK.map(function(b){
+        var start = b.start, end = b.end, s=0;
         DATA.pemasukan.forEach(function(p){ if(p.sumber===sumber && p.tanggal>=start && p.tanggal<=end) s+=p.jumlah; });
         return s;
       }) };
@@ -18799,8 +18890,8 @@ function renderGrafik(){
   // 4. Pengeluaran per kategori (bulanan, bukan kumulatif)
   var dsKat = DATA.jenisPengeluaran.map(function(kat,i){
     return { label:kat, color:paletteColor(i, DATA.jenisPengeluaran.length),
-      data: labels.map(function(_,mi){
-        var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+      data: BK.map(function(b){
+        var start = b.start, end = b.end, s=0;
         pengeluaranPerJenis().forEach(function(p){ if(p.jenis===kat && p.tanggal>=start && p.tanggal<=end) s+=p.jumlah; });
         return s;
       }) };
@@ -18812,8 +18903,8 @@ function renderGrafik(){
   // 5. Belanja per kategori item (bulanan)
   var dsBelanja = DATA.kategoriBelanja.map(function(kat,i){
     return { label:kat, color:paletteColor(i, DATA.kategoriBelanja.length),
-      data: labels.map(function(_,mi){
-        var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+      data: BK.map(function(b){
+        var start = b.start, end = b.end, s=0;
         DATA.belanja.forEach(function(b){ if(b.kategori===kat && b.tanggal>=start && b.tanggal<=end) s+=b.jumlah; });
         return s;
       }) };
@@ -18825,8 +18916,8 @@ function renderGrafik(){
   if(want('invbeli')){
   var dsInvBeli = INSTRUMEN_INVESTASI.map(function(ins,i){
     return { label:ins, color:paletteColor(i, INSTRUMEN_INVESTASI.length),
-      data: labels.map(function(_,mi){
-        var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+      data: BK.map(function(b){
+        var start = b.start, end = b.end, s=0;
         DATA.invbeli.forEach(function(x){ if(x.instrumen===ins && x.tanggal>=start && x.tanggal<=end) s+=x.jumlah; });
         return s;
       }) };
@@ -18838,8 +18929,8 @@ function renderGrafik(){
   if(want('invjual')){
   var dsInvJual = INSTRUMEN_INVESTASI.map(function(ins,i){
     return { label:ins, color:paletteColor(i, INSTRUMEN_INVESTASI.length),
-      data: labels.map(function(_,mi){
-        var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+      data: BK.map(function(b){
+        var start = b.start, end = b.end, s=0;
         DATA.invjual.forEach(function(x){ if(x.instrumen===ins && x.tanggal>=start && x.tanggal<=end) s+=x.jumlah; });
         return s;
       }) };
@@ -18850,8 +18941,8 @@ function renderGrafik(){
   }
   if(want('invkinerja')){
   // 6b. Kinerja Portofolio Investasi: tren untung/rugi terealisasi (bulanan & kumulatif)
-  var pnlBulanan = labels.map(function(_,mi){
-    var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+  var pnlBulanan = BK.map(function(b){
+    var start = b.start, end = b.end, s=0;
     DATA.invjual.forEach(function(x){
       if(x.tanggal>=start && x.tanggal<=end){
         var ur = invUntungRugi(x);
@@ -18864,7 +18955,7 @@ function renderGrafik(){
   pnlBulanan.forEach(function(v){ running += v; pnlKumulatif.push(running); });
   var dsKinerja = [
     { label:'Untung/Rugi Bulanan', color:'#5E78FF', data: pnlBulanan },
-    { label:'Kumulatif Sepanjang Tahun', color:'#F2545B', data: pnlKumulatif }
+    { label:(GB.tahun ? 'Kumulatif Sepanjang Tahun' : 'Kumulatif dalam Rentang'), color:'#F2545B', data: pnlKumulatif }
   ];
   renderChartPanel('invkinerja', 'chart-invkinerja', labels, dsKinerja, 'line');
   var pnlAllTime = DATA.invjual.reduce(function(a,x){
@@ -18879,7 +18970,7 @@ function renderGrafik(){
       var arrow = withTrend ? (positif ? ' ▲' : ' ▼') : '';
       return '<span class="badge" style="border:1.5px solid '+(positif?'var(--pos)':'var(--danger)')+'; color:'+(positif?'var(--pos)':'var(--danger)')+'; background:transparent; font-weight:700;">'+label+': '+(positif?'+':'-')+fmt(Math.abs(val))+arrow+'</span>';
     }
-    sumEl.innerHTML = pillHtml('Realized '+year, pnlTahunIni, true) + pillHtml('Realized Semua Waktu', pnlAllTime, false);
+    sumEl.innerHTML = pillHtml(GB.tahun ? 'Realized '+year : 'Realized Rentang', pnlTahunIni, true) + pillHtml('Realized Semua Waktu', pnlAllTime, false);
   }
 
   }
@@ -18889,8 +18980,8 @@ function renderGrafik(){
   // 7. Tagihan per jenis (bulanan)
   var dsTagihan = DATA.jenisTagihan.map(function(jn,i){
     return { label:jn, color:paletteColor(i, DATA.jenisTagihan.length),
-      data: labels.map(function(_,mi){
-        var start = firstDayStr(year, mi+1), end = lastDayStr(year, mi+1), s=0;
+      data: BK.map(function(b){
+        var start = b.start, end = b.end, s=0;
         DATA.tagihan.forEach(function(x){ if(x.jenis===jn && x.tanggal>=start && x.tanggal<=end) s+=x.jumlah; });
         return s;
       }) };
@@ -19006,6 +19097,8 @@ function wireEvents(){
       else if(atype==='hapus-foto') hapusFotoProfil();
       else if(atype==='copy') copyAkunNumber();
       else if(atype==='edit-nama') bukaEditNama();
+      else if(atype==='pilih-sampul') pilihSampulProfil();
+      else if(atype==='hapus-sampul') hapusSampulProfil();
       return;
     }
   });
@@ -19261,6 +19354,11 @@ function wireEvents(){
   document.getElementById('profil-foto-input').addEventListener('change', function(){
     var f = this.files && this.files[0];
     handleProfilFotoFile(f);
+    this.value = '';
+  });
+  document.getElementById('profil-sampul-input').addEventListener('change', function(){
+    var f = this.files && this.files[0];
+    handleProfilSampulFile(f);
     this.value = '';
   });
   document.getElementById('inv-search').addEventListener('input', renderInventarisList);
@@ -20009,7 +20107,7 @@ if(document.readyState==='loading'){
   var PF = [["Dicetak ","Printed "],["Saldo per Rekening (per ","Balance per Account (as of "],["Piutang & Hutang (posisi per ","Receivables & Debts (position as of "],["Penjualan produk investasi tahun ini: ","Investment product sales this year: "],["Pengeluaran bulan ini tercatat ","Spending recorded this month "],["Tagihan tanggal ","Bill on date "],["Saldo mengendap ","Idle balance "],["Update terakhir ","Last update "],["Beli Aset Biologis: ","Buy Biological Asset: "],["Beli Aset: ","Buy Asset: "],["Bisa diambil: ","Withdrawable: "],["Jatuh tempo ","Due "],["Terlambat ","Overdue "],["Dipinjamkan ","Lent "],["Setara ","Equivalent to "],["Dipinjam ","Borrowed "],["Pembelian ","Purchase "],["Penjualan ","Sale "],["Cicilan ","Installment "],["Defisit ","Deficit "],["Fee beli ","Buy fee "],["Fee jual ","Sell fee "],["Untung ","Profit "],["Nyisa ","Left over "],["Skor ","Score "],["Rugi ","Loss "],["Dari ","From "]];
   var MO = {Januari:'January',Februari:'February',Maret:'March',April:'April',Mei:'May',Juni:'June',Juli:'July',Agustus:'August',September:'September',Oktober:'October',November:'November',Desember:'December'};
   var RXC = [["^Gagal aktifkan biometrik — (.+)$","Failed to enable biometrics — $1"],["^Jumlah transfer minimal (.+) \\(sebesar titipannya\\)$","Minimum transfer amount is $1 (equal to the held amount)"],["^Dana titipan (.+) tersimpan$","Held funds $1 saved"],["^Pemasukan (.+) tersimpan$","Income $1 saved"],["^Pengeluaran (.+) tersimpan$","Spending $1 saved"],["^Hutang (.+) tersimpan$","Debt $1 saved"],["^Hutang (.+) dari total aset (.+)$","Debt $1 of total assets $2"],["^Jumlah tidak boleh lebih kecil dari cicilan yang sudah diterima \\((.+)\\)$","Amount cannot be smaller than the installments already received ($1)"],["^Jumlah tidak boleh lebih kecil dari cicilan yang sudah dibayar \\((.+)\\)$","Amount cannot be smaller than the installments already paid ($1)"],["^Belum ada produk (.+) yang dimiliki untuk dijual$","No $1 products owned to sell yet"],["^Split bill tersimpan • (\\d+) orang dititipin$","Split bill saved • $1 people assigned"],["^Ikhlasin piutang (.+) dari (.+)\\? Nominalnya bakal dicatat sebagai pengeluaran \\(dikasih/ikhlas\\), bukan ditagih lagi\\.$","Write off the receivable of $1 from $2? The amount will be recorded as spending (given away/forgiven) and will no longer be collected."],["^Anggap piutang (.+) dari (.+) tak tertagih\\? Nominalnya bakal dicatat sebagai pengeluaran \\(Piutang Tak Tertagih\\) dan nggak ditagih lagi\\.$","Treat the receivable of $1 from $2 as uncollectible? The amount will be recorded as spending (Uncollectible Receivable) and will no longer be collected."],["^Kategori \"(.+)\" ditambahkan$","Category \"$1\" added"],["^Item \"(.+)\" ditambahkan$","Item \"$1\" added"],["^Kategori \"(.+)\" masih dipakai di data belanja/item\\. Riwayat lama tetap tersimpan, tapi kategori ini nggak akan bisa dipilih lagi untuk item baru\\. Lanjut hapus\\?$","Category \"$1\" is still used in shopping/item data. Old history is kept, but this category can no longer be chosen for new items. Delete anyway?"],["^Item \"(.+)\" masih ada di riwayat belanja/stok\\. Riwayat lama tetap tersimpan, tapi item ini nggak akan bisa dipilih lagi untuk belanja baru\\. Lanjut hapus\\?$","Item \"$1\" is still in the shopping/stock history. Old history is kept, but this item can no longer be chosen for new purchases. Delete anyway?"],["^Hapus kategori \"(.+)\"\\?(.*)$","Delete category \"$1\"?$2"],["^Hapus item \"(.+)\"\\?(.*)$","Delete item \"$1\"?$2"],["^Hapus rekening \"(.+)\"\\?(.*)$","Delete account \"$1\"?$2"],["^Target \"(.+)\" dibuat$","Goal \"$1\" created"],["^🎉 Target \"(.+)\" tercapai! (.+) dipindah dari (.+) ke (.+)$","🎉 Goal \"$1\" reached! $2 moved from $3 to $4"],["^Setoran (.+) dipindah dari (.+) ke (.+)$","Deposit $1 moved from $2 to $3"],["^Hapus target \"(.+)\"\\? Setoran yang sudah tercatat akan dikembalikan ke saldo rekening asal, dan progresnya hilang\\.$","Delete goal \"$1\"? Recorded deposits will be returned to the source account balance, and its progress will be lost."],["^Transaksi berulang \"(.+)\" dibuat$","Recurring transaction \"$1\" created"],["^Aset disimpan, saldo (.+) terpotong (.+)$","Asset saved, $1 balance deducted by $2"],["^Aset biologis disimpan, saldo (.+) terpotong (.+)$","Biological asset saved, $1 balance deducted by $2"],["^Hapus aset \"(.+)\"\\? Transaksi terkait \\(potongan saldo beli / pemasukan jual\\) juga akan dihapus\\.$","Delete asset \"$1\"? Related transactions (purchase balance deduction / sale income) will also be deleted."],["^Hapus aset biologis \"(.+)\"\\? Transaksi terkait \\(potongan saldo beli, penjualan, dan semua riwayat panennya\\) juga akan dihapus\\.$","Delete biological asset \"$1\"? Related transactions (purchase balance deduction, sales, and all its harvest history) will also be deleted."],["^Aset \"(.+)\" terjual \\((.+)\\), belum dibayar — otomatis dicatat sebagai Piutang (.+)$","Asset \"$1\" sold ($2), not yet paid — automatically recorded as a Receivable $3"],["^Aset \"(.+)\" terjual, saldo (.+) bertambah (.+) \\((.+)\\)$","Asset \"$1\" sold, $2 balance increased by $3 ($4)"],["^Aset \"(.+)\" dikeluarkan \\((.+)\\), tetap tersimpan di riwayat$","Asset \"$1\" removed ($2), still kept in the history"],["^Hasil panen dicatat, saldo (.+) bertambah (.+)$","Harvest recorded, $1 balance increased by $2"],["^Stok \"(.+)\" terjual, belum dibayar — otomatis dicatat sebagai Piutang (.+)$","Stock \"$1\" sold, not yet paid — automatically recorded as a Receivable $2"],["^Stok \"(.+)\" terjual, saldo (.+) bertambah (.+)$","Stock \"$1\" sold, $2 balance increased by $3"],["^Stok \"(.+)\" dikurangi (.+)$","Stock \"$1\" reduced by $2"],["^Hapus dulu semua nomor di bawah \"(.+)\" sebelum menghapus rekening ini$","First delete all numbers under \"$1\" before deleting this account"],["^Belanja item terbanyak di kategori \"(.+)\"$","Most item shopping is in category \"$1\""],["^Tagihan terbesar: \"(.+)\"$","Largest bill: \"$1\""],["^Setoran ke target \"(.+)\"$","Deposit to goal \"$1\""],["^Nomor baru untuk \"(.+)\"$","New number for \"$1\""],["^Beli aset biologis \"(.+)\"$","Buy biological asset \"$1\""],["^Beli aset inventaris \"(.+)\"$","Buy inventory asset \"$1\""],["^Jual aset biologis \"(.+)\"$","Sell biological asset \"$1\""],["^Jual aset inventaris \"(.+)\"$","Sell inventory asset \"$1\""],["^Jual stok \"(.+)\"$","Sell stock \"$1\""],["^Pembeli aset \"(.+)\"$","Buyer of asset \"$1\""],["^Pembeli stok \"(.+)\"$","Buyer of stock \"$1\""],["^Piutang dari jual aset biologis \"(.+)\"$","Receivable from selling biological asset \"$1\""],["^Piutang dari jual aset inventaris \"(.+)\"$","Receivable from selling inventory asset \"$1\""],["^Piutang dari jual stok \"(.+)\"$","Receivable from selling stock \"$1\""],["^Beli di (.+)$","Bought at $1"],["^Beli via (.+)$","Bought via $1"],["^Tanda Dana Darurat dilepas dari (.+)$","Emergency Fund mark removed from $1"],["^Tumbuh Kaya sekarang ada di (.+)$","Tumbuh Kaya is now on $1"],["^dibanding (\\d+) \\((.+) → (.+)\\)\\.$","compared to $1 ($2 → $3)."],["^Pengeluaran naik$","Spending rose"],["^Pengeluaran turun$","Spending fell"]].map(function(a){ return [new RegExp(a[0]), a[1]]; });
-  RXC = RXC.concat([["^(?:PIUTANG & HUTANG|Piutang & Hutang) \\(posisi per (.+)\\)$","Receivables & Debts (as of $1)"],["^(?:SALDO PER REKENING|Saldo per Rekening) \\(per (.+)\\)$","Balance per Account (as of $1)"],["^Lihat semua \\((\\d+) kategori\\)$","See all ($1 categories)"],["^Semua \\((\\d+)\\)$","All ($1)"],["^Jumlah melebihi sisa \\((.+)\\)$","Amount exceeds the remainder ($1)"],["^Qty melebihi stok tersisa \\((.+)\\)$","Qty exceeds the remaining stock ($1)"],["^Setara ([\\d.,]+) bulan pengeluaran \\(dana darurat (.+)\\)$","Equivalent to $1 months of spending (emergency fund $2)"],["^Setara ([\\d.,]+) bulan pengeluaran \\(saldo likuid (.+)\\)$","Equivalent to $1 months of spending (liquid balance $2)"],["^Setara ([\\d.,]+) bulan pengeluaran \\(target 3[–-]6 bulan\\)$","Equivalent to $1 months of spending (target 3–6 months)"],["^(\\d+) dari (\\d+) kategori masih di dalam limit \\((.+) dari (.+) total limit\\)$","$1 of $2 categories are still within the limit ($3 of $4 total limit)"],["^dari pemasukan \\(pengeluaran (.+)% dari pemasukan\\)\\. Kondisi keuangan sehat\\.$","of income (spending is $1% of income). Your finances are healthy."],["^\\(pengeluaran (.+)% dari pemasukan\\)\\. Pengeluaran lebih besar dari pemasukan tahun ini\\.$","(spending is $1% of income). Spending is larger than income this year."],["^Nyisa (\\d+)% dari pemasukan \\((.+)\\)$","Left over $1% of income ($2)"],["^Defisit (\\d+)% dari pemasukan \\((.+)\\)$","Deficit $1% of income ($2)"],["^Saldo mengendap (.+) di (.+) gak bisa diambil\\. Maksimal yang bisa keluar: (.+)$","Idle balance $1 in $2 can\\'t be withdrawn. Maximum that can go out: $3"],["^tiap (\\d+) bln$","every $1 mo"],["^Split Bill \\(total (.+), patungan (\\d+) orang\\)$","Split Bill (total $1, split among $2 people)"],["^Split Bill \\(total (.+)\\)$","Split Bill (total $1)"],["^Terjual (.+?) \\(belum diterima\\)$","Sold $1 (not yet received)"],["^Terjual (.+)$","Sold $1"],["^Estimasi Harga Wajar sekarang: (.+) \\(disusutkan sejak tahun (\\d+) • usia (\\d+) tahun\\)$","Current Fair Price Estimate: $1 (depreciated since $2 • age $3 years)"],["^\\(vs nilai wajar (.+)\\)$","(vs fair value $1)"],["^Total Nilai Aset \\(Harga Wajar\\)$","Total Asset Value (Fair Price)"],["^Total Nilai Aset \\(Harga Perolehan\\)$","Total Asset Value (Acquisition Cost)"],["^Sudah ada cicilan diterima (.+), jadi yang dihitung hanya sisa (.+)\\.$","Installments of $1 were already received, so only the remainder $2 is counted."],["^(\\d+) kategori pengeluaran \\(split\\) tersimpan$","$1 spending categories (split) saved"],["^Pilih alasan keluar dulu$","Choose the reason for removal first"],["^(\\d+) orang dititipin$","$1 people assigned"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }));
+  RXC = RXC.concat([["^(?:PIUTANG & HUTANG|Piutang & Hutang) \\(posisi per (.+)\\)$","Receivables & Debts (as of $1)"],["^(?:SALDO PER REKENING|Saldo per Rekening) \\(per (.+)\\)$","Balance per Account (as of $1)"],["^Lihat semua \\((\\d+) kategori\\)$","See all ($1 categories)"],["^Semua \\((\\d+)\\)$","All ($1)"],["^Jumlah melebihi sisa \\((.+)\\)$","Amount exceeds the remainder ($1)"],["^Qty melebihi stok tersisa \\((.+)\\)$","Qty exceeds the remaining stock ($1)"],["^Setara ([\\d.,]+) bulan pengeluaran \\(dana darurat (.+)\\)$","Equivalent to $1 months of spending (emergency fund $2)"],["^Setara ([\\d.,]+) bulan pengeluaran \\(saldo likuid (.+)\\)$","Equivalent to $1 months of spending (liquid balance $2)"],["^Setara ([\\d.,]+) bulan pengeluaran \\(target 3[–-]6 bulan\\)$","Equivalent to $1 months of spending (target 3–6 months)"],["^(\\d+) dari (\\d+) kategori masih di dalam limit \\((.+) dari (.+) total limit\\)$","$1 of $2 categories are still within the limit ($3 of $4 total limit)"],["^dari pemasukan \\(pengeluaran (.+)% dari pemasukan\\)\\. Kondisi keuangan sehat\\.$","of income (spending is $1% of income). Your finances are healthy."],["^\\(pengeluaran (.+)% dari pemasukan\\)\\. Pengeluaran lebih besar dari pemasukan tahun ini\\.$","(spending is $1% of income). Spending is larger than income this year."],["^Nyisa (\\d+)% dari pemasukan \\((.+)\\)$","Left over $1% of income ($2)"],["^Defisit (\\d+)% dari pemasukan \\((.+)\\)$","Deficit $1% of income ($2)"],["^Saldo mengendap (.+) di (.+) gak bisa diambil\\. Maksimal yang bisa keluar: (.+)$","Idle balance $1 in $2 can\\'t be withdrawn. Maximum that can go out: $3"],["^tiap (\\d+) bln$","every $1 mo"],["^Split Bill \\(total (.+), patungan (\\d+) orang\\)$","Split Bill (total $1, split among $2 people)"],["^Split Bill \\(total (.+)\\)$","Split Bill (total $1)"],["^Terjual (.+?) \\(belum diterima\\)$","Sold $1 (not yet received)"],["^Terjual (.+)$","Sold $1"],["^Estimasi Harga Wajar sekarang: (.+) \\(disusutkan sejak tahun (\\d+) • usia ([\\d,]+) tahun\\)$","Current Fair Price Estimate: $1 (depreciated since $2 • age $3 years)"],["^\\(vs nilai wajar (.+)\\)$","(vs fair value $1)"],["^Total Nilai Aset \\(Harga Wajar\\)$","Total Asset Value (Fair Price)"],["^Total Nilai Aset \\(Harga Perolehan\\)$","Total Asset Value (Acquisition Cost)"],["^Sudah ada cicilan diterima (.+), jadi yang dihitung hanya sisa (.+)\\.$","Installments of $1 were already received, so only the remainder $2 is counted."],["^(\\d+) kategori pengeluaran \\(split\\) tersimpan$","$1 spending categories (split) saved"],["^Pilih alasan keluar dulu$","Choose the reason for removal first"],["^(\\d+) orang dititipin$","$1 people assigned"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }));
   RXC = [["^Hutang (.+) dari total aset (.+) \\((\\d+)%\\), setara ([\\d.,]+)x pendapatan setahun, cicilan (\\d+)% dari pendapatan bulanan$","Debt $1 of total assets $2 ($3%), equal to $4x yearly income, installments $5% of monthly income"],["^Hutang (.+) dari total aset (.+) \\((\\d+)%\\), setara ([\\d.,]+)x pendapatan setahun$","Debt $1 of total assets $2 ($3%), equal to $4x yearly income"],["^Hutang (.+) dari total aset (.+) \\((\\d+)%\\)$","Debt $1 of total assets $2 ($3%)"],["^Aset biologis terjual, belum dibayar — otomatis dicatat sebagai Piutang (.+)$","Biological asset sold, not yet paid — automatically recorded as a Receivable $1"],["^⚠️ lewat budget (.+)$","⚠️ over budget by $1"],["^sudah (\\d+)% budget$","already $1% of budget"],["^Saldo \"(.+)\" minus \\($","Balance \"$1\" is negative ("],["^Tagihan terbesar: \"(.+)\" senilai (.+) dari total tagihan (.+)\\.$","Largest bill: \"$1\" worth $2 out of total bills $3."],["^Piutang (.+) dicatat diberikan$","Receivable $1 recorded as given"],["^Piutang (.+) dicatat tak tertagih$","Receivable $1 recorded as uncollectible"],["^Piutang (.+) tersimpan$","Receivable $1 saved"],["^Jual stok \"(.+)\" x(\\d+)$","Sell stock \"$1\" x$2"],["^Piutang dari jual stok \"(.+)\" x(\\d+)$","Receivable from selling stock \"$1\" x$2"],["^Konsumsi sendiri dicatat, tidak memengaruhi saldo$","Own consumption recorded, does not affect the balance"],["^Bagi hasil dicatat, tidak memengaruhi saldo$","Profit sharing recorded, does not affect the balance"],["^Gagal panen dicatat, tidak memengaruhi saldo$","Failed harvest recorded, does not affect the balance"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
   RXC = [["^Transfer (.+) \\+ Biaya admin (.+) tersimpan$","Transfer $1 + Admin fee $2 saved"],["^Transfer (.+) tersimpan$","Transfer $1 saved"],["^\"(.+)\" diubah jadi \"(.+)\"$","\"$1\" renamed to \"$2\""],["^Penjualan (.+?) (Rp\\S+) tersimpan • untung (.+)$","Sale $1 $2 saved • profit $3"],["^Penjualan (.+?) (Rp\\S+) tersimpan • rugi (.+)$","Sale $1 $2 saved • loss $3"],["^Penjualan (.+?) (Rp\\S+) tersimpan$","Sale $1 $2 saved"],["^Pembelian (.+?) (Rp\\S+) tersimpan$","Purchase $1 $2 saved"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
   RXC = [["^1 rekening$","1 account"],["^(\\d+) rekening$","$1 accounts"],["^1 mutasi$","1 transaction"],["^(\\d+) mutasi$","$1 transactions"],["^Tabungan (Rp.*)$","Savings $1"],["^Bisa diambil: (.+) \\(mengendap (.+)\\)$","Withdrawable: $1 (idle $2)"],["^\\(mengendap (.+)\\)$","(idle $1)"],["^💰 Kantong: (.+)$","💰 Pocket: $1"],["^\"(.+)\" masih dipakai di data \\(saldo awal atau transaksi\\)\\. Riwayat lama tetap tersimpan, tapi rekening ini nggak akan bisa dipilih lagi untuk transaksi baru\\. Lanjut hapus\\?$","\"$1\" is still used in data (opening balance or transactions). Old history is kept, but this account can no longer be chosen for new transactions. Delete anyway?"],["^Nomor baru untuk \"(.+)\" ditambahkan$","New number for \"$1\" added"],["^Rekening \"(.+)\" ditambahkan$","Account \"$1\" added"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
@@ -20088,7 +20186,7 @@ if(document.readyState==='loading'){
   for(var k19 in X19) if(!(k19 in D)) D[k19]=X19[k19];
   RXC = [["^(•\\s*)?Jatuh tempo (\\d+) hari lagi$", "$1Due in $2 days"], ["^(•\\s*)?Jatuh tempo besok$", "$1Due tomorrow"], ["^(•\\s*)?Jatuh tempo hari ini$", "$1Due today"], ["^(•\\s*)?Jatuh tempo (\\d.+)$", "$1Due $2"], ["^Total semua kategori • (\\d+) hari$", "Total all categories • $1 days"], ["^Tiap (\\d+) hari$", "Every $1 days"], ["^Tiap (\\d+) minggu$", "Every $1 weeks"], ["^Tiap (\\d+) bulan$", "Every $1 months"], ["^Tiap (\\d+) tahun$", "Every $1 years"], ["^(\\d+) target, (\\d+) sudah tercapai$", "$1 goals, $2 achieved"], ["^Tampilkan lebih banyak \\((\\d+) dari (\\d+)\\)$", "Show more ($1 of $2)"], ["^(.+) · kurang (.+)$", "$1 · short by $2"], ["^(.*)Target: (.+)$", "$1Target date: $2"], ["^(\\W*)Kantong: (.+)$", "$1Pocket: $2"], ["^(\\d+) kategori$", "$1 categories"], ["^1 categories$", "1 category"], ["^(\\d+) aset aktif$", "$1 active assets"], ["^sejak (\\d+)$", "since $1"], ["^(\\d+) th$", "$1 yrs"], ["^(\\d+) bulan terakhir$", "Last $1 months"], ["^(\\d+) hari terakhir$", "Last $1 days"], ["^Beli (Rp.+)$", "Buy $1"], ["^Jual (Rp.+)$", "Sell $1"], ["^Rutin (Rp.+)/hari$", "Regular $1/day"], ["^Sesekali/dadakan total (Rp.+)$", "Occasional/unexpected total $1"], ["^Realized Semua Waktu: (.+)$", "Realized All Time: $1"], ["^Masuk ke (.+)$", "Into $1"], ["^masuk ke (.+)$", "into $1"], ["^Nama orang ke-(\\d+)$", "Person $1 name"], ["^Belum ada (.+) yang dimiliki di (.+)$", "No $1 held at $2 yet"], ["^Cash / Tunai \\((\\d+)\\)$", "Cash ($1)"], ["^Investasi \\((\\d+)\\)$", "Investment ($1)"], ["^• \\(Tanpa kode\\)$", "• (No code)"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
   RXC = ([["^Dibayar (.+) dari (.+), \"(.+)\" masuk ke Stok Barang$", "Paid $1 from $2, \"$3\" added to Item Stock"], ["^Dibayar (.+) dari (.+), \"(.+)\" masuk ke Aset Biologis$", "Paid $1 from $2, \"$3\" added to Biological Assets"], ["^Dibayar (.+) dari (.+), \"(.+)\" masuk ke Inventaris$", "Paid $1 from $2, \"$3\" added to Inventory"], ["^(.+) ditandai sebagai Dana Darurat$", "$1 marked as Emergency Fund"], ["^Tanda Dana Darurat dilepas dari (.+)$", "Emergency Fund mark removed from $1"], ["^(\\d+) transaksi berulang otomatis tercatat: (.+), dll$", "$1 recurring transactions automatically recorded: $2, etc"], ["^(\\d+) transaksi berulang otomatis tercatat: (.+)$", "$1 recurring transactions automatically recorded: $2"], ["^Split bill tersimpan • (\\d+) orang dititipin$", "Split bill saved • $1 people recorded as held funds"], ["^(.+) dipakai (.+) • sisa (.+)$", "$1 used $2 • $3 left"], ["^sudah (\\d+)% budget$", "already $1% of budget"], ["^Lainnya \\((\\d+)\\)$", "Others ($1)"], ["^Saldo di Tumbuh Kaya sama dengan saldo aslimu \\((.+)\\)$", "The balance in Tumbuh Kaya equals your actual balance ($1)"], ["^Transfer diperbarui \\+ Biaya admin (.+)$", "Transfer updated + Admin fee $1"], ["^Tumbuh Kaya sekarang ada di versi (.+)$", "Tumbuh Kaya is now on version $1"], ["^Terjual (\\d+) (ekor|pohon|butir|lembar|botol|bungkus|ikat|karung|kaleng|lusin|Pcs|Kg|Gram)$", "Sold $1 $2"]]).map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
-  RXC = RXC.concat(([["^(\\d+) kategori pengeluaran \\(split\\) tersimpan$", "$1 spending categories (split) saved"], ["^Tercatat, \"(.+)\" masuk Aset Biologis$", "Recorded, \"$1\" added to Biological Assets"], ["^Aset \"(.+)\" dikeluarkan \\((.+)\\), tetap tersimpan di riwayat$", "Asset \"$1\" removed ($2), still kept in history"], ["^Aset \"(.+)\" terjual \\((.+)\\), belum dibayar — otomatis dicatat sebagai Piutang (.+)$", "Asset \"$1\" sold ($2), not yet paid — automatically recorded as Receivable $3"], ["^🎉 Target \"(.+)\" tercapai! (.+) dipindah dari (.+) ke (.+)$", "🎉 Goal \"$1\" reached! $2 moved from $3 to $4"], ["^Kategori \"(.+)\" ditambahkan$", "Category \"$1\" added"], ["^Item \"(.+)\" ditambahkan$", "Item \"$1\" added"], ["^Transaksi berulang \"(.+)\" dibuat$", "Recurring transaction \"$1\" created"], ["^⏳ Segera kedaluwarsa \\(≤30 hari\\): (.+)$", "⏳ Expiring soon (≤30 days): $1"], ["^⚠️ Perlu dicek \\((\\d+)\\)$", "⚠️ Needs checking ($1)"], ["^🛒 Perlu dibeli \\((\\d+)\\)$", "🛒 To buy ($1)"], ["^🛒 Daftar Belanja \\((.+)\\)$", "🛒 Shopping List ($1)"], ["^Estimasi total: ±(.+)$", "Estimated total: ±$1"], ["^Estimasi ±(.+)$", "Estimate ±$1"], ["^Habis ±(\\d+) hari lagi$", "Runs out in ±$1 days"], ["^✅ Sudah dibeli \\((.+)\\) dan masuk ke Stok Barang: (.+)$", "✅ Bought ($1) and added to Item Stock: $2"], ["^✅ Sudah dibeli \\((.+)\\) dan masuk ke Aset Biologis: (.+)$", "✅ Bought ($1) and added to Biological Assets: $2"], ["^✅ Sudah dibeli \\((.+)\\) dan masuk ke Inventaris: (.+)$", "✅ Bought ($1) and added to Inventory: $2"], ["^Saldo disesuaikan \\((.+)\\)$", "Balance adjusted ($1)"], ["^Prompt disalin\\. Membuka (.+)\\.\\.\\.$", "Prompt copied. Opening $1..."], ["^Pemakaian 7 hari terakhir \\((\\d+)\\) jauh di atas biasanya \\(±(.+)/minggu\\)$", "Usage in the last 7 days ($1) is far above normal (±$2/week)"], ["^Dibeli (\\d+) hari lalu tapi belum pernah dicatat dipakai — lupa dicatat atau menumpuk\\?$", "Bought $1 days ago but never recorded as used — forgotten or piling up?"], ["^balik modal (\\d+)%$", "break-even $1%"], ["^sudah balik modal \\((\\d+)%\\)$", "already broke even ($1%)"], ["^Modal (Rp.*)$", "Capital $1"], ["^\\(dibanding estimasi nilai wajar sekarang (.+)\\)$", "(compared to the current fair value estimate $1)"], ["^Estimasi Harga Wajar sekarang: (.+) \\(disusutkan sejak tahun (\\d+) • usia (\\d+) tahun\\)$", "Current fair price estimate: $1 (depreciated since $2 • age $3 years)"], ["^Saldo mengendap (.+) di (.+) gak bisa diambil\\. Maksimal yang bisa keluar: (.+)$", "Idle balance $1 in $2 can't be withdrawn. Maximum that can go out: $3"], ["^Total penjualan: (.+)$", "Total sales: $1"], ["^File dibuka langsung dari HP \\((.+)\\), jadi browser tidak menyimpan login\\. Solusinya, pasang file ini di hosting gratis \\((.+)\\) lalu buka lewat link https\\.$", "File opened directly from the phone ($1), so the browser doesn't save the login. The fix: put this file on free hosting ($2) and open it through an https link."]]).map(function(a){ return [new RegExp(a[0]), a[1]]; }));
+  RXC = RXC.concat(([["^(\\d+) kategori pengeluaran \\(split\\) tersimpan$", "$1 spending categories (split) saved"], ["^Tercatat, \"(.+)\" masuk Aset Biologis$", "Recorded, \"$1\" added to Biological Assets"], ["^Aset \"(.+)\" dikeluarkan \\((.+)\\), tetap tersimpan di riwayat$", "Asset \"$1\" removed ($2), still kept in history"], ["^Aset \"(.+)\" terjual \\((.+)\\), belum dibayar — otomatis dicatat sebagai Piutang (.+)$", "Asset \"$1\" sold ($2), not yet paid — automatically recorded as Receivable $3"], ["^🎉 Target \"(.+)\" tercapai! (.+) dipindah dari (.+) ke (.+)$", "🎉 Goal \"$1\" reached! $2 moved from $3 to $4"], ["^Kategori \"(.+)\" ditambahkan$", "Category \"$1\" added"], ["^Item \"(.+)\" ditambahkan$", "Item \"$1\" added"], ["^Transaksi berulang \"(.+)\" dibuat$", "Recurring transaction \"$1\" created"], ["^⏳ Segera kedaluwarsa \\(≤30 hari\\): (.+)$", "⏳ Expiring soon (≤30 days): $1"], ["^⚠️ Perlu dicek \\((\\d+)\\)$", "⚠️ Needs checking ($1)"], ["^🛒 Perlu dibeli \\((\\d+)\\)$", "🛒 To buy ($1)"], ["^🛒 Daftar Belanja \\((.+)\\)$", "🛒 Shopping List ($1)"], ["^Estimasi total: ±(.+)$", "Estimated total: ±$1"], ["^Estimasi ±(.+)$", "Estimate ±$1"], ["^Habis ±(\\d+) hari lagi$", "Runs out in ±$1 days"], ["^✅ Sudah dibeli \\((.+)\\) dan masuk ke Stok Barang: (.+)$", "✅ Bought ($1) and added to Item Stock: $2"], ["^✅ Sudah dibeli \\((.+)\\) dan masuk ke Aset Biologis: (.+)$", "✅ Bought ($1) and added to Biological Assets: $2"], ["^✅ Sudah dibeli \\((.+)\\) dan masuk ke Inventaris: (.+)$", "✅ Bought ($1) and added to Inventory: $2"], ["^Saldo disesuaikan \\((.+)\\)$", "Balance adjusted ($1)"], ["^Prompt disalin\\. Membuka (.+)\\.\\.\\.$", "Prompt copied. Opening $1..."], ["^Pemakaian 7 hari terakhir \\((\\d+)\\) jauh di atas biasanya \\(±(.+)/minggu\\)$", "Usage in the last 7 days ($1) is far above normal (±$2/week)"], ["^Dibeli (\\d+) hari lalu tapi belum pernah dicatat dipakai — lupa dicatat atau menumpuk\\?$", "Bought $1 days ago but never recorded as used — forgotten or piling up?"], ["^balik modal (\\d+)%$", "break-even $1%"], ["^sudah balik modal \\((\\d+)%\\)$", "already broke even ($1%)"], ["^Modal (Rp.*)$", "Capital $1"], ["^\\(dibanding estimasi nilai wajar sekarang (.+)\\)$", "(compared to the current fair value estimate $1)"], ["^Estimasi Harga Wajar sekarang: (.+) \\(disusutkan sejak tahun (\\d+) • usia ([\\d,]+) tahun\\)$", "Current fair price estimate: $1 (depreciated since $2 • age $3 years)"], ["^Saldo mengendap (.+) di (.+) gak bisa diambil\\. Maksimal yang bisa keluar: (.+)$", "Idle balance $1 in $2 can't be withdrawn. Maximum that can go out: $3"], ["^Total penjualan: (.+)$", "Total sales: $1"], ["^File dibuka langsung dari HP \\((.+)\\), jadi browser tidak menyimpan login\\. Solusinya, pasang file ini di hosting gratis \\((.+)\\) lalu buka lewat link https\\.$", "File opened directly from the phone ($1), so the browser doesn't save the login. The fix: put this file on free hosting ($2) and open it through an https link."]]).map(function(a){ return [new RegExp(a[0]), a[1]]; }));
   RXC = RXC.concat(([["^Target \"(.+)\" dibuat \\(Inventaris\\)$", "Goal \"$1\" created (Inventory)"], ["^Lunas! Dibayar (.+) dari (.+), dicatat sebagai Inventaris$", "Paid off! Paid $1 from $2, recorded as Inventory"], ["^Target \"(.+)\" dibuat \\(Aset Biologis\\)$", "Goal \"$1\" created (Biological Assets)"], ["^Lunas! Dibayar (.+) dari (.+), dicatat sebagai Aset Biologis$", "Paid off! Paid $1 from $2, recorded as Biological Assets"], ["^Target \"(.+)\" dibuat \\(Stok Barang\\)$", "Goal \"$1\" created (Item Stock)"], ["^Lunas! Dibayar (.+) dari (.+), dicatat sebagai Stok Barang$", "Paid off! Paid $1 from $2, recorded as Item Stock"], ["^Target \"(.+)\" dibuat \\(Pengeluaran Biasa\\)$", "Goal \"$1\" created (Regular Spending)"], ["^Lunas! Dibayar (.+) dari (.+), dicatat sebagai Pengeluaran Biasa$", "Paid off! Paid $1 from $2, recorded as Regular Spending"]]).map(function(a){ return [new RegExp(a[0]), a[1]]; }));
   RXC = RXC.concat(([["^Inventaris \\((\\d+)\\)$", "Inventory ($1)"], ["^Biologis \\((\\d+)\\)$", "Biological ($1)"], ["^Stok Barang \\((\\d+)\\)$", "Item Stock ($1)"], ["^Pengeluaran Biasa \\((\\d+)\\)$", "Regular Spending ($1)"], ["^🏷️ Inventaris · (.+)$", "🏷️ Inventory · $1"], ["^🏷️ Aset Biologis · (.+)$", "🏷️ Biological Assets · $1"], ["^🏷️ Stok Barang · (.+)$", "🏷️ Item Stock · $1"],  ["^Target \"(.+)\" diperbarui$", "Goal \"$1\" updated"],  ["^✅ Lunas dan sudah dibayar \\((.+)\\), tercatat sebagai Pengeluaran: (.+)$", "✅ Paid off and settled ($1), recorded as Spending: $2"], ["^✅ Lunas dan sudah dibayar \\((.+)\\), tercatat sebagai Pengeluaran$", "✅ Paid off and settled ($1), recorded as Spending"], ["^Dibeli dari target nabung \"(.+)\"$", "Bought from savings goal \"$1\""], ["^Dari target nabung \"(.+)\"$", "From savings goal \"$1\""], ["^Beli aset inventaris \"(.+)\" \\(dari target \"(.+)\"\\)$", "Bought inventory asset \"$1\" (from goal \"$2\")"], ["^Beli aset biologis \"(.+)\" \\(dari target \"(.+)\"\\)$", "Bought biological asset \"$1\" (from goal \"$2\")"]]).map(function(a){ return [new RegExp(a[0]), a[1]]; }));
   RXC = RXC.concat(([["^Lihat semua \\((\\d+)\\)$", "View all ($1)"], ["^Semua \\((\\d+)\\)$", "All ($1)"], ["^✅ Sudah dibeli \\((\\d+)\\)$", "✅ Already bought ($1)"], ["^Ditanam dari stok biji \"(.+)\"$", "Planted from seed stock \"$1\""], ["^Rekening \"(.+)\" sudah ada$", "Account \"$1\" already exists"], ["^Kategori \"(.+)\" sudah ada$", "Category \"$1\" already exists"], ["^Aset \"(.+)\" dihapus$", "Asset \"$1\" deleted"], ["^Saldo di Tumbuh Kaya sama dengan saldo aslimu \\((.+)\\)$", "The balance in Tumbuh Kaya matches your real balance ($1)"], ["^Kalau kamu sesuaikan, saldo akan jadi (.+)$", "If you adjust it, the balance will become $1"]]).map(function(a){ return [new RegExp(a[0]), a[1]]; }));
@@ -20652,6 +20750,14 @@ if(document.readyState==='loading'){
 "Tempat sampah kosong. Transaksi yang kamu hapus akan muncul di sini selama": "Trash is empty. Transactions you delete will appear here for",
 "Semua produk sudah terjual.": "All products have been sold.",
 "Tanpa akun. Data hanya tersimpan di HP ini.": "No account needed. Data is stored only on this phone.",
+"Kumulatif dalam Rentang": "Cumulative in Range",
+"Realized Rentang": "Realized in Range",
+"pada rentang ini": "in this range",
+"Selamat datang kembali": "Welcome back",
+"Belum punya akun?": "Don't have an account?",
+"Daftar di sini": "Sign up",
+"Coba tanpa akun": "Try without an account",
+"Data hanya tersimpan di HP ini.": "Data is stored only on this phone.",
 "Dasar: pemakaian yang kamu catat (Dikeluarkan) 4 minggu terakhir, minggu terbaru lebih berbobot, ditambah kebiasaan jarak belanjamu (±": "Basis: the usage you recorded (Taken Out) over the last 4 weeks, with recent weeks weighted more, plus your shopping interval habit (±",
 "Tidak ada hutang atau titipan aktif 👍": "No active debts or held funds 👍",
 "Pengeluaran per Akun (COA)": "Spending per Account (COA)",
@@ -20787,7 +20893,7 @@ if(document.readyState==='loading'){
 });
   /* ===== Terjemahan tambahan (tahap 6): perluasan cakupan bahasa Inggris ===== */
   (function(extra){ for(var k in extra) D[k]=extra[k]; })({"Perlu perhatian":"Needs attention","Saldo Minus":"Negative Balance","Segera isi saldo atau lunasi":"Top up the balance or pay it off soon","Minus":"Negative","Naik":"Up","Turun":"Down","Rata-rata/hari":"Average/day","Rata-rata / bulan":"Average / month","Pengeluaran naik dibanding periode yang sama bulan lalu. Yuk cek lagi pos terbesarnya.":"Spending is up compared with the same period last month. Take another look at your biggest categories.","Keluar hari ini":"Out today","Masuk hari ini":"In today","Saldo per rekening":"Balance per account","Stok barang":"Item stock","Semua stok aman.":"All stock is fine.","Dividen Saham":"Stock Dividends","Tidak ada menu yang cocok.":"No matching menu.","Tanggal (harian)":"Date (daily)","Hari sebelumnya":"Previous day","Hari berikutnya":"Next day","Pindah rekening":"Move account","Hapus riwayat":"Delete history","yang dibeli":"purchased","Harga per":"Price per","yang dijual":"sold","Jual semua":"Sell all","Harga jual per":"Sell price per","(Rp, opsional)":"(Rp, optional)","1 lot = 100 lembar. Bilangan bulat. Isi unit dan harga, total Rp terhitung otomatis; atau isi total Rp dan harga, unit yang terhitung.":"1 lot = 100 shares. Whole numbers. Enter units and price and the Rp total is calculated automatically; or enter the Rp total and price and the units are calculated.","Lembar":"Shares","lembar":"shares","Dividen per Lembar (Rp)":"Dividend per Share (Rp)","Catat Dividen Masuk":"Record Incoming Dividend","Saham yang kamu pegang (ketuk untuk isi otomatis)":"Stocks you hold (tap to auto-fill)","Tanggal Diterima":"Date Received","Kode Saham":"Stock Code","Jenis Dividen":"Dividend Type","Isi total":"Enter total","Dividen Kotor / Sebelum Pajak (Rp)":"Gross Dividend / Before Tax (Rp)","Pajak Dividen (%)":"Dividend Tax (%)","Umumnya 10% (PPh final dividen untuk orang pribadi). Isi 0 kalau tidak dipotong.":"Usually 10% (final income tax on dividends for individuals). Enter 0 if nothing is withheld.","Dividen kotor":"Gross dividend","Jumlah Masuk ke Rekening (opsional)":"Amount Received in Account (optional)","isi kalau beda dari hitungan di atas":"fill in if different from the calculation above","Cocokkan dengan mutasi rekening/RDN kalau ada selisih pembulatan.":"Match it with your account/RDN statement if there is a rounding difference.","Platform/Sekuritas (opsional)":"Platform/Broker (optional)","Tidak dipilih":"Not selected","Simpan Dividen":"Save Dividend","Riwayat Dividen":"Dividend History","Belum ada dividen dicatat.":"No dividends recorded yet.","Total saldo":"Total balance","Saldo minus":"Overdrawn","Jumlah rekening":"Accounts","Ketuk rekening untuk melihat mutasinya.":"Tap an account to see its transactions.","Komposisi skor: tiap pilar menyumbang poin sebesar skor × bobot. Bagian terang = poin yang didapat, bagian gelap = poin yang belum terambil.":"Score composition: each pillar contributes points equal to its score × weight. The bright part = points earned, the dark part = points not yet earned.","Target: sisa ≥30% dari pemasukan rutin = skor penuh. Sisa 0% = skor 40; defisit menurunkan skor.":"Target: leftover ≥30% of regular income = full score. 0% leftover = score 40; a deficit lowers the score.","Target: hutang ≤20% dari aset. Skor = rata-rata ukuran yang ada, maksimal 25 poin di atas ukuran terburuk. Hutang > aset membatasi skor total 69; > 2x aset, 54.":"Target: debt ≤20% of assets. Score = average of the available measures, at most 25 points above the worst measure. Debt > assets caps the total score at 69; > 2x assets, at 54.","Tagihan lewat jatuh tempo":"Overdue bills","Saldo rekening minus":"Negative account balance","Perlu dibenahi":"Needs work","Ada hutang & tagihan belum lunas sebesar":"There are unpaid debts & bills totaling","💡 Saldo rekening sudah cukup menutup seluruh kewajiban. Posisi aman.":"💡 Your account balances are enough to cover all obligations. You're in a safe position.","Dana Titipan bisa dijadikan Hutang. Di kartu titipan yang masih Aktif ada tombol \"Jadikan hutang\": pilih jumlahnya (semua atau sebagian), tanggal, dan jatuh tempo. Titipan berubah jadi \"Dijadikan Hutang\" dan otomatis tercatat di menu Hutang (bisa dicicil dan dilunasi seperti biasa). Saldo rekening dan kekayaan bersih tidak berubah, karena uangnya memang sudah ada di saldo. Kalau hutang hasil konversi dihapus, titipannya aktif lagi.":"Held Funds can be turned into Debt. On a held-fund card that is still Active there is a \"Make it debt\" button: choose the amount (all or part), the date, and the due date. The held fund becomes \"Turned into Debt\" and is automatically recorded in the Debts menu (it can be paid in installments and settled as usual). Account balances and net worth do not change, because the money is already in your balance. If the debt created from the conversion is deleted, the held fund becomes active again.","Dashboard desktop dirombak jadi ringkas dan muat satu layar laptop: semua komponen (aksi cepat, pengeluaran dan pemasukan hari ini, kekayaan bersih, kesehatan finansial, perlu perhatian, stok, saldo per rekening, insight, transaksi terbaru) tampil sebagai kartu ringkas, dan kalau diklik membuka halaman detailnya. Halaman baru: Insight dan Saldo per Rekening. Tampilan HP tidak berubah.":"The desktop dashboard was redesigned to be compact and fit on one laptop screen: every component (quick actions, today's spending and income, net worth, financial health, needs attention, stock, balance per account, insights, recent transactions) now appears as a compact card, and clicking it opens its detail page. New pages: Insights and Balance per Account. The phone layout is unchanged.","Perbaikan tampilan desktop: kartu \"Perlu perhatian\" dan \"Stok perlu dibeli\" tidak lagi berdesakan di kolom sempit. Daftar pengingat satu kolom (dua kolom hanya kalau kartunya lebar), dan kartu stok menyesuaikan lebar kolom.":"Desktop layout fix: the \"Needs attention\" and \"Stock to buy\" cards are no longer squeezed into a narrow column. The reminder list uses one column (two columns only when the card is wide), and the stock cards adapt to the column width.","Kesehatan Finansial: saldo rekening yang minus sekarang dihitung sebagai hutang di pilar Rasio Hutang (muncul sebagai baris \"Saldo rekening minus\" di rinciannya). Aset bersih memakai saldo rekening positif saja supaya minus tidak terhitung dua kali.":"Financial Health: negative account balances are now counted as debt in the Debt Ratio pillar (shown as a \"Negative account balance\" row in its breakdown). Net assets use positive account balances only so the negative amount is not counted twice.","Tampilan baru kartu \"Perlu perhatian\" dan \"Stok perlu dibeli\" di Beranda: header seragam (ikon, judul, ringkasan), tiap pengingat jadi dua baris dengan ikon per jenis (saldo minus, hutang, piutang, tagihan, cicilan, titipan) sehingga nama rekening tidak terpotong lagi, nominal dan status rata kanan, serta warna mengikuti tingkat urgensi. Stok jadi kartu mini yang bisa digeser.":"New look for the \"Needs attention\" and \"Stock to buy\" cards on Home: a uniform header (icon, title, summary), each reminder is now two lines with an icon per type (negative balance, debt, receivable, bill, installment, held fund) so account names are no longer cut off, amounts and status are right-aligned, and colors follow the urgency level. Stock became swipeable mini cards.","Perbaikan bug: di form Transfer, \"Pindahkan titipan\" tidak bisa disimpan dan selalu minta pilih dana titipan padahal sudah dipilih. Penyebabnya, titipan yang dicatat lewat menu Dana Titipan tidak punya id. Sekarang semua titipan (lama maupun baru) otomatis punya id, dan pilihan tidak ikut reset saat daftar dimuat ulang.":"Bug fix: in the Transfer form, \"Move held funds\" could not be saved and always asked you to choose a held fund even though one was selected. The cause was that held funds recorded through the Held Funds menu had no id. Now every held fund (old and new) automatically has an id, and your choice no longer resets when the list reloads.","Pengingat baru di Beranda: kalau saldo sebuah rekening minus, muncul peringatan merah \"Saldo Minus\" (selalu di urutan teratas, lengkap dengan nominal minusnya) supaya segera dilunasi atau diisi. Ketuk untuk langsung ke menu Transfer.":"New reminder on Home: if an account balance goes negative, a red \"Negative Balance\" warning appears (always at the top, with the negative amount) so you can top it up or settle it soon. Tap it to go straight to the Transfer menu.","Dana titipan: \"Pindahkan titipan\" di form Transfer sekarang juga bisa dipakai untuk titipan uang orang lain (yang dulu tidak muncul di pilihan), jadi posisi titipan ikut berpindah ke rekening tujuan tanpa saldo dobel. Ada peringatan di form Transfer kalau rekening asal punya dana titipan aktif, dan tombol \"Pindah rekening\" di tiap kartu titipan untuk membetulkan posisi titipan yang transfernya sudah telanjur dicatat biasa.":"Held funds: \"Move held funds\" in the Transfer form can now also be used for other people's money (which previously did not appear in the choices), so the held fund moves to the destination account without double balances. There is a warning in the Transfer form when the source account has active held funds, and a \"Move account\" button on every held-fund card to fix the position of held funds whose transfer was already recorded as a regular transfer.","Inventaris: ada \"Kantong Rusak / Hilang\" khusus di halaman Inventaris Aset. Aset yang dikeluarkan dengan alasan Rusak / Hilang masuk ke kantong ini, lengkap dengan tanggal, keterangan, dan total kerugian (nilai wajar saat dikeluarkan). Aset lama yang sudah dikeluarkan karena rusak ikut terhitung otomatis. Ada tombol \"Jual sisa\" untuk menjual aset rusak (rongsok/suku cadang): hasilnya jadi pemasukan (atau Piutang) dan mengurangi total kerugian.":"Inventory: there is a dedicated \"Damaged / Lost Pocket\" on the Asset Inventory page. Assets removed with the reason Damaged / Lost go into this pocket, complete with date, notes, and total loss (fair value at removal). Old assets already removed as damaged are counted automatically. There is a \"Sell remainder\" button to sell a damaged asset (scrap/spare parts): the proceeds become income (or a Receivable) and reduce the total loss.","Grafik baru \"Kekayaan Bersih (Net Worth)\" di halaman Grafik: garis tren per bulan dari aset (saldo rekening, piutang, inventaris, aset biologis) dikurangi hutang, tagihan, dan dana titipan. Ada ringkasan perubahan vs bulan lalu dan vs akhir tahun lalu, rincian per komponen, tampilan \"Aset vs Hutang\", dan sentuh grafik untuk membaca nilai tiap bulan. Ada juga kartu ringkas Kekayaan Bersih di Home yang membuka grafik ini.":"New \"Net Worth\" chart on the Charts page: a monthly trend line of assets (account balances, receivables, inventory, biological assets) minus debts, bills, and held funds. It includes a summary of change vs last month and vs end of last year, a breakdown per component, an \"Assets vs Debt\" view, and you can touch the chart to read each month's value. There is also a compact Net Worth card on Home that opens this chart.","Kumpulan aset inventaris yang sudah dikeluarkan karena rusak atau hilang. Nilainya dicatat sebagai kerugian aset. Kalau sisanya masih laku dijual (rongsok/suku cadang), pakai tombol Jual: hasilnya jadi pemasukan dan mengurangi kerugian (kalau hasil jual melebihi nilai aset, selisihnya tampil sebagai untung). Selain itu saldo rekening tidak berubah.":"A collection of inventory assets that were removed because they were damaged or lost. Their value is recorded as an asset loss. If the remainder can still be sold (scrap/spare parts), use the Sell button: the proceeds become income and reduce the loss (if the sale proceeds exceed the asset's value, the difference shows as a profit). Otherwise account balances do not change.","Kode Undangan":"Invitation Code","(belum ditentukan)":"(not set yet)","Kode/Nama Produk (opsional)":"Product Code/Name (optional)","Fitur ini memakai koleksi baru \"patungan\". Satu kali saja, tambahkan Rules ini di Firebase Console → Firestore → Rules (di dalam match /databases/{database}/documents):":"This feature uses a new \"patungan\" collection. One time only, add these Rules in Firebase Console → Firestore → Rules (inside match /databases/{database}/documents):","Begitu target lunas, otomatis tercatat sebagai Pembelian Investasi dari kantong tabungan.":"Once the goal is paid off, it is automatically recorded as an Investment Purchase from the savings pocket.","🏷️ Pengeluaran Biasa · aset baru":"🏷️ Regular Spending · new asset","Jumlah Aset":"Number of Assets","Jual sisa":"Sell remainder","Pindah Rekening Titipan":"Move Held Funds to Another Account","Sekarang disimpan di rekening":"Currently held in account","Ini hanya mengubah posisi dana titipan (untuk perhitungan dana bebas dan dana darurat). Saldo rekening tidak berubah, jadi pakai ini kalau transfernya sudah kamu catat terpisah.":"This only changes where the held funds are recorded (for the free-funds and emergency-fund calculations). Account balances do not change, so use this if you have already recorded the transfer separately.","Jumlah yang jadi hutang":"Amount to become debt","Tanggal jadi hutang":"Date it becomes debt","Uangnya sudah ada di saldo, jadi saldo rekening tidak berubah dan kekayaan bersih tetap sama. Yang berpindah hanya pencatatannya: dari Dana Titipan ke Hutang. Kalau jumlahnya lebih kecil dari titipan, sisanya tetap jadi titipan aktif.":"The money is already in your balance, so account balances do not change and net worth stays the same. Only the record moves: from Held Funds to Debt. If the amount is smaller than the held fund, the remainder stays as an active held fund.","Jual Aset Rusak":"Sell Damaged Asset","Hasil Penjualan (Rp)":"Sale Proceeds (Rp)","Pembeli (opsional)":"Buyer (optional)","Hasil jual tercatat sebagai pemasukan \"Jual Aset Rusak\" dan mengurangi total kerugian di Kantong Rusak / Hilang.":"Sale proceeds are recorded as \"Sell Damaged Asset\" income and reduce the total loss in the Damaged / Lost pocket.","Belum ada pemasukan hari ini.":"No income today yet.","Nama orang":"Person's name","Hapus item":"Delete item","Isi kode saham dulu":"Enter the stock code first","Isi tanggal dulu":"Enter the date first","Isi jumlah dividen dulu":"Enter the dividend amount first","Aset ini sudah dijual":"This asset has already been sold","HP terasa berat, animasi dihemat otomatis":"The phone feels slow, so animations were reduced automatically","Beban = uang yang habis dipakai (termasuk nilai stok yang sudah dipakai). Aset dan Persediaan = uang yang berubah bentuk jadi barang yang masih bernilai, jadi bukan kerugian.":"Expenses = money that was used up (including the value of stock already used). Assets and Supplies = money that changed form into goods that still have value, so they are not a loss.","− Dana titipan":"− Held funds","Belum ada pengeluaran tercatat bulan ini.":"No spending recorded this month yet.","Tidak ada yang jatuh tempo atau minus.":"Nothing is due or overdrawn.","cth: biaya admin belum dicatat":"e.g. admin fee not yet recorded","Total Kerugian":"Total Loss","Total Untung":"Total Profit","Isi hasil penjualan dulu":"Enter the sale proceeds first","Titipan sudah di rekening ini":"The held fund is already in this account","Isi tanggalnya dulu":"Enter the date first","Sejak tanggal 1":"Since the 1st","Bulan sebelumnya":"Previous month","Jumlah pembayaran":"Payment amount","Perlu dibeli (perkiraan)":"Need to buy (estimate)","Perlu dibeli (perkiraan kasar)":"Need to buy (rough estimate)","Lihat di Pembelian Investasi ›":"See in Investment Purchases ›","Titipan diserahkan":"Held fund handed over","Dana titipan dijadikan hutang":"Held fund turned into debt","sudah diterima":"already received","belum diterima, piutang":"not yet received, receivable"});
-  RXC = [["^(\\d+) mendatang$","$1 upcoming"],["^Lihat (\\d+) lainnya$","See $1 more"],["^1 titipan$","1 held fund"],["^(\\d+) titipan$","$1 held funds"],["^⚠️ Sudah melebihi budget (.+)$","⚠️ Over budget by $1"],["^1 belanja$","1 purchase"],["^(\\d+) belanja$","$1 purchases"],["^1 produk$","1 product"],["^(\\d+) produk$","$1 products"],["^1 jenis$","1 type"],["^(\\d+) jenis$","$1 types"],["^1 pembelian$","1 purchase"],["^(\\d+) pembelian$","$1 purchases"],["^1 penjualan$","1 sale"],["^(\\d+) penjualan$","$1 sales"],["^(\\d+) dari (\\d+) orang sudah bayar$","$1 of $2 people have paid"],["^porsi kamu (.+)$","your share $1"],["^Kepatuhan Budget Belanja (\\d+/\\d+)$","Shopping Budget Adherence $1"],["^Kondisi kamu: (.+?) bln$","Your status: $1 mo"],["^Kondisi kamu: (.+?)% aset$","Your status: $1% of assets"],["^Kondisi kamu: (.+?)% limit$","Your status: $1% of limit"],["^Kondisi kamu: (.+)$","Your status: $1"],["^rata-rata (\\d+) bulan terakhir$","average of the last $1 months"],["^Target: total belanja bulan ini tidak melewati total limit\\. Kelewat (\\d+)% dari limit = skor 0\\.$","Target: this month's total shopping does not exceed the total limit. Exceeding the limit by $1% = score 0."],["^Hal (\\d+) dari (\\d+) · (\\d+) poin$","Page $1 of $2 · $3 pts"],["^Total (.+) • (\\d+) hari ada transaksi$","Total $1 • $2 days with transactions"],["^Aset (\\d+)%$","Assets $1%"],["^Aset ([\\d.,]+)× kewajiban$","Assets $1× liabilities"],["^Saldo rekening (\\d+)%$","Account balance $1%"],["^Aset biologis (\\d+)%$","Biological assets $1%"],["^(\\d+) sudah tercapai$","$1 reached"],["^masih kurang$","still short"],["^🏷️ (.+) · aset baru$","🏷️ $1 · new asset"],["^Tiap 1 bulan$","Every month"],["^Tiap (\\d+) bulan$","Every $1 months"],["^(\\d+) aset aktif$","$1 active assets"],["^(\\d+) dikeluarkan$","$1 removed"],["^(\\d+) aset aktif \\((\\d+) unit\\)$","$1 active assets ($2 units)"],["^Naik (.+)$","Up $1"],["^Turun (.+)$","Down $1"],["^Dividen bersih (\\d{4})$","Net dividends $1"],["^Belum ada dividen di (\\d{4})\\.$","No dividends in $1 yet."],["^cth: dividen final tahun buku (\\d{4})$","e.g. final dividend for fiscal year $1"],["^cth: (.+) kalau saldo minus$","e.g. $1 if the balance is negative"],["^(\\d+) dari (\\d+) pemasukan • Total (.+)$","$1 of $2 income entries • Total $3"],["^(\\d+) dari (\\d+) pengeluaran • Total (.+)$","$1 of $2 spending entries • Total $3"],["^(\\d+) dari (\\d+) transfer • Total (.+)$","$1 of $2 transfers • Total $3"],["^(\\d+) dari (\\d+) transaksi • Total (.+)$","$1 of $2 transactions • Total $3"],["^(\\d+) dari (\\d+) belanja • Total (.+)$","$1 of $2 purchases • Total $3"],["^(\\d+) dari (\\d+) piutang • Total (.+)$","$1 of $2 receivables • Total $3"],["^(\\d+) dari (\\d+) hutang • Total (.+)$","$1 of $2 debts • Total $3"],["^(\\d+) dari (\\d+) tagihan • Total (.+)$","$1 of $2 bills • Total $3"],["^(\\d+) dari (\\d+) titipan • Total (.+)$","$1 of $2 held funds • Total $3"],["^Kategori: (.+)$","Category: $1"],["^(?:Nilai wajar|Fair value) setelah penyusutan \\(per (.+)\\)$","Fair value after depreciation (as of $1)"],["^Aset biologis aktif \\((\\d+)\\): modal (.+)$","Active biological assets ($1): capital $2"],["^Titipan \"(.+)\" sekarang di (.+)$","Held fund \"$1\" is now in $2"],["^Maksimal yang bisa dijual: (.+)$","Maximum that can be sold: $1"],["^Akun \"(.+)\" ditambahkan$","Account \"$1\" added"],["^Akun \"(.+)\" diperbarui$","Account \"$1\" updated"],["^Target \"(.+)\" dibuat \\((.+)\\)$","Goal \"$1\" created ($2)"],["^Target \"(.+)\" diperbarui$","Goal \"$1\" updated"],["^Aset rusak \"(.+)\" terjual (.+), belum dibayar — dicatat sebagai Piutang$","Damaged asset \"$1\" sold for $2, not yet paid — recorded as a Receivable"],["^Aset rusak \"(.+)\" terjual, saldo (.+) bertambah (.+)$","Damaged asset \"$1\" sold, $2 balance increased by $3"],["^Dividen (.+) diperbarui$","Dividend $1 updated"],["^Dividen (.+) (Rp\\S+) tersimpan$","Dividend $1 $2 saved"],["^Total: (.+)$","Total: $1"],["^Jumlah tidak boleh lebih besar dari dana titipan \\((.+)\\)$","Amount cannot be larger than the held fund ($1)"],["^Tanggal tidak boleh sebelum titipan masuk \\((.+)\\)$","Date cannot be before the held fund came in ($1)"],["^⚠ Di rekening ini ada (\\d+) dana titipan aktif\\. Kalau uang titipannya ikut dipindah, pilih \"Pindahkan titipan\" supaya posisinya ikut berubah\\.$","⚠ This account has $1 active held fund(s). If the held money is moved too, choose \"Move held funds\" so its position changes as well."],["^Dari titipan (.+)$","From held fund $1"],["^Titipan diserahkan • (.+)$","Held fund handed over • $1"],["^Lihat di daftar (.+) ›$","See in $1 list ›"],["^✅ Sudah dibeli \\((.+)\\) dan tercatat sebagai Pembelian Investasi: (.+)$","✅ Already bought ($1) and recorded as an Investment Purchase: $2"],["^✅ Sudah dibeli \\((.+)\\) dan masuk ke (.+): (.+)$","✅ Already bought ($1) and added to $2: $3"],["^(.+) \\(disusutkan sejak tahun (\\d{4})\\)$","$1 (depreciated since $2)"],["^sejak (\\d{4}) • (\\d+) th$","since $1 • $2 yrs"],["^sejak tahun (\\d{4}) • usia (\\d+) tahun$","since $1 • age $2 years"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
+  RXC = [["^(\\d+) mendatang$","$1 upcoming"],["^Lihat (\\d+) lainnya$","See $1 more"],["^1 titipan$","1 held fund"],["^(\\d+) titipan$","$1 held funds"],["^⚠️ Sudah melebihi budget (.+)$","⚠️ Over budget by $1"],["^1 belanja$","1 purchase"],["^(\\d+) belanja$","$1 purchases"],["^1 produk$","1 product"],["^(\\d+) produk$","$1 products"],["^1 jenis$","1 type"],["^(\\d+) jenis$","$1 types"],["^1 pembelian$","1 purchase"],["^(\\d+) pembelian$","$1 purchases"],["^1 penjualan$","1 sale"],["^(\\d+) penjualan$","$1 sales"],["^(\\d+) dari (\\d+) orang sudah bayar$","$1 of $2 people have paid"],["^porsi kamu (.+)$","your share $1"],["^Kepatuhan Budget Belanja (\\d+/\\d+)$","Shopping Budget Adherence $1"],["^Kondisi kamu: (.+?) bln$","Your status: $1 mo"],["^Kondisi kamu: (.+?)% aset$","Your status: $1% of assets"],["^Kondisi kamu: (.+?)% limit$","Your status: $1% of limit"],["^Kondisi kamu: (.+)$","Your status: $1"],["^rata-rata (\\d+) bulan terakhir$","average of the last $1 months"],["^Target: total belanja bulan ini tidak melewati total limit\\. Kelewat (\\d+)% dari limit = skor 0\\.$","Target: this month's total shopping does not exceed the total limit. Exceeding the limit by $1% = score 0."],["^Hal (\\d+) dari (\\d+) · (\\d+) poin$","Page $1 of $2 · $3 pts"],["^Total (.+) • (\\d+) hari ada transaksi$","Total $1 • $2 days with transactions"],["^Aset (\\d+)%$","Assets $1%"],["^Aset ([\\d.,]+)× kewajiban$","Assets $1× liabilities"],["^Saldo rekening (\\d+)%$","Account balance $1%"],["^Aset biologis (\\d+)%$","Biological assets $1%"],["^(\\d+) sudah tercapai$","$1 reached"],["^masih kurang$","still short"],["^🏷️ (.+) · aset baru$","🏷️ $1 · new asset"],["^Tiap 1 bulan$","Every month"],["^Tiap (\\d+) bulan$","Every $1 months"],["^(\\d+) aset aktif$","$1 active assets"],["^(\\d+) dikeluarkan$","$1 removed"],["^(\\d+) aset aktif \\((\\d+) unit\\)$","$1 active assets ($2 units)"],["^Naik (.+)$","Up $1"],["^Turun (.+)$","Down $1"],["^Dividen bersih (\\d{4})$","Net dividends $1"],["^Belum ada dividen di (\\d{4})\\.$","No dividends in $1 yet."],["^cth: dividen final tahun buku (\\d{4})$","e.g. final dividend for fiscal year $1"],["^cth: (.+) kalau saldo minus$","e.g. $1 if the balance is negative"],["^(\\d+) dari (\\d+) pemasukan • Total (.+)$","$1 of $2 income entries • Total $3"],["^(\\d+) dari (\\d+) pengeluaran • Total (.+)$","$1 of $2 spending entries • Total $3"],["^(\\d+) dari (\\d+) transfer • Total (.+)$","$1 of $2 transfers • Total $3"],["^(\\d+) dari (\\d+) transaksi • Total (.+)$","$1 of $2 transactions • Total $3"],["^(\\d+) dari (\\d+) belanja • Total (.+)$","$1 of $2 purchases • Total $3"],["^(\\d+) dari (\\d+) piutang • Total (.+)$","$1 of $2 receivables • Total $3"],["^(\\d+) dari (\\d+) hutang • Total (.+)$","$1 of $2 debts • Total $3"],["^(\\d+) dari (\\d+) tagihan • Total (.+)$","$1 of $2 bills • Total $3"],["^(\\d+) dari (\\d+) titipan • Total (.+)$","$1 of $2 held funds • Total $3"],["^Kategori: (.+)$","Category: $1"],["^(?:Nilai wajar|Fair value) setelah penyusutan \\(per (.+)\\)$","Fair value after depreciation (as of $1)"],["^Aset biologis aktif \\((\\d+)\\): modal (.+)$","Active biological assets ($1): capital $2"],["^Titipan \"(.+)\" sekarang di (.+)$","Held fund \"$1\" is now in $2"],["^Maksimal yang bisa dijual: (.+)$","Maximum that can be sold: $1"],["^Akun \"(.+)\" ditambahkan$","Account \"$1\" added"],["^Akun \"(.+)\" diperbarui$","Account \"$1\" updated"],["^Target \"(.+)\" dibuat \\((.+)\\)$","Goal \"$1\" created ($2)"],["^Target \"(.+)\" diperbarui$","Goal \"$1\" updated"],["^Aset rusak \"(.+)\" terjual (.+), belum dibayar — dicatat sebagai Piutang$","Damaged asset \"$1\" sold for $2, not yet paid — recorded as a Receivable"],["^Aset rusak \"(.+)\" terjual, saldo (.+) bertambah (.+)$","Damaged asset \"$1\" sold, $2 balance increased by $3"],["^Dividen (.+) diperbarui$","Dividend $1 updated"],["^Dividen (.+) (Rp\\S+) tersimpan$","Dividend $1 $2 saved"],["^Total: (.+)$","Total: $1"],["^Jumlah tidak boleh lebih besar dari dana titipan \\((.+)\\)$","Amount cannot be larger than the held fund ($1)"],["^Tanggal tidak boleh sebelum titipan masuk \\((.+)\\)$","Date cannot be before the held fund came in ($1)"],["^⚠ Di rekening ini ada (\\d+) dana titipan aktif\\. Kalau uang titipannya ikut dipindah, pilih \"Pindahkan titipan\" supaya posisinya ikut berubah\\.$","⚠ This account has $1 active held fund(s). If the held money is moved too, choose \"Move held funds\" so its position changes as well."],["^Dari titipan (.+)$","From held fund $1"],["^Titipan diserahkan • (.+)$","Held fund handed over • $1"],["^Lihat di daftar (.+) ›$","See in $1 list ›"],["^✅ Sudah dibeli \\((.+)\\) dan tercatat sebagai Pembelian Investasi: (.+)$","✅ Already bought ($1) and recorded as an Investment Purchase: $2"],["^✅ Sudah dibeli \\((.+)\\) dan masuk ke (.+): (.+)$","✅ Already bought ($1) and added to $2: $3"],["^(.+) \\(disusutkan sejak tahun (\\d{4})\\)$","$1 (depreciated since $2)"],["^sejak (\\d{4}) • (\\d+) th$","since $1 • $2 yrs"],["^sejak tahun (\\d{4}) • usia ([\\d,]+) tahun$","since $1 • age $2 years"]].map(function(a){ return [new RegExp(a[0]), a[1]]; }).concat(RXC);
   /* ===== Terjemahan Portofolio Saat Ini (kartu "Modal tertanam", baris produk, detail transaksi) ===== */
   (function(extra){ for(var k in extra) D[k]=extra[k]; })({
     "Modal tertanam":"Capital invested",
@@ -23345,9 +23451,9 @@ html[data-theme="light"] #screen-auth .auth-card .btn:not(.ghost){background:lin
     var list = buildAccountTransactions(acc).filter(function(t){ return inPeriod(t, per); });
     if(!list.length) return '<div class="rr-empty">Tidak ada transaksi pada periode ini.</div>';
     return groupByDay(list).map(function(g){
-      var im=0, ik=0; g.items.forEach(function(t){ if(t.sign>0) im+=t.jumlah||0; else if(t.sign<0) ik+=t.jumlah||0; });
+      var im=0, ik=0, kr=0; g.items.forEach(function(t){ if(t.type==='koreksi'){ kr+=(t.sign||0)*(t.jumlah||0); } else if(t.sign>0) im+=t.jumlah||0; else if(t.sign<0) ik+=t.jumlah||0; });
       return '<div class="rr-day"><div class="rr-dh"><span>'+escapeHtml(hariLabel(g.tgl))+'</span><span>'+
-        (im?'<i class="pos mono">+'+maskOrFmt(im)+'</i> ':'')+(ik?'<i class="neg mono">-'+maskOrFmt(ik)+'</i>':'')+'</span></div>'+
+        (im?'<i class="pos mono">+'+maskOrFmt(im)+'</i> ':'')+(ik?'<i class="neg mono">-'+maskOrFmt(ik)+'</i> ':'')+(kr?'<i class="mono" style="opacity:.7;">Koreksi '+(kr<0?'-':'+')+maskOrFmt(Math.abs(kr))+'</i>':'')+'</span></div>'+
         renderTxnRows(g.items, true)+'</div>';
     }).join('');
   }
@@ -23359,8 +23465,8 @@ html[data-theme="light"] #screen-auth .auth-card .btn:not(.ghost){background:lin
     (typeof ACCOUNTS!=='undefined' ? ACCOUNTS : []).forEach(function(a){
       var list = buildAccountTransactions(a).filter(function(t){ return inPeriod(t, per); });
       if(!list.length) return;
-      var im=0, ik=0; list.forEach(function(t){ if(t.sign>0) im+=t.jumlah||0; else if(t.sign<0) ik+=t.jumlah||0; });
-      rows.push({a:a, n:list.length, im:im, ik:ik});
+      var im=0, ik=0, kr=0; list.forEach(function(t){ if(t.type==='koreksi'){ kr+=(t.sign||0)*(t.jumlah||0); } else if(t.sign>0) im+=t.jumlah||0; else if(t.sign<0) ik+=t.jumlah||0; });
+      rows.push({a:a, n:list.length, im:im, ik:ik, kr:kr});
     });
     if(!rows.length){ box.innerHTML = '<div class="empty">Belum ada transaksi pada periode ini.</div>'; return; }
     var pri = KINDS[kind].pri;
@@ -23370,7 +23476,7 @@ html[data-theme="light"] #screen-auth .auth-card .btn:not(.ghost){background:lin
       var open = OPEN[kind][r.a];
       h += '<details class="rr-acc" data-acc="'+escapeHtml(r.a)+'"'+(open?' open':'')+'><summary>'+accountBadgeHtml(r.a)+
         '<span class="rr-nm"><b>'+escapeHtml(accountOptionLabel(r.a))+'</b><span>'+r.n+' transaksi</span></span>'+
-        '<span class="rr-sum mono">'+(r.im?'<span class="pos">+'+maskOrFmt(r.im)+'</span>':'')+(r.im&&r.ik?'<br>':'')+(r.ik?'<span class="neg">-'+maskOrFmt(r.ik)+'</span>':'')+'</span>'+
+        '<span class="rr-sum mono">'+(r.im?'<span class="pos">+'+maskOrFmt(r.im)+'</span>':'')+(r.im&&r.ik?'<br>':'')+(r.ik?'<span class="neg">-'+maskOrFmt(r.ik)+'</span>':'')+(r.kr?((r.im||r.ik)?'<br>':'')+'<span style="opacity:.7; font-size:11px;">Koreksi '+(r.kr<0?'-':'+')+maskOrFmt(Math.abs(r.kr))+'</span>':'')+'</span>'+
         '<span class="rr-chev">'+(ICONS.chevronRight||'')+'</span></summary>'+
         '<div class="rr-body">'+(open ? bodyHtml(r.a, per) : '')+'</div></details>';
     });
@@ -27165,5 +27271,46 @@ html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan#view-
   },{passive:true});
 })();
 </script>
+<style id="auth-simple-css">
+/* Login simpel: satu glow halus, tanpa bingkai kartu, satu tombol utama, aksi lain berupa tautan teks */
+html #screen-auth .auth-fx > *:not(.o1){display:none !important;}
+html #screen-auth .auth-fx .o1{display:block !important; width:460px; height:460px; top:-150px; left:50%; right:auto; transform:translateX(-50%); border-radius:50%; background:radial-gradient(closest-side, color-mix(in srgb,var(--primary) 26%, transparent), transparent) !important; opacity:1 !important; filter:none !important; animation:none !important;}
+html #screen-auth .moon.auth-moon, html #screen-auth .shooting-star{display:none !important;}
+html[data-theme="light"] #screen-auth .auth-fx .o1{background:radial-gradient(closest-side, rgba(45,212,191,.28), transparent) !important;}
+html #screen-auth .auth-logo{margin-bottom:30px;}
+html #screen-auth .auth-logo .halo{width:84px; height:84px; margin:0 auto 14px; animation:none !important;}
+html #screen-auth .auth-logo .halo::before, html #screen-auth .auth-logo .halo::after{display:none !important;}
+html #screen-auth .auth-logo .halo .brandmark{border-radius:22px; box-shadow:0 10px 26px -12px rgba(0,0,0,.55);}
+html #screen-auth .auth-logo .nm{font-size:26px;}
+html #screen-auth .auth-logo .tg{font-size:10.5px; letter-spacing:.2em; opacity:.55;}
+html #screen-auth #auth-inner .auth-card{background:none !important; border:none !important; box-shadow:none !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; padding:0 2px; border-radius:0;}
+html #screen-auth #auth-inner .auth-card::before{display:none !important;}
+html #screen-auth .auth-card .btn:not(.ghost)::after{display:none !important;}
+html #screen-auth .auth-card .btn:not(.ghost){box-shadow:0 12px 26px -16px var(--primary);}
+#screen-auth .auth-hello{text-align:center; font-size:15px; color:var(--text-2); margin-bottom:18px;}
+#screen-auth .auth-forgot{text-align:right; font-size:12.5px; font-weight:600; color:var(--primary); margin:-4px 4px 16px; cursor:pointer;}
+#screen-auth .auth-alt{text-align:center; font-size:13.5px; color:var(--text-2); margin-top:20px;}
+#screen-auth .auth-alt .lk{color:var(--primary); font-weight:700; cursor:pointer;}
+#screen-auth .auth-alt.auth-guest{margin-top:12px; display:flex; flex-direction:column; align-items:center; gap:2px;}
+#screen-auth .auth-alt .lk.soft{color:var(--text-2); font-weight:600; text-decoration:underline; text-underline-offset:3px;}
+#screen-auth .auth-alt small{font-size:11px; opacity:.7;}
+/* Tombol animasi: cukup ikon kecil (ikonnya berwarna sesuai mode) */
+#auth-anim-btn{padding:8px !important; border-radius:50% !important; opacity:.65;}
+#auth-anim-btn .l, #auth-anim-btn b{display:none !important;}
+#auth-anim-btn svg{width:16px !important; height:16px !important;}
+</style>
+<style id="profile-cover-css">
+/* Foto sampul di belakang profil: dipasang ke banner (::before) kartu profil */
+html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan .pg-l > .card:first-child.has-cover::before{background:var(--cover) center/cover no-repeat !important; height:104px !important; opacity:1 !important; -webkit-mask-image:none !important; mask-image:none !important;}
+.profile-cover-btns{position:absolute; top:10px; right:12px; display:flex; gap:8px; z-index:5;}
+.profile-cover-btns .pc-btn{width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); color:#fff; border:1px solid rgba(255,255,255,.25); cursor:pointer; -webkit-tap-highlight-color:transparent;}
+.profile-cover-btns .pc-btn:active{transform:scale(.92);}
+.profile-cover-btns .pc-btn [data-icon], .profile-cover-btns .pc-btn svg{display:flex; width:15px; height:15px; color:#fff; stroke:currentColor;}
+</style>
+<style id="gr-range-css">
+.gr-total{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin:2px 0 10px; padding:9px 12px; border-radius:12px; background:var(--primary-dim); font-size:12px; color:var(--text-2);}
+.gr-total b{font-size:14px; font-weight:800; color:var(--text); white-space:nowrap;}
+#gr-range .nw-range{padding:0;}
+</style>
 </body>
 </html>
