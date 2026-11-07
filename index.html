@@ -613,6 +613,7 @@
   .catat-grid .qa[data-goto="titipan"] .ic{background:#B84A7C;}
   .catat-grid .qa[data-goto="untuk-orang"] .ic{background:#E8837A;}
   .catat-grid .qa[data-goto="belanja"] .ic{background:#7B5CFA;}
+  .catat-grid .qa[data-goto="rencana-belanja"] .ic{background:#3B82C4;}
   .catat-grid .qa[data-goto="stok-barang"] .ic{background:#189B67;}
   .catat-grid .qa[data-goto="investasi-beli"] .ic{background:#5C6BFA;}
   .catat-grid .qa[data-goto="investasi-jual"] .ic{background:#F2994A;}
@@ -2172,6 +2173,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div class="qa" data-goto="keluar"><div class="ic" data-icon="arrowUp"></div><div class="lb">Pengeluaran</div></div>
         <div class="qa" data-goto="untuk-orang"><div class="ic" data-icon="users"></div><div class="lb">Uang untuk Orang Lain</div></div>
         <div class="qa" data-goto="belanja"><div class="ic" data-icon="cart"></div><div class="lb">Belanja Item</div></div>
+        <div class="qa" data-goto="rencana-belanja"><div class="ic" data-icon="receipt"></div><div class="lb">Rencana Belanja</div></div>
         <div class="qa" data-goto="tagihan"><div class="ic" data-icon="receipt"></div><div class="lb">Tagihan</div></div>
         <div class="qa" data-goto="recurring"><div class="ic" data-icon="repeat"></div><div class="lb">Transaksi Berulang</div></div>
       </div>
@@ -2484,6 +2486,9 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   <!-- ============ BELANJA ITEM ============ -->
   <div class="view" id="view-belanja"><main>
     <div class="section-title"><span data-icon="cart"></span>Belanja per Item</div>
+    <div class="card" data-goto="rencana-belanja" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div style="min-width:0;"><b>Rencana Belanja</b><div class="meta-sub" style="margin-top:2px;">Susun daftar belanja, cek anggaran, lalu catat saat dibeli.</div></div><span style="font-size:22px; line-height:1;">&rsaquo;</span>
+    </div>
     <div class="card">
       <div class="toggle-row" id="bl-mode-row" style="margin-bottom:14px;">
         <div class="toggle active" id="bl-mode-single" data-blmode="single">Satu Item</div>
@@ -2538,6 +2543,21 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div id="bl-count" style="font-size:12px; color:var(--text-2); margin-bottom:6px;"></div>
       </div>
       <div id="bl-list"></div></div>
+  </main></div>
+
+  <div class="view" id="view-rencana-belanja"><main>
+    <div class="section-title"><span data-icon="receipt"></span>Rencana Belanja</div>
+    <div class="card" id="rb-ringkas"></div>
+    <div id="rb-plans"></div>
+    <button type="button" class="btn" id="btn-rb-baru">+ Buat Rencana</button>
+    <div class="card"><h3><span class="dot"></span>Cara kerjanya</h3>
+      <div class="meta-sub" style="line-height:1.65; margin-top:6px;">
+        <b>1. Susun.</b> Satu rencana = satu kali belanja (cth: belanja bulanan). Isi item, jumlah, dan perkiraan harga. Harga terisi otomatis dari pembelian terakhir, boleh kamu ubah.<br>
+        <b>2. Beri prioritas.</b> Wajib, Perlu, atau Boleh. Kalau anggaran tidak cukup, yang disarankan ditunda dulu adalah yang Boleh, lalu Perlu. Wajib tidak pernah disarankan ditunda.<br>
+        <b>3. Cek.</b> Total dibandingkan dengan sisa budget kategori bulan itu (sudah dikurangi belanja yang sudah tercatat dan rencana lain) dan saldo tersedia di rekening sumber dana.<br>
+        <b>4. Belanja.</b> Tekan Beli saat item dibeli. Tercatat sebagai Belanja Item sungguhan, jadi stok dan budget ikut terhitung, dan selisih dengan perkiraan terlihat.
+      </div>
+    </div>
   </main></div>
 
   <!-- ============ STOK BARANG HABIS PAKAI ============ -->
@@ -3881,6 +3901,46 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <button class="cancel" id="ipo-jatah-cancel">Batal</button>
       <button class="confirm" id="ipo-jatah-simpan" style="background:var(--primary);">Simpan</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ MODAL RENCANA BELANJA ============ -->
+<div class="modal-overlay" id="rb-plan-modal-overlay">
+  <div class="modal-box" style="max-width:360px; text-align:left; max-height:92vh; overflow:auto;">
+    <h3 style="margin:0 0 12px; font-family:var(--font-disp); font-size:16px;" id="rb-plan-title">Rencana Baru</h3>
+    <div class="field"><label>Nama rencana</label><input type="text" id="rb-p-nama" maxlength="40" placeholder="cth: Belanja bulanan"></div>
+    <div class="field"><label>Rencana belanja tanggal</label><input type="date" id="rb-p-tanggal"></div>
+    <div class="field"><label>Sumber dana (opsional)</label><select id="rb-p-metode"></select>
+      <div class="meta" style="margin-top:4px;">Kalau diisi, total rencana dicek terhadap saldo tersedia rekening ini.</div></div>
+    <div id="rb-plan-err" style="font-size:11.5px; color:var(--danger); min-height:16px; margin-bottom:6px;"></div>
+    <div class="modal-actions"><button class="cancel" id="rb-plan-cancel">Batal</button><button class="confirm" id="rb-plan-simpan" style="background:var(--primary);">Simpan</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="rb-item-modal-overlay">
+  <div class="modal-box" style="max-width:360px; text-align:left; max-height:92vh; overflow:auto;">
+    <h3 style="margin:0 0 12px; font-family:var(--font-disp); font-size:16px;" id="rb-item-title">Tambah Item</h3>
+    <div class="field"><label>Item</label><select id="rb-i-item"></select></div>
+    <div class="field"><label>Kategori</label><input type="text" id="rb-i-kat" disabled></div>
+    <div class="field"><label>Jumlah</label><input type="number" id="rb-i-qty" inputmode="decimal" min="0" step="any" value="1"></div>
+    <div class="field"><label>Satuan</label><select id="rb-i-satuan"></select></div>
+    <div class="field"><label>Perkiraan harga per satuan (Rp)</label><input type="text" class="money-input" id="rb-i-harga" inputmode="numeric" placeholder="0"><div class="meta" id="rb-i-info" style="margin-top:4px;"></div></div>
+    <div class="field"><label>Prioritas</label><select id="rb-i-prio"><option value="wajib">Wajib (kebutuhan pokok)</option><option value="perlu" selected>Perlu (sebaiknya dibeli)</option><option value="boleh">Boleh (bisa ditunda)</option></select></div>
+    <div id="rb-i-prev" style="font-size:12.5px; color:var(--text-2); margin-bottom:6px;"></div>
+    <div id="rb-item-err" style="font-size:11.5px; color:var(--danger); min-height:16px; margin-bottom:6px;"></div>
+    <div class="modal-actions"><button class="cancel" id="rb-item-cancel">Batal</button><button class="confirm" id="rb-item-simpan" style="background:var(--primary);">Simpan</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="rb-beli-modal-overlay">
+  <div class="modal-box" style="max-width:360px; text-align:left; max-height:92vh; overflow:auto;">
+    <h3 style="margin:0 0 4px; font-family:var(--font-disp); font-size:16px;">Catat Pembelian</h3>
+    <div class="meta-sub" id="rb-b-info" style="margin-bottom:12px;"></div>
+    <div class="field"><label>Tanggal beli</label><input type="date" id="rb-b-tanggal"></div>
+    <div class="field"><label>Jumlah yang dibeli</label><input type="number" id="rb-b-qty" inputmode="decimal" min="0" step="any"></div>
+    <div class="field"><label>Total bayar (Rp)</label><input type="text" class="money-input" id="rb-b-jumlah" inputmode="numeric" placeholder="0"></div>
+    <div class="field"><label>Metode bayar</label><select id="rb-b-metode"></select></div>
+    <div id="rb-b-prev" style="font-size:12.5px; color:var(--text-2); margin-bottom:6px;"></div>
+    <div id="rb-beli-err" style="font-size:11.5px; color:var(--danger); min-height:16px; margin-bottom:6px;"></div>
+    <div class="modal-actions"><button class="cancel" id="rb-beli-cancel">Batal</button><button class="confirm" id="rb-beli-simpan" style="background:var(--primary);">Simpan</button></div>
   </div>
 </div>
 
@@ -5240,7 +5300,7 @@ AI_METODE.restockDef = {
   en:'- The restock suggestions are only rough estimates: based on the last 4 weeks of logged usage (recent weeks weighted more) and my usual shopping interval, not exact needs. Accuracy depends on how consistently I log usage; unlogged usage is not detected, except when my logged usage is far below my purchase pattern: the estimate then uses the average of the two.'
 };
 function aiMetode(key){ var x = AI_METODE[key]; return x ? (isEN() ? x.en : x.id) : ''; }
-var DATA = { saldoAwal:{}, akunJenis:{}, akunSumber:{}, accountsCustom:[], accountInfo:{}, budgetBelanja:{}, kategoriBelanja:[], itemBelanjaCustom:[], stokAbaikan:[], stokPengaturan:{}, untukSiapa:[], jenisPengeluaran:[], jenisTagihan:[], kategoriInventaris:[], tempatBeliInventaris:[], lokasiInventaris:[], lokasiInventarisMaps:{}, sumberPemasukan:[], goals:[], recurring:[], transfer:[], pemasukan:[], pengeluaran:[], piutang:[], hutang:[], titipan:[], belanja:[], invbeli:[], invjual:[], tagihan:[], inventaris:[], splitbill:[], stokKeluar:[], asetbio:[], panenAsetBio:[], sampah:[], ipo:[] };
+var DATA = { saldoAwal:{}, akunJenis:{}, akunSumber:{}, accountsCustom:[], accountInfo:{}, budgetBelanja:{}, kategoriBelanja:[], itemBelanjaCustom:[], stokAbaikan:[], stokPengaturan:{}, untukSiapa:[], jenisPengeluaran:[], jenisTagihan:[], kategoriInventaris:[], tempatBeliInventaris:[], lokasiInventaris:[], lokasiInventarisMaps:{}, sumberPemasukan:[], goals:[], recurring:[], transfer:[], pemasukan:[], pengeluaran:[], piutang:[], hutang:[], titipan:[], belanja:[], invbeli:[], invjual:[], tagihan:[], inventaris:[], splitbill:[], stokKeluar:[], asetbio:[], panenAsetBio:[], sampah:[], ipo:[], rencanaBelanja:[] };
 var statusPick = { pi:"Berjalan", ht:"Belum Lunas", tt:"Aktif", tg:"Belum Lunas" };
 var editState = { type:null, index:null };
 var sbMode = 'rata';
@@ -5682,7 +5742,7 @@ function applyDataDefaultsCore(){
   });
   DATA.goals.forEach(function(g){ if(!g.id) g.id = genId('goal'); });
   if(!DATA.recurring) DATA.recurring = [];
-  ['transfer','pemasukan','pengeluaran','piutang','hutang','titipan','belanja','invbeli','invjual','tagihan','inventaris','splitbill','stokKeluar','asetbio','panenAsetBio','koreksi','ipo'].forEach(function(k){
+  ['transfer','pemasukan','pengeluaran','piutang','hutang','titipan','belanja','invbeli','invjual','tagihan','inventaris','splitbill','stokKeluar','asetbio','panenAsetBio','koreksi','ipo','rencanaBelanja'].forEach(function(k){
     if(!DATA[k]) DATA[k] = [];
   });
   DATA.titipan.forEach(function(t){ if(t && !t.id) t.id = genId('tt'); });
@@ -5825,7 +5885,7 @@ function handleImportFile(file){
     catch(e){ toast('File tidak valid / rusak'); return; }
     var incoming = parsed && parsed.data ? parsed.data : parsed;
     if(!incoming || typeof incoming !== 'object'){ toast('Format file tidak dikenali'); return; }
-    var known = ['saldoAwal','accountsCustom','accountInfo','budgetBelanja','kategoriBelanja','itemBelanjaCustom','untukSiapa','jenisPengeluaran','jenisTagihan','sumberPemasukan','goals','recurring','transfer','pemasukan','pengeluaran','piutang','hutang','belanja','invbeli','invjual','tagihan','splitbill','stokKeluar','stokAbaikan','stokPengaturan','koreksi','rekon','ipo'];
+    var known = ['saldoAwal','accountsCustom','accountInfo','budgetBelanja','kategoriBelanja','itemBelanjaCustom','untukSiapa','jenisPengeluaran','jenisTagihan','sumberPemasukan','goals','recurring','transfer','pemasukan','pengeluaran','piutang','hutang','belanja','invbeli','invjual','tagihan','splitbill','stokKeluar','stokAbaikan','stokPengaturan','koreksi','rekon','ipo','rencanaBelanja'];
     var looksValid = known.some(function(k){ return k in incoming; });
     if(!looksValid){ toast('Format file tidak dikenali'); return; }
     showConfirm('Pulihkan data dari file ini? Semua data saat ini di akun ini akan DITIMPA oleh isi backup.', function(){
@@ -6950,7 +7010,7 @@ function go(tab){
   }
 
   var navMap = {dashboard:'dashboard', insight:'dashboard', 'saldo-rekening':'dashboard', catat:'catat', transfer:'catat', masuk:'catat', keluar:'catat',
-    piutang:'catat', hutang:'catat', titipan:'catat', belanja:'catat', 'investasi-beli':'catat', 'investasi-jual':'catat', dividen:'catat', tagihan:'catat',
+    piutang:'catat', hutang:'catat', titipan:'catat', belanja:'catat', 'rencana-belanja':'catat', 'investasi-beli':'catat', 'investasi-jual':'catat', dividen:'catat', tagihan:'catat',
     'atur-budget':'catat', goals:'catat', patungan:'catat', recurring:'catat', inventaris:'catat', 'inventaris-detail':'catat', asetbio:'catat', 'stok-barang':'catat', splitbill:'catat', 'untuk-orang':'catat', kesehatan:'catat', riwayat:'riwayat',
     laporan:'laporan', grafik:'laporan', pengaturan:'pengaturan', 'edit-saldo-awal':'pengaturan', rekonsiliasi:'pengaturan', sampah:'pengaturan', 'analisis-ai':'pengaturan', 'kelola-kategori':'pengaturan', coa:'pengaturan', 'riwayat-update':'pengaturan', widget:'dashboard', 'mutasi-rekening':'dashboard'};
   var navBtns = document.querySelectorAll('.navbtn');
@@ -6969,6 +7029,7 @@ function go(tab){
   if(tab==='hutang') renderHutangList();
   if(tab==='titipan') renderTitipanList();
   if(tab==='belanja'){ if(blMode==='multi') blMultiRefreshOptions(); fillSelectWithBlank('bl-lokasi', DATA.lokasiInventaris, 'Belum diisi'); updateLokasiMapsPreview('bl-lokasi','bl-lokasi-maps-preview'); renderBelanjaProgress(); renderBelanjaList(); }
+  if(tab==='rencana-belanja') renderRencanaBelanja();
   if(tab==='atur-budget') renderAturBudget();
   if(tab==='goals') renderGoals();
   if(tab==='patungan' && window.PTG){ PTG.start(); PTG.renderView(); }
@@ -8860,6 +8921,305 @@ function ipoInit(){
     var t = ev.target.closest ? ev.target.closest('button') : null; if(!t) return;
     if(t.getAttribute('data-ipo-jatah')) openIpoJatah(t.getAttribute('data-ipo-jatah'));
     else if(t.getAttribute('data-ipo-batal')) ipoBatal(t.getAttribute('data-ipo-batal'));
+  });
+}
+/* ============ RENCANA BELANJA ============
+   DATA.rencanaBelanja[] = {id, nama, tanggal, metode, items:[{id, item, kategori, qty, satuan, harga (perkiraan per satuan), prio:'wajib'|'perlu'|'boleh', tunda}]}
+   Status item TIDAK disimpan: "dibeli" = ada DATA.belanja dengan linkRencana === item.id (jadi selalu sinkron kalau belanjanya diedit/dihapus).
+   Cek kelayakan: sisa budget kategori = limit - belanja tercatat bulan itu - rencana lain di bulan yang sama; dana = saldo tersedia rekening sumber. */
+var RB_PRIO = { wajib:{l:'Wajib', o:0, c:'var(--danger)'}, perlu:{l:'Perlu', o:1, c:'var(--warn-text,var(--warn))'}, boleh:{l:'Boleh', o:2, c:'var(--text-2)'} };
+var rbOpen = {}, _rbPlanEdit = null, _rbItemPlan = null, _rbItemEdit = null, _rbBeliPlan = null, _rbBeliItem = null;
+function rbPlan(id){ var r = null; (DATA.rencanaBelanja||[]).forEach(function(p){ if(p.id===id) r = p; }); return r; }
+function rbItem(p, id){ var r = null; ((p&&p.items)||[]).forEach(function(i){ if(i.id===id) r = i; }); return r; }
+function rbBelanjaDari(it){ var r = null; (DATA.belanja||[]).forEach(function(b){ if(b.linkRencana===it.id) r = b; }); return r; }
+function rbEst(it){ return Math.round((it.qty||0)*(it.harga||0)); }
+function rbStatus(it){ return rbBelanjaDari(it) ? 'dibeli' : (it.tunda ? 'tunda' : 'rencana'); }
+function rbKategoriItem(nama){ var k = ''; allItemBelanja().forEach(function(x){ if(x[0]===nama) k = x[1]||''; }); return k; }
+function rbHargaTerakhir(nama){
+  for(var i=DATA.belanja.length-1;i>=0;i--){ var b = DATA.belanja[i]; if(b.item===nama && b.qty>0 && b.jumlah>0) return { harga:Math.round(b.jumlah/b.qty), satuan:b.satuan||'Pcs' }; }
+  return null;
+}
+function rbBulan(p){ return (p.tanggal||todayISO()).slice(0,7); }
+function rbHitung(p){
+  var r = { est:0, estDibeli:0, realisasi:0, nDibeli:0, nRencana:0, nTunda:0, perKat:{}, perPrio:{wajib:0, perlu:0, boleh:0} };
+  (p.items||[]).forEach(function(it){
+    var st = rbStatus(it), e = rbEst(it);
+    if(st==='dibeli'){ r.nDibeli++; r.estDibeli += e; r.realisasi += (rbBelanjaDari(it).jumlah||0); }
+    else if(st==='tunda'){ r.nTunda++; }
+    else { r.nRencana++; r.est += e; var k = it.kategori||'Lainnya'; r.perKat[k] = (r.perKat[k]||0)+e; r.perPrio[it.prio||'perlu'] += e; }
+  });
+  return r;
+}
+function rbKomitmenLain(p, kat){
+  var v = 0;
+  (DATA.rencanaBelanja||[]).forEach(function(q){
+    if(q.id===p.id || rbBulan(q)!==rbBulan(p)) return;
+    (q.items||[]).forEach(function(it){ if(rbStatus(it)==='rencana' && (it.kategori||'Lainnya')===kat) v += rbEst(it); });
+  });
+  return v;
+}
+function rbCek(p){
+  var h = rbHitung(p), bl = rbBulan(p), y = parseInt(bl.slice(0,4),10), m = parseInt(bl.slice(5,7),10);
+  var used = belanjaTerpakaiKategori(firstDayStr(y,m), lastDayStr(y,m)), kat = [];
+  Object.keys(h.perKat).forEach(function(k){
+    var bud = (DATA.budgetBelanja||{})[k]||0; if(!(bud>0)) return;
+    var lain = rbKomitmenLain(p,k), sisa = bud - (used[k]||0) - lain;
+    kat.push({ kat:k, est:h.perKat[k], budget:bud, terpakai:used[k]||0, lain:lain, sisa:sisa, lewat:h.perKat[k] > Math.max(0,sisa) });
+  });
+  var dana = null;
+  if(p.metode && ACCOUNTS.indexOf(p.metode)>-1 && h.est>0){ var tv = saldoTersediaAkun(p.metode); dana = { metode:p.metode, tersedia:tv, kurang:Math.max(0, h.est-tv) }; }
+  return { h:h, kat:kat, dana:dana };
+}
+/* Saran tunda: buang dari prioritas terendah dulu (Boleh, lalu Perlu), yang nilainya terbesar duluan. Wajib tidak pernah disarankan. */
+function rbSaran(p, c){
+  var needK = {}; c.kat.forEach(function(k){ if(k.lewat) needK[k.kat] = k.est - Math.max(0,k.sisa); });
+  var needD = c.dana ? c.dana.kurang : 0, hemat = 0, pick = {};
+  var cand = (p.items||[]).filter(function(it){ return rbStatus(it)==='rencana' && it.prio!=='wajib'; })
+    .sort(function(a,b){ return (RB_PRIO[b.prio||'perlu'].o - RB_PRIO[a.prio||'perlu'].o) || (rbEst(b)-rbEst(a)); });
+  Object.keys(needK).forEach(function(k){
+    cand.forEach(function(it){
+      if(needK[k]<=0 || pick[it.id] || (it.kategori||'Lainnya')!==k) return;
+      pick[it.id] = it; needK[k] -= rbEst(it); needD -= rbEst(it); hemat += rbEst(it);
+    });
+  });
+  cand.forEach(function(it){ if(needD<=0 || pick[it.id]) return; pick[it.id] = it; needD -= rbEst(it); hemat += rbEst(it); });
+  var still = needD>0; Object.keys(needK).forEach(function(k){ if(needK[k]>0) still = true; });
+  return { list:Object.keys(pick).map(function(k){ return pick[k]; }), hemat:hemat, belumCukup:still };
+}
+function rbRp(n){ return maskOrFmt(n); }
+function rbBtn(act, p, i, label){ return '<button type="button" class="btn ghost" data-act="'+act+'" data-p="'+escapeHtml(p)+'"'+(i?' data-i="'+escapeHtml(i)+'"':'')+' style="margin-top:0; width:auto; min-width:0; box-sizing:border-box; flex:1 1 0; padding:9px 6px; font-size:12px;">'+label+'</button>'; }
+function rbItemHtml(p, it){
+  var st = rbStatus(it), e = rbEst(it), pr = RB_PRIO[it.prio||'perlu'] || RB_PRIO.perlu, b = rbBelanjaDari(it), last = rbHargaTerakhir(it.item);
+  var chip = '<span style="font-size:10.5px; font-weight:800; color:'+pr.c+'; border:1px solid currentColor; border-radius:999px; padding:1px 7px; margin-left:6px; white-space:nowrap;">'+pr.l+'</span>';
+  var sub = escapeHtml(String(it.qty))+' '+escapeHtml(it.satuan||'')+' \u00d7 '+fmt(it.harga||0)+(it.kategori ? ' \u2022 '+escapeHtml(it.kategori) : '');
+  if(st==='rencana' && last && it.harga>0 && last.satuan===it.satuan && last.harga!==it.harga) sub += ' \u2022 terakhir '+fmt(last.harga);
+  var h = '<div style="padding:11px 0; border-top:1px solid var(--line);'+(st==='tunda'?' opacity:.65;':'')+'">'+
+    '<div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">'+
+      '<div style="min-width:0;"><b'+(st==='dibeli'?' style="text-decoration:line-through; opacity:.7;"':'')+'>'+escapeHtml(it.item)+'</b>'+chip+(st==='tunda'?' <span class="meta-sub">\u2022 ditunda</span>':'')+
+      '<div class="meta-sub" style="margin-top:2px;">'+sub+'</div></div>'+
+      '<div class="mono" style="font-weight:700; white-space:nowrap;">'+rbRp(e)+'</div></div>';
+  if(st==='dibeli'){
+    var sel = (b.jumlah||0) - e;
+    h += '<div class="meta-sub" style="margin-top:6px; color:var(--pos);">\u2713 Dibeli '+escapeHtml(ipoTglPendek(b.tanggal))+' \u2022 '+rbRp(b.jumlah||0)+(sel!==0 ? ' ('+(sel>0?'lebih ':'hemat ')+rbRp(Math.abs(sel))+')' : '')+'</div>';
+  } else if(st==='tunda'){
+    h += '<div style="display:flex; gap:6px; margin-top:8px;">'+rbBtn('lanjut',p.id,it.id,'Lanjutkan')+rbBtn('edit-item',p.id,it.id,'Edit')+rbBtn('hapus-item',p.id,it.id,'Hapus')+'</div>';
+  } else {
+    h += '<div style="display:flex; gap:6px; margin-top:8px;">'+rbBtn('beli',p.id,it.id,'Beli')+rbBtn('edit-item',p.id,it.id,'Edit')+rbBtn('tunda',p.id,it.id,'Tunda')+rbBtn('hapus-item',p.id,it.id,'Hapus')+'</div>';
+  }
+  return h+'</div>';
+}
+function rbPlanHtml(p){
+  var c = rbCek(p), h = c.h, open = !!rbOpen[p.id];
+  var masalah = c.kat.some(function(k){ return k.lewat; }) ? 'budget' : (c.dana && c.dana.kurang>0 ? 'dana' : '');
+  var selesai = h.nRencana===0 && h.nDibeli>0;
+  var chip = selesai ? '<span style="color:var(--pos); font-weight:800; font-size:11.5px;">\u2713 Selesai</span>'
+    : (masalah==='budget' ? '<span style="color:var(--danger); font-weight:800; font-size:11.5px;">\u26a0\ufe0f Lewat budget</span>'
+    : (masalah==='dana' ? '<span style="color:var(--danger); font-weight:800; font-size:11.5px;">\u26a0\ufe0f Dana kurang</span>'
+    : (h.nRencana>0 ? '<span style="color:var(--pos); font-weight:800; font-size:11.5px;">\u2713 Aman</span>' : '')));
+  var total = (p.items||[]).length;
+  var out = '<div class="card" style="padding:0; overflow:hidden;">'+
+    '<div data-act="toggle" data-p="'+escapeHtml(p.id)+'" style="padding:14px 16px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; align-items:center;">'+
+      '<div style="min-width:0;"><b style="font-size:15px;">'+escapeHtml(p.nama||'Rencana')+'</b>'+
+      '<div class="meta-sub" style="margin-top:2px;">'+escapeHtml(ipoTglPendek(p.tanggal))+(p.metode?' \u2022 '+escapeHtml(p.metode):'')+' \u2022 '+h.nDibeli+'/'+(total-h.nTunda)+' dibeli</div></div>'+
+      '<div style="text-align:right; flex:0 0 auto;"><div class="mono" style="font-weight:800;">'+rbRp(h.est)+'</div><div style="margin-top:2px;">'+chip+'</div></div></div>';
+  if(open){
+    out += '<div style="padding:0 16px 14px;">';
+    var items = (p.items||[]).slice().sort(function(a,b){
+      var ra = {rencana:0,tunda:1,dibeli:2}[rbStatus(a)], rb = {rencana:0,tunda:1,dibeli:2}[rbStatus(b)];
+      return (ra-rb) || (RB_PRIO[a.prio||'perlu'].o - RB_PRIO[b.prio||'perlu'].o);
+    });
+    items.forEach(function(it){ out += rbItemHtml(p,it); });
+    if(!items.length) out += '<div class="empty" style="margin:8px 0;">Belum ada item. Tambah item atau ambil dari rekomendasi stok.</div>';
+    /* panel cek */
+    var cek = '';
+    if(h.nRencana>0){
+      c.kat.forEach(function(k){
+        cek += '<div style="font-size:12.5px; line-height:1.55; color:'+(k.lewat?'var(--danger)':'var(--text-2)')+';">'+(k.lewat?'\u26a0\ufe0f ':'\u2713 ')+escapeHtml(k.kat)+': rencana '+rbRp(k.est)+(k.sisa>=0 ? ', sisa budget '+rbRp(k.sisa) : ', budget sudah lewat '+rbRp(-k.sisa))+(k.lain>0 ? ' <span class="meta-sub">(setelah rencana lain '+rbRp(k.lain)+')</span>' : '')+'</div>';
+      });
+      if(c.dana) cek += '<div style="font-size:12.5px; line-height:1.55; color:'+(c.dana.kurang>0?'var(--danger)':'var(--text-2)')+';">'+(c.dana.kurang>0?'\u26a0\ufe0f ':'\u2713 ')+escapeHtml(c.dana.metode)+': saldo tersedia '+rbRp(c.dana.tersedia)+(c.dana.kurang>0 ? ', kurang '+rbRp(c.dana.kurang) : ', cukup')+'</div>';
+      var sr = rbSaran(p,c);
+      if(sr.list.length) cek += '<div style="font-size:12.5px; line-height:1.55; margin-top:6px;"><b>Saran:</b> tunda '+sr.list.map(function(it){ return escapeHtml(it.item); }).join(', ')+' (hemat '+rbRp(sr.hemat)+')'+(sr.belumCukup ? '. Masih belum cukup, sisanya item Wajib.' : '.')+'</div>';
+      else if(masalah) cek += '<div style="font-size:12.5px; line-height:1.55; margin-top:6px;">Semua sisa item berprioritas Wajib, jadi tidak ada yang disarankan ditunda. Tambah dana atau budget.</div>';
+      if(!c.kat.length && !c.dana) cek += '<div class="meta-sub">Atur limit kategori di Atur Limit dan isi sumber dana rencana untuk mengaktifkan pengecekan.</div>';
+    }
+    if(cek) out += '<div style="margin-top:10px; padding:10px 12px; border-radius:12px; background:var(--ghost-bg,rgba(127,127,127,.08));">'+cek+'</div>';
+    if(h.nDibeli>0) out += '<div class="meta-sub" style="margin-top:8px;">Realisasi '+rbRp(h.realisasi)+' dari perkiraan '+rbRp(h.estDibeli)+' ('+(h.realisasi-h.estDibeli>0?'lebih ':'hemat ')+rbRp(Math.abs(h.realisasi-h.estDibeli))+')</div>';
+    out += '<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">'+rbBtn('tambah',p.id,'','+ Item')+rbBtn('stok',p.id,'','Dari stok')+rbBtn('salin',p.id,'','Salin')+'</div>'+
+           '<div style="display:flex; gap:6px; margin-top:6px;">'+rbBtn('edit-plan',p.id,'','Ubah')+rbBtn('dup',p.id,'','Duplikat')+rbBtn('hapus-plan',p.id,'','Hapus')+'</div></div>';
+  }
+  return out+'</div>';
+}
+function renderRencanaBelanja(){
+  var box = document.getElementById('rb-plans'); if(!box) return;
+  var plans = (DATA.rencanaBelanja||[]).slice().sort(function(a,b){ return (a.tanggal||'').localeCompare(b.tanggal||''); });
+  var now = todayISO().slice(0,7), tot = 0, pr = {wajib:0, perlu:0, boleh:0}, n = 0;
+  plans.forEach(function(p){ if(rbBulan(p)!==now) return; var h = rbHitung(p); if(h.nRencana>0){ n++; tot += h.est; Object.keys(pr).forEach(function(k){ pr[k] += h.perPrio[k]; }); } });
+  var rk = document.getElementById('rb-ringkas');
+  if(rk) rk.innerHTML = '<div class="meta-sub">Belum dibeli bulan ini</div><div class="mono" style="font-size:22px; font-weight:800; margin:2px 0 4px;">'+rbRp(tot)+'</div>'+
+    '<div class="meta-sub">'+(n ? n+' rencana \u2022 Wajib '+rbRp(pr.wajib)+' \u2022 Perlu '+rbRp(pr.perlu)+' \u2022 Boleh '+rbRp(pr.boleh) : 'Belum ada rencana yang menunggu bulan ini.')+'</div>';
+  box.innerHTML = plans.length ? plans.map(rbPlanHtml).join('') : '<div class="card"><div class="empty">Belum ada rencana belanja. Tekan Buat Rencana untuk mulai.</div></div>';
+}
+function rbToast(m){ toast(m); }
+/* ---- rencana ---- */
+function openRbPlan(id){
+  var p = id ? rbPlan(id) : null; _rbPlanEdit = id||null;
+  document.getElementById('rb-plan-title').textContent = p ? 'Ubah Rencana' : 'Rencana Baru';
+  fillSelectAccountsWithBlank('rb-p-metode', ACCOUNTS, 'Belum ditentukan');
+  document.getElementById('rb-p-nama').value = p ? (p.nama||'') : '';
+  document.getElementById('rb-p-tanggal').value = p ? (p.tanggal||todayISO()) : todayISO();
+  document.getElementById('rb-p-metode').value = p && p.metode && ACCOUNTS.indexOf(p.metode)>-1 ? p.metode : '';
+  document.getElementById('rb-plan-err').textContent = '';
+  document.getElementById('rb-plan-modal-overlay').classList.add('show');
+}
+function submitRbPlan(){
+  var nama = document.getElementById('rb-p-nama').value.trim(), tgl = document.getElementById('rb-p-tanggal').value, met = document.getElementById('rb-p-metode').value, err = document.getElementById('rb-plan-err');
+  if(!nama){ err.textContent = 'Isi nama rencana dulu'; return; }
+  if(!tgl){ err.textContent = 'Pilih tanggal rencana belanja'; return; }
+  var p = _rbPlanEdit ? rbPlan(_rbPlanEdit) : null;
+  if(p){ p.nama = nama; p.tanggal = tgl; p.metode = met; }
+  else { p = { id:genId('rb'), nama:nama, tanggal:tgl, metode:met, items:[] }; DATA.rencanaBelanja.push(p); rbOpen[p.id] = true; }
+  saveData(); document.getElementById('rb-plan-modal-overlay').classList.remove('show'); renderRencanaBelanja();
+}
+/* ---- item ---- */
+function rbItemPreview(){
+  var qty = parseFloat(ipoVal('rb-i-qty'))||0, harga = parseMoneyValue(ipoVal('rb-i-harga')), el = document.getElementById('rb-i-prev');
+  el.innerHTML = qty>0 && harga>0 ? 'Perkiraan total: <b class="mono" style="color:var(--text);">'+fmt(Math.round(qty*harga))+'</b>' : '';
+}
+function rbItemPilih(isiHarga){
+  var nama = ipoVal('rb-i-item'), last = rbHargaTerakhir(nama);
+  document.getElementById('rb-i-kat').value = rbKategoriItem(nama);
+  document.getElementById('rb-i-info').textContent = last ? 'Pembelian terakhir: '+fmt(last.harga)+' per '+last.satuan : 'Belum pernah dibeli, isi perkiraan sendiri.';
+  if(isiHarga){
+    document.getElementById('rb-i-satuan').value = last ? last.satuan : (satuanTerakhirItem(nama)||'Pcs');
+    document.getElementById('rb-i-harga').value = last ? formatMoneyValue(last.harga) : '';
+  }
+  rbItemPreview();
+}
+function openRbItem(planId, itemId){
+  var p = rbPlan(planId); if(!p) return;
+  var items = allItemBelanja().map(function(x){ return x[0]; });
+  if(!items.length){ toast('Belum ada item. Tambah dulu lewat Atur Limit.'); return; }
+  _rbItemPlan = planId; _rbItemEdit = itemId||null;
+  var it = itemId ? rbItem(p,itemId) : null;
+  fillSelect('rb-i-item', items); fillSelect('rb-i-satuan', SATUAN_BELANJA);
+  document.getElementById('rb-item-title').textContent = it ? 'Edit Item' : 'Tambah Item';
+  document.getElementById('rb-i-item').value = it ? it.item : items[0];
+  document.getElementById('rb-i-qty').value = it ? it.qty : 1;
+  document.getElementById('rb-i-prio').value = it ? (it.prio||'perlu') : 'perlu';
+  rbItemPilih(!it);
+  if(it){ document.getElementById('rb-i-satuan').value = it.satuan||'Pcs'; document.getElementById('rb-i-harga').value = formatMoneyValue(it.harga||0); rbItemPreview(); }
+  document.getElementById('rb-item-err').textContent = '';
+  document.getElementById('rb-item-modal-overlay').classList.add('show');
+}
+function submitRbItem(){
+  var p = rbPlan(_rbItemPlan), err = document.getElementById('rb-item-err'); if(!p) return;
+  var nama = ipoVal('rb-i-item'), qty = stokBulat(parseFloat(ipoVal('rb-i-qty'))), harga = parseMoneyValue(ipoVal('rb-i-harga'));
+  if(!nama){ err.textContent = 'Pilih item dulu'; return; }
+  if(!(qty>0)){ err.textContent = 'Isi jumlah yang direncanakan'; return; }
+  if(!(harga>0)){ err.textContent = 'Isi perkiraan harga per satuan'; return; }
+  var dup = false; (p.items||[]).forEach(function(x){ if(x.item===nama && x.id!==_rbItemEdit && rbStatus(x)!=='dibeli') dup = true; });
+  if(dup){ err.textContent = nama+' sudah ada di rencana ini. Edit saja itemnya.'; return; }
+  var rec = { item:nama, kategori:rbKategoriItem(nama), qty:qty, satuan:ipoVal('rb-i-satuan')||'Pcs', harga:harga, prio:ipoVal('rb-i-prio')||'perlu' };
+  var it = _rbItemEdit ? rbItem(p,_rbItemEdit) : null;
+  if(it){ Object.keys(rec).forEach(function(k){ it[k] = rec[k]; }); }
+  else { rec.id = genId('rbi'); rec.tunda = false; p.items.push(rec); }
+  rbOpen[p.id] = true; saveData();
+  document.getElementById('rb-item-modal-overlay').classList.remove('show'); renderRencanaBelanja();
+}
+function rbDariStok(planId){
+  var p = rbPlan(planId); if(!p) return;
+  var list = []; try{ list = daftarBelanjaStok(); }catch(e){ list = []; }
+  var ada = {}; (p.items||[]).forEach(function(x){ if(rbStatus(x)!=='dibeli') ada[x.item] = true; });
+  var tambah = 0;
+  list.forEach(function(x){
+    if(ada[x.nama]) return;
+    var last = rbHargaTerakhir(x.nama), harga = x.hargaUnit>0 ? Math.round(x.hargaUnit) : (last ? last.harga : 0);
+    if(!(harga>0) || !(x.qty>0)) return;
+    p.items.push({ id:genId('rbi'), item:x.nama, kategori:x.kategori||rbKategoriItem(x.nama), qty:x.qty, satuan:x.satuan||'Pcs', harga:harga, prio:(x.stok<=0 ? 'wajib' : (x.mode==='pola' ? 'boleh' : 'perlu')), tunda:false });
+    tambah++;
+  });
+  saveData(); rbOpen[p.id] = true; renderRencanaBelanja();
+  toast(tambah ? tambah+' item ditambahkan dari rekomendasi stok' : 'Tidak ada rekomendasi baru dari stok');
+}
+function rbSalin(planId){
+  var p = rbPlan(planId); if(!p) return;
+  var lines = [], tot = 0;
+  ['wajib','perlu','boleh'].forEach(function(k){
+    var grp = (p.items||[]).filter(function(it){ return rbStatus(it)==='rencana' && (it.prio||'perlu')===k; });
+    if(!grp.length) return;
+    lines.push('['+RB_PRIO[k].l+']');
+    grp.forEach(function(it){ tot += rbEst(it); lines.push('\u2610 '+it.item+' \u2014 '+it.qty+' '+(it.satuan||'')+' (\u00b1'+fmt(rbEst(it))+')'); });
+  });
+  if(!lines.length){ toast('Tidak ada item yang perlu dibeli'); return; }
+  var txt = '\ud83d\uded2 '+(p.nama||'Rencana Belanja')+' ('+p.tanggal+')\n'+lines.join('\n')+'\n\nPerkiraan total: \u00b1'+fmt(tot);
+  function fb(){ var t = document.createElement('textarea'); t.value = txt; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); toast('Daftar disalin'); }catch(e){ toast('Gagal menyalin'); } t.remove(); }
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function(){ toast('Daftar disalin'); }, fb); else fb();
+}
+function rbDuplikat(planId){
+  var p = rbPlan(planId); if(!p) return;
+  var q = { id:genId('rb'), nama:(p.nama||'Rencana')+' (salinan)', tanggal:todayISO(), metode:p.metode||'', items:(p.items||[]).map(function(it){ return { id:genId('rbi'), item:it.item, kategori:it.kategori, qty:it.qty, satuan:it.satuan, harga:it.harga, prio:it.prio, tunda:false }; }) };
+  DATA.rencanaBelanja.push(q); rbOpen[q.id] = true; saveData(); renderRencanaBelanja(); toast('Rencana diduplikat dengan status baru');
+}
+/* ---- beli (tercatat sebagai Belanja Item sungguhan) ---- */
+function rbBeliPreview(){
+  var p = rbPlan(_rbBeliPlan), it = rbItem(p,_rbBeliItem), el = document.getElementById('rb-b-prev'); if(!it) return;
+  var j = parseMoneyValue(ipoVal('rb-b-jumlah')), e = rbEst(it), sel = j-e;
+  el.innerHTML = j>0 ? ('Perkiraan '+fmt(e)+(sel===0?' \u2022 sesuai':(' \u2022 '+(sel>0?'lebih ':'hemat ')+fmt(Math.abs(sel))))) : '';
+}
+function openRbBeli(planId, itemId){
+  var p = rbPlan(planId), it = rbItem(p,itemId); if(!it) return;
+  _rbBeliPlan = planId; _rbBeliItem = itemId;
+  document.getElementById('rb-b-info').textContent = it.item+' \u2022 rencana '+it.qty+' '+(it.satuan||'')+' \u00d7 '+fmt(it.harga);
+  document.getElementById('rb-b-tanggal').value = todayISO();
+  document.getElementById('rb-b-qty').value = it.qty;
+  document.getElementById('rb-b-jumlah').value = formatMoneyValue(rbEst(it));
+  fillRekeningBlankSelect('rb-b-metode', p.metode && ACCOUNTS.indexOf(p.metode)>-1 ? p.metode : '');
+  document.getElementById('rb-beli-err').textContent = '';
+  rbBeliPreview();
+  document.getElementById('rb-beli-modal-overlay').classList.add('show');
+}
+function submitRbBeli(){
+  var p = rbPlan(_rbBeliPlan), it = rbItem(p,_rbBeliItem), err = document.getElementById('rb-beli-err'); if(!it || rbBelanjaDari(it)) return;
+  var qty = stokBulat(parseFloat(ipoVal('rb-b-qty'))), jumlah = parseMoneyValue(ipoVal('rb-b-jumlah')), metode = ipoVal('rb-b-metode'), tgl = ipoVal('rb-b-tanggal') || todayISO();
+  if(!(qty>0)){ err.textContent = 'Isi jumlah yang dibeli'; return; }
+  if(!(jumlah>0)){ err.textContent = 'Isi total bayar'; return; }
+  if(!cekBatasMengendapKeluar(metode, jumlah, 0)) return;
+  var kategori = it.kategori || rbKategoriItem(it.item);
+  DATA.belanja.push({ tanggal:tgl, item:it.item, kategori:kategori, metode:metode, jumlah:jumlah, qty:qty, satuan:it.satuan||'Pcs', lokasi:'', ket:'Rencana: '+(p.nama||''), linkRencana:it.id });
+  saveData();
+  document.getElementById('rb-beli-modal-overlay').classList.remove('show');
+  var crossing = metode ? checkBudgetCrossing(kategori, jumlah) : null, msg = it.item+' dicatat sebagai belanja, stok bertambah';
+  if(crossing && crossing.level==='over') msg += ' \u2022 \u26a0\ufe0f lewat budget '+fmt(crossing.over); else if(crossing && crossing.level==='warn') msg += ' \u2022 sudah '+crossing.pct+'% budget';
+  toast(msg);
+  try{ renderBelanjaProgress(); renderBelanjaList(); renderStokBarangList(); renderStokRiwayatList(); }catch(e){}
+  renderRencanaBelanja();
+}
+function rbInit(){
+  var b = document.getElementById('btn-rb-baru'); if(!b) return;
+  b.addEventListener('click', function(){ openRbPlan(null); });
+  document.getElementById('rb-plan-cancel').addEventListener('click', function(){ document.getElementById('rb-plan-modal-overlay').classList.remove('show'); });
+  document.getElementById('rb-plan-simpan').addEventListener('click', submitRbPlan);
+  document.getElementById('rb-item-cancel').addEventListener('click', function(){ document.getElementById('rb-item-modal-overlay').classList.remove('show'); });
+  document.getElementById('rb-item-simpan').addEventListener('click', submitRbItem);
+  document.getElementById('rb-i-item').addEventListener('change', function(){ rbItemPilih(true); });
+  ['rb-i-qty','rb-i-harga'].forEach(function(id){ document.getElementById(id).addEventListener('input', rbItemPreview); });
+  document.getElementById('rb-beli-cancel').addEventListener('click', function(){ document.getElementById('rb-beli-modal-overlay').classList.remove('show'); });
+  document.getElementById('rb-beli-simpan').addEventListener('click', submitRbBeli);
+  document.getElementById('rb-b-jumlah').addEventListener('input', rbBeliPreview);
+  document.getElementById('rb-plans').addEventListener('click', function(ev){
+    var t = ev.target.closest ? ev.target.closest('[data-act]') : null; if(!t) return;
+    var act = t.getAttribute('data-act'), pid = t.getAttribute('data-p'), iid = t.getAttribute('data-i'), p = rbPlan(pid);
+    if(act==='toggle'){ rbOpen[pid] = !rbOpen[pid]; renderRencanaBelanja(); }
+    else if(act==='tambah') openRbItem(pid,null);
+    else if(act==='edit-item') openRbItem(pid,iid);
+    else if(act==='beli') openRbBeli(pid,iid);
+    else if(act==='tunda' || act==='lanjut'){ var it = rbItem(p,iid); if(it){ it.tunda = (act==='tunda'); saveData(); renderRencanaBelanja(); } }
+    else if(act==='hapus-item'){ var it2 = rbItem(p,iid); if(it2) showConfirm('Hapus '+it2.item+' dari rencana ini?', function(){ p.items = p.items.filter(function(x){ return x.id!==iid; }); saveData(); renderRencanaBelanja(); }); }
+    else if(act==='stok') rbDariStok(pid);
+    else if(act==='salin') rbSalin(pid);
+    else if(act==='edit-plan') openRbPlan(pid);
+    else if(act==='dup') rbDuplikat(pid);
+    else if(act==='hapus-plan' && p) showConfirm('Hapus rencana "'+(p.nama||'')+'"? Belanja yang sudah tercatat tidak ikut terhapus.', function(){ DATA.rencanaBelanja = DATA.rencanaBelanja.filter(function(x){ return x.id!==pid; }); saveData(); renderRencanaBelanja(); });
   });
 }
 function submitInvBeli(){
@@ -19351,6 +19711,7 @@ function wireEvents(){
   document.getElementById('bl-satuan').addEventListener('change', blRecalcJumlah);
   document.getElementById('btn-invbeli').addEventListener('click', submitInvBeli);
   ipoInit();
+  rbInit();
   document.getElementById('btn-invjual').addEventListener('click', submitInvJual);
   document.getElementById('btn-tagihan').addEventListener('click', submitTagihan);
   document.getElementById('tg-split-tidak').addEventListener('click', function(){ tgSplitSetEnabled(false); });
@@ -24711,6 +25072,7 @@ html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="masuk"]{--t1:#CB
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="keluar"]{--t1:#FFDADE; --t2:#FFC6CD; --a:#E14B54;}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="untuk-orang"]{--t1:#FFDDD8; --t2:#FBCBC4; --a:#E8837A;}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="belanja"]{--t1:#E5DDFF; --t2:#D4C8FF; --a:#7B5CFA;}
+html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="rencana-belanja"]{--t1:#D6E8F8; --t2:#C3DDF3; --a:#3B82C4;}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="tagihan"]{--t1:#FFE1D3; --t2:#FFCEB8; --a:#FF7A59;}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="recurring"]{--t1:#FFD6DE; --t2:#FAC2CE; --a:#D6455F;}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="piutang"]{--t1:#C9F0EC; --t2:#B1E6E0; --a:#1C9E97;}
@@ -24730,6 +25092,7 @@ html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="masuk"] .lb::aft
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="keluar"] .lb::after{content:"Catat uang keluar";}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="untuk-orang"] .lb::after{content:"Bayarin orang lain";}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="belanja"] .lb::after{content:"Belanja & stok";}
+html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="rencana-belanja"] .lb::after{content:"Susun & cek anggaran";}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="tagihan"] .lb::after{content:"Listrik, internet, dll";}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="recurring"] .lb::after{content:"Otomatis berkala";}
 html[data-theme="light"] #view-catat .catat-grid .qa[data-goto="piutang"] .lb::after{content:"Uang yang dipinjam orang";}
@@ -24749,6 +25112,7 @@ html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="masuk
 html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="keluar"] .lb::after{content:"Log your spending";}
 html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="untuk-orang"] .lb::after{content:"Paid for others";}
 html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="belanja"] .lb::after{content:"Shopping & stock";}
+html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="rencana-belanja"] .lb::after{content:"Plan & check budget";}
 html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="tagihan"] .lb::after{content:"Bills & utilities";}
 html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="recurring"] .lb::after{content:"Auto recurring";}
 html[lang="en"][data-theme="light"] #view-catat .catat-grid .qa[data-goto="piutang"] .lb::after{content:"Money you lent";}
@@ -24774,6 +25138,7 @@ html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="masuk"]{--
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="keluar"]{--a:#E14B54;}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="untuk-orang"]{--a:#E8837A;}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="belanja"]{--a:#7B5CFA;}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="rencana-belanja"]{--a:#3B82C4;}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="tagihan"]{--a:#FF7A59;}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="recurring"]{--a:#D6455F;}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="piutang"]{--a:#1C9E97;}
@@ -24794,6 +25159,7 @@ html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="masuk"] .l
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="keluar"] .lb::after{content:"Catat uang keluar";}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="untuk-orang"] .lb::after{content:"Bayarin orang lain";}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="belanja"] .lb::after{content:"Belanja & stok";}
+html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="rencana-belanja"] .lb::after{content:"Susun & cek anggaran";}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="tagihan"] .lb::after{content:"Listrik, internet, dll";}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="recurring"] .lb::after{content:"Otomatis berkala";}
 html:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="piutang"] .lb::after{content:"Uang yang dipinjam orang";}
@@ -24813,6 +25179,7 @@ html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto=
 html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="keluar"] .lb::after{content:"Log your spending";}
 html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="untuk-orang"] .lb::after{content:"Paid for others";}
 html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="belanja"] .lb::after{content:"Shopping & stock";}
+html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="rencana-belanja"] .lb::after{content:"Plan & check budget";}
 html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="tagihan"] .lb::after{content:"Bills & utilities";}
 html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="recurring"] .lb::after{content:"Auto recurring";}
 html[lang="en"]:not([data-theme="light"]) #view-catat .catat-grid .qa[data-goto="piutang"] .lb::after{content:"Money you lent";}
@@ -27553,6 +27920,22 @@ html body #view-pengaturan#view-pengaturan#view-pengaturan#view-pengaturan .pg-l
 .gr-total{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin:2px 0 10px; padding:9px 12px; border-radius:12px; background:var(--primary-dim); font-size:12px; color:var(--text-2);}
 .gr-total b{font-size:14px; font-weight:800; color:var(--text); white-space:nowrap;}
 #gr-range .nw-range{padding:0;}
+</style>
+<style id="tk-teal-refine">
+/* ===== Penyempurnaan teal (tema gelap): teal jadi aksen, bukan latar di mana-mana =====
+   Hierarki: tombol utama (.btn) tetap teal penuh; header, tombol sekunder (.ghost), label, dan garis kartu dibuat lebih tenang. */
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .back-row, html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .back-row.dk-back{background:#151515 !important; background-image:none !important; color:#5EEAD4 !important; border:1px solid rgba(45,212,191,.30) !important; box-shadow:none !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) main > .section-title{background:linear-gradient(135deg, rgba(45,212,191,.20) 0%, rgba(45,212,191,.05) 65%), #131313 !important; background-image:linear-gradient(135deg, rgba(45,212,191,.20) 0%, rgba(45,212,191,.05) 65%) !important; background-color:#131313 !important; color:#fff !important; border:1px solid rgba(45,212,191,.26) !important; box-shadow:none !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) main > .section-title > span:first-child{background:var(--primary) !important; color:#062E29 !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) main > .section-title > span:first-child svg, html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) main > .section-title > span:first-child svg *{stroke:#062E29 !important; color:#062E29 !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .card:not(.card .card){box-shadow:inset 0 1px 0 rgba(45,212,191,.35), 0 10px 22px -18px rgba(0,0,0,.9) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .field > label{color:var(--text-2) !important; font-weight:600;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .card h3{color:var(--text) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .btn.ghost{background:#1A1A1A !important; background-image:none !important; color:#5EEAD4 !important; border:1px solid rgba(255,255,255,.12) !important; box-shadow:none !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .btn.ghost:hover, html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) .btn.ghost:active{background:#202020 !important; border-color:rgba(45,212,191,.55) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) #lp-pane-analisis > .card[style*="background:var(--primary)"]{background:#121212 !important; background-image:none !important; --on-primary:#EDEDED; color:#EDEDED !important; box-shadow:inset 0 1px 0 rgba(45,212,191,.35), 0 10px 22px -18px rgba(0,0,0,.9) !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) #lp-pane-analisis > .card[style*="background:var(--primary)"] h3{color:#fff !important;}
+html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) #lp-pane-analisis > .card[style*="background:var(--primary)"] h3 .dot{background:var(--primary) !important;}
 </style>
 </body>
 </html>
