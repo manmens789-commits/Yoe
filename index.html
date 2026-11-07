@@ -2548,6 +2548,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   <div class="view" id="view-rencana-belanja"><main>
     <div class="section-title"><span data-icon="receipt"></span>Rencana Belanja</div>
     <div class="card" id="rb-ringkas"></div>
+    <div id="rb-filter"></div>
     <div id="rb-plans"></div>
     <button type="button" class="btn" id="btn-rb-baru">+ Buat Rencana</button>
     <div class="card"><h3><span class="dot"></span>Cara kerjanya</h3>
@@ -3438,7 +3439,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="hero-card hero-goals">
       <div class="hero-ic">🎯</div>
       <div class="hero-title">Target Nabung</div>
-      <div class="hero-sub">Bikin target nabung (misal buat laptop, liburan, dana darurat). Pilih dulu target ini nanti jadi apa (Inventaris, Aset Biologis, Stok Barang, atau Pengeluaran Biasa). Begitu uangnya terkumpul penuh, otomatis dibayar dan dicatat sesuai pilihan itu.</div>
+      <div class="hero-sub">Bikin target nabung (misal buat laptop, liburan, dana darurat). Pilih dulu target ini nanti jadi apa (Inventaris, Aset Biologis, Stok Item Baru, atau Pengeluaran Biasa). Begitu uangnya terkumpul penuh, otomatis dibayar dan dicatat sesuai pilihan itu.</div>
     </div>
     <div class="card">
       <div class="field"><label>Nama Target</label><input type="text" id="goal-nama" placeholder="cth: Laptop baru"></div>
@@ -3447,9 +3448,10 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <option value="biasa">Pengeluaran Biasa</option>
         <option value="inv">Aset Inventaris</option>
         <option value="bio">Aset Biologis</option>
-        <option value="stok">Stok Barang</option>
+        <option value="stok">Stok Item Baru (belum ada di master stok)</option>
         <option value="invest">Instrumen Investasi (saham, emas, dll)</option>
-      </select></div>
+      </select>
+      <div class="hint" id="goal-jenis-hint" style="display:none; margin-top:4px;">Khusus item stok yang belum ada di master stok. Nama target jadi nama item barunya. Item yang sudah ada di master stok, masukkan lewat Rencana Belanja.</div></div>
       <div id="goal-invest-wrap" style="display:none;">
         <div class="field"><label>Instrumen Investasi</label><select id="goal-instrumen"></select></div>
         <div class="field"><label>Platform/Sekuritas (opsional)</label><select id="goal-platform"></select></div>
@@ -4129,19 +4131,6 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   </div>
 </div>
 
-<!-- ============ MODAL DAFTAR BELANJA STOK ============ -->
-<div class="modal-overlay" id="dbl-modal-overlay">
-  <div class="modal-box" style="max-width:340px; text-align:left;">
-    <h3 style="margin:0 0 10px; font-family:var(--font-disp); font-size:16px;">🛒 Daftar Belanja</h3>
-    <div id="dbl-isi" style="max-height:50vh; overflow:auto; margin-bottom:12px;"></div>
-    <div class="modal-actions" style="flex-wrap:wrap;">
-      <button class="cancel" id="dbl-tutup">Tutup</button>
-      <button class="cancel" id="dbl-salin">Salin</button>
-      <button class="confirm" id="dbl-wa" style="background:var(--primary);">Kirim WA</button>
-    </div>
-  </div>
-</div>
-
 <!-- ============ MODAL UBAH PASSWORD ============ -->
 <div class="modal-overlay" id="ubah-password-modal-overlay">
   <div class="modal-box" style="max-width:340px; text-align:left;">
@@ -4387,6 +4376,7 @@ function isHybridTabunganInvestasi(acc){
    ini -- nomor versi yang ditampilkan di halaman Pengaturan otomatis ikut ke-update,
    nggak perlu ubah HTML manual. */
 var CHANGELOG = [
+  { versi:"1.12.2", catatan:'Rencana Belanja jadi pusat belanja: ada filter kategori, tombol Kirim WA, dan "Dari stok" tidak lagi menambah item yang sudah ada di rencana lain. Kartu "Stok perlu dibeli" (Beranda dan halaman Stok) sekarang tahu mana yang sudah direncanakan, dan modal Daftar Belanja lama dihapus. Target Nabung jenis Stok kini khusus item baru yang belum ada di master stok. Kartu Insight desktop dirancang ulang (dua kolom, grafik 7 hari lebih jelas).' },
   { versi:"1.12.1", catatan:'Dana Titipan bisa dijadikan Hutang. Di kartu titipan yang masih Aktif ada tombol "Jadikan hutang": pilih jumlahnya (semua atau sebagian), tanggal, dan jatuh tempo. Titipan berubah jadi "Dijadikan Hutang" dan otomatis tercatat di menu Hutang (bisa dicicil dan dilunasi seperti biasa). Saldo rekening dan kekayaan bersih tidak berubah, karena uangnya memang sudah ada di saldo. Kalau hutang hasil konversi dihapus, titipannya aktif lagi.' },
   { versi:"1.12.0", catatan:'Dashboard desktop dirombak jadi ringkas dan muat satu layar laptop: semua komponen (aksi cepat, pengeluaran dan pemasukan hari ini, kekayaan bersih, kesehatan finansial, perlu perhatian, stok, saldo per rekening, insight, transaksi terbaru) tampil sebagai kartu ringkas, dan kalau diklik membuka halaman detailnya. Halaman baru: Insight dan Saldo per Rekening. Tampilan HP tidak berubah.' },
   { versi:"1.11.7", catatan:'Perbaikan tampilan desktop: kartu "Perlu perhatian" dan "Stok perlu dibeli" tidak lagi berdesakan di kolom sempit. Daftar pengingat satu kolom (dua kolom hanya kalau kartunya lebar), dan kartu stok menyesuaikan lebar kolom.' },
@@ -8928,6 +8918,22 @@ function ipoInit(){
    Status item TIDAK disimpan: "dibeli" = ada DATA.belanja dengan linkRencana === item.id (jadi selalu sinkron kalau belanjanya diedit/dihapus).
    Cek kelayakan: sisa budget kategori = limit - belanja tercatat bulan itu - rencana lain di bulan yang sama; dana = saldo tersedia rekening sumber. */
 var RB_PRIO = { wajib:{l:'Wajib', o:0, c:'var(--danger)'}, perlu:{l:'Perlu', o:1, c:'var(--warn-text,var(--warn))'}, boleh:{l:'Boleh', o:2, c:'var(--text-2)'} };
+var rbFilterKat = 'all';
+function rbKatItem(it){ return it.kategori || 'Lainnya'; }
+function rbItemsF(p){ var a = p.items||[]; return rbFilterKat==='all' ? a : a.filter(function(it){ return rbKatItem(it)===rbFilterKat; }); }
+function rbIsOpen(id){ var v = rbOpen[id]; return v===undefined ? rbFilterKat!=='all' : !!v; }
+function rbFilterHtml(){
+  var cnt = {}, tot = 0;
+  (DATA.rencanaBelanja||[]).forEach(function(p){ (p.items||[]).forEach(function(it){ var k = rbKatItem(it); cnt[k] = (cnt[k]||0)+1; tot++; }); });
+  var ks = Object.keys(cnt).sort(function(a,b){ return a.localeCompare(b); });
+  if(rbFilterKat!=='all' && !cnt[rbFilterKat]) rbFilterKat = 'all';
+  if(ks.length<2) return '';
+  function chip(k, label, n){
+    var on = rbFilterKat===k;
+    return '<button type="button" class="rb-fc'+(on?' on':'')+'" data-fk="'+escapeHtml(k)+'" aria-pressed="'+on+'">'+escapeHtml(label)+' <span class="rb-fn">'+n+'</span></button>';
+  }
+  return '<div class="rb-fbar" role="group" aria-label="Filter kategori">'+chip('all','Semua',tot)+ks.map(function(k){ return chip(k,k,cnt[k]); }).join('')+'</div>';
+}
 var rbOpen = {}, _rbPlanEdit = null, _rbItemPlan = null, _rbItemEdit = null, _rbBeliPlan = null, _rbBeliItem = null;
 function rbPlan(id){ var r = null; (DATA.rencanaBelanja||[]).forEach(function(p){ if(p.id===id) r = p; }); return r; }
 function rbItem(p, id){ var r = null; ((p&&p.items)||[]).forEach(function(i){ if(i.id===id) r = i; }); return r; }
@@ -9009,7 +9015,7 @@ function rbItemHtml(p, it){
   return h+'</div>';
 }
 function rbPlanHtml(p){
-  var c = rbCek(p), h = c.h, open = !!rbOpen[p.id];
+  var c = rbCek(p), h = c.h, open = rbIsOpen(p.id);
   var masalah = c.kat.some(function(k){ return k.lewat; }) ? 'budget' : (c.dana && c.dana.kurang>0 ? 'dana' : '');
   var selesai = h.nRencana===0 && h.nDibeli>0;
   var chip = selesai ? '<span style="color:var(--pos); font-weight:800; font-size:11.5px;">\u2713 Selesai</span>'
@@ -9024,10 +9030,11 @@ function rbPlanHtml(p){
       '<div style="text-align:right; flex:0 0 auto;"><div class="mono" style="font-weight:800;">'+rbRp(h.est)+'</div><div style="margin-top:2px;">'+chip+'</div></div></div>';
   if(open){
     out += '<div style="padding:0 16px 14px;">';
-    var items = (p.items||[]).slice().sort(function(a,b){
+    var items = rbItemsF(p).slice().sort(function(a,b){
       var ra = {rencana:0,tunda:1,dibeli:2}[rbStatus(a)], rb = {rencana:0,tunda:1,dibeli:2}[rbStatus(b)];
       return (ra-rb) || (RB_PRIO[a.prio||'perlu'].o - RB_PRIO[b.prio||'perlu'].o);
     });
+    if(rbFilterKat!=='all'){ var hf = rbHitung({items:items}); out += '<div class="meta-sub" style="margin:2px 0 8px;">Filter: <b>'+escapeHtml(rbFilterKat)+'</b> \u2022 '+items.length+' dari '+total+' item'+(hf.est>0 ? ' \u2022 belum dibeli '+rbRp(hf.est) : '')+'</div>'; }
     items.forEach(function(it){ out += rbItemHtml(p,it); });
     if(!items.length) out += '<div class="empty" style="margin:8px 0;">Belum ada item. Tambah item atau ambil dari rekomendasi stok.</div>';
     /* panel cek */
@@ -9044,20 +9051,24 @@ function rbPlanHtml(p){
     }
     if(cek) out += '<div style="margin-top:10px; padding:10px 12px; border-radius:12px; background:var(--ghost-bg,rgba(127,127,127,.08));">'+cek+'</div>';
     if(h.nDibeli>0) out += '<div class="meta-sub" style="margin-top:8px;">Realisasi '+rbRp(h.realisasi)+' dari perkiraan '+rbRp(h.estDibeli)+' ('+(h.realisasi-h.estDibeli>0?'lebih ':'hemat ')+rbRp(Math.abs(h.realisasi-h.estDibeli))+')</div>';
-    out += '<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">'+rbBtn('tambah',p.id,'','+ Item')+rbBtn('stok',p.id,'','Dari stok')+rbBtn('salin',p.id,'','Salin')+'</div>'+
+    out += '<div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">'+rbBtn('tambah',p.id,'','+ Item')+rbBtn('stok',p.id,'','Dari stok')+rbBtn('salin',p.id,'','Salin')+rbBtn('wa',p.id,'','Kirim WA')+'</div>'+
            '<div style="display:flex; gap:6px; margin-top:6px;">'+rbBtn('edit-plan',p.id,'','Ubah')+rbBtn('dup',p.id,'','Duplikat')+rbBtn('hapus-plan',p.id,'','Hapus')+'</div></div>';
   }
   return out+'</div>';
 }
 function renderRencanaBelanja(){
   var box = document.getElementById('rb-plans'); if(!box) return;
+  var fb = document.getElementById('rb-filter');
+  if(fb){ fb.innerHTML = rbFilterHtml(); var bar = fb.firstChild, on = fb.querySelector('.rb-fc.on'); if(bar && on) bar.scrollLeft = on.offsetLeft - (bar.clientWidth - on.offsetWidth)/2; }
   var plans = (DATA.rencanaBelanja||[]).slice().sort(function(a,b){ return (a.tanggal||'').localeCompare(b.tanggal||''); });
+  var semuaPlan = plans.length;
+  if(rbFilterKat!=='all') plans = plans.filter(function(p){ return rbItemsF(p).length>0; });
   var now = todayISO().slice(0,7), tot = 0, pr = {wajib:0, perlu:0, boleh:0}, n = 0;
-  plans.forEach(function(p){ if(rbBulan(p)!==now) return; var h = rbHitung(p); if(h.nRencana>0){ n++; tot += h.est; Object.keys(pr).forEach(function(k){ pr[k] += h.perPrio[k]; }); } });
+  plans.forEach(function(p){ if(rbBulan(p)!==now) return; var h = rbHitung({items:rbItemsF(p)}); if(h.nRencana>0){ n++; tot += h.est; Object.keys(pr).forEach(function(k){ pr[k] += h.perPrio[k]; }); } });
   var rk = document.getElementById('rb-ringkas');
-  if(rk) rk.innerHTML = '<div class="meta-sub">Belum dibeli bulan ini</div><div class="mono" style="font-size:22px; font-weight:800; margin:2px 0 4px;">'+rbRp(tot)+'</div>'+
+  if(rk) rk.innerHTML = '<div class="meta-sub">Belum dibeli bulan ini'+(rbFilterKat!=='all' ? ' \u2022 '+escapeHtml(rbFilterKat) : '')+'</div><div class="mono" style="font-size:22px; font-weight:800; margin:2px 0 4px;">'+rbRp(tot)+'</div>'+
     '<div class="meta-sub">'+(n ? n+' rencana \u2022 Wajib '+rbRp(pr.wajib)+' \u2022 Perlu '+rbRp(pr.perlu)+' \u2022 Boleh '+rbRp(pr.boleh) : 'Belum ada rencana yang menunggu bulan ini.')+'</div>';
-  box.innerHTML = plans.length ? plans.map(rbPlanHtml).join('') : '<div class="card"><div class="empty">Belum ada rencana belanja. Tekan Buat Rencana untuk mulai.</div></div>';
+  box.innerHTML = plans.length ? plans.map(rbPlanHtml).join('') : '<div class="card"><div class="empty">'+(semuaPlan ? 'Tidak ada item kategori ini di rencana mana pun.' : 'Belum ada rencana belanja. Tekan Buat Rencana untuk mulai.')+'</div></div>';
 }
 function rbToast(m){ toast(m); }
 /* ---- rencana ---- */
@@ -9130,9 +9141,9 @@ function rbDariStok(planId){
   var p = rbPlan(planId); if(!p) return;
   var list = []; try{ list = daftarBelanjaStok(); }catch(e){ list = []; }
   var ada = {}; (p.items||[]).forEach(function(x){ if(rbStatus(x)!=='dibeli') ada[x.item] = true; });
-  var tambah = 0;
+  var tambah = 0, gl = stokRencanaMap();
   list.forEach(function(x){
-    if(ada[x.nama]) return;
+    if(ada[x.nama] || gl[x.nama]==='rencana') return;
     var last = rbHargaTerakhir(x.nama), harga = x.hargaUnit>0 ? Math.round(x.hargaUnit) : (last ? last.harga : 0);
     if(!(harga>0) || !(x.qty>0)) return;
     p.items.push({ id:genId('rbi'), item:x.nama, kategori:x.kategori||rbKategoriItem(x.nama), qty:x.qty, satuan:x.satuan||'Pcs', harga:harga, prio:(x.stok<=0 ? 'wajib' : (x.mode==='pola' ? 'boleh' : 'perlu')), tunda:false });
@@ -9141,8 +9152,7 @@ function rbDariStok(planId){
   saveData(); rbOpen[p.id] = true; renderRencanaBelanja();
   toast(tambah ? tambah+' item ditambahkan dari rekomendasi stok' : 'Tidak ada rekomendasi baru dari stok');
 }
-function rbSalin(planId){
-  var p = rbPlan(planId); if(!p) return;
+function rbTeks(p){
   var lines = [], tot = 0;
   ['wajib','perlu','boleh'].forEach(function(k){
     var grp = (p.items||[]).filter(function(it){ return rbStatus(it)==='rencana' && (it.prio||'perlu')===k; });
@@ -9150,10 +9160,19 @@ function rbSalin(planId){
     lines.push('['+RB_PRIO[k].l+']');
     grp.forEach(function(it){ tot += rbEst(it); lines.push('\u2610 '+it.item+' \u2014 '+it.qty+' '+(it.satuan||'')+' (\u00b1'+fmt(rbEst(it))+')'); });
   });
-  if(!lines.length){ toast('Tidak ada item yang perlu dibeli'); return; }
-  var txt = '\ud83d\uded2 '+(p.nama||'Rencana Belanja')+' ('+p.tanggal+')\n'+lines.join('\n')+'\n\nPerkiraan total: \u00b1'+fmt(tot);
+  if(!lines.length) return '';
+  return '\ud83d\uded2 '+(p.nama||'Rencana Belanja')+' ('+p.tanggal+')\n'+lines.join('\n')+'\n\nPerkiraan total: \u00b1'+fmt(tot);
+}
+function rbSalin(planId){
+  var p = rbPlan(planId); if(!p) return;
+  var txt = rbTeks(p); if(!txt){ toast('Tidak ada item yang perlu dibeli'); return; }
   function fb(){ var t = document.createElement('textarea'); t.value = txt; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); toast('Daftar disalin'); }catch(e){ toast('Gagal menyalin'); } t.remove(); }
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function(){ toast('Daftar disalin'); }, fb); else fb();
+}
+function rbWA(planId){
+  var p = rbPlan(planId); if(!p) return;
+  var txt = rbTeks(p); if(!txt){ toast('Tidak ada item yang perlu dibeli'); return; }
+  window.open('https://wa.me/?text='+encodeURIComponent(txt), '_blank');
 }
 function rbDuplikat(planId){
   var p = rbPlan(planId); if(!p) return;
@@ -9206,10 +9225,15 @@ function rbInit(){
   document.getElementById('rb-beli-cancel').addEventListener('click', function(){ document.getElementById('rb-beli-modal-overlay').classList.remove('show'); });
   document.getElementById('rb-beli-simpan').addEventListener('click', submitRbBeli);
   document.getElementById('rb-b-jumlah').addEventListener('input', rbBeliPreview);
+  document.getElementById('rb-filter').addEventListener('click', function(ev){
+    var b = ev.target.closest ? ev.target.closest('[data-fk]') : null; if(!b) return;
+    rbFilterKat = b.getAttribute('data-fk'); if(rbFilterKat!=='all') rbOpen = {};
+    renderRencanaBelanja();
+  });
   document.getElementById('rb-plans').addEventListener('click', function(ev){
     var t = ev.target.closest ? ev.target.closest('[data-act]') : null; if(!t) return;
     var act = t.getAttribute('data-act'), pid = t.getAttribute('data-p'), iid = t.getAttribute('data-i'), p = rbPlan(pid);
-    if(act==='toggle'){ rbOpen[pid] = !rbOpen[pid]; renderRencanaBelanja(); }
+    if(act==='toggle'){ rbOpen[pid] = !rbIsOpen(pid); renderRencanaBelanja(); }
     else if(act==='tambah') openRbItem(pid,null);
     else if(act==='edit-item') openRbItem(pid,iid);
     else if(act==='beli') openRbBeli(pid,iid);
@@ -9217,6 +9241,7 @@ function rbInit(){
     else if(act==='hapus-item'){ var it2 = rbItem(p,iid); if(it2) showConfirm('Hapus '+it2.item+' dari rencana ini?', function(){ p.items = p.items.filter(function(x){ return x.id!==iid; }); saveData(); renderRencanaBelanja(); }); }
     else if(act==='stok') rbDariStok(pid);
     else if(act==='salin') rbSalin(pid);
+    else if(act==='wa') rbWA(pid);
     else if(act==='edit-plan') openRbPlan(pid);
     else if(act==='dup') rbDuplikat(pid);
     else if(act==='hapus-plan' && p) showConfirm('Hapus rencana "'+(p.nama||'')+'"? Belanja yang sudah tercatat tidak ikut terhapus.', function(){ DATA.rencanaBelanja = DATA.rencanaBelanja.filter(function(x){ return x.id!==pid; }); saveData(); renderRencanaBelanja(); });
@@ -12191,34 +12216,87 @@ function cicilanBulanIniItems(){
   return out;
 }
 /* Kartu ringkas "Stok Perlu Dibeli" di dashboard (terpisah dari Pengingat Jatuh Tempo, karena stok bukan tenggat bayar) */
+/* Stok yang sudah masuk Rencana Belanja (belum dibeli) tidak dihitung "perlu dibeli" lagi: 'rencana' = disembunyikan, 'tunda' = tampil diredupkan */
+function stokRencanaMap(){
+  var m = {}, now = todayISO().slice(0,7);
+  (DATA.rencanaBelanja||[]).forEach(function(p){ if(rbBulan(p)<now) return; (p.items||[]).forEach(function(it){
+    var st = rbStatus(it); if(st==='dibeli') return;
+    if(m[it.item]!=='rencana') m[it.item] = st;
+  }); });
+  return m;
+}
+function stokRencanaTarget(){
+  var now = todayISO().slice(0,7), best = null;
+  (DATA.rencanaBelanja||[]).forEach(function(p){
+    if(rbBulan(p)!==now) return;
+    var n = (p.items||[]).length;
+    if(n>0 && rbHitung(p).nRencana===0) return;
+    if(!best || (p.tanggal||'')>=(best.tanggal||'')) best = p;
+  });
+  return best;
+}
+function stokTambahKeRencana(){
+  var p = stokRencanaTarget(), baru = false;
+  if(!p){
+    var bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][new Date().getMonth()];
+    p = { id:genId('rb'), nama:'Belanja '+bln+' '+new Date().getFullYear(), tanggal:todayISO(), metode:'', items:[] };
+    if(!DATA.rencanaBelanja) DATA.rencanaBelanja = [];
+    DATA.rencanaBelanja.push(p); baru = true;
+  }
+  rbDariStok(p.id);
+  if(baru && !p.items.length){ DATA.rencanaBelanja = DATA.rencanaBelanja.filter(function(x){ return x.id!==p.id; }); saveData(); renderRencanaBelanja(); }
+  renderStokDashboard();
+  try{ if(typeof renderDashCompact==='function') renderDashCompact(); }catch(e){}
+  try{ if(document.getElementById('stk-summary')) renderStokBarangList(); }catch(e){}
+}
 function renderStokDashboard(){
   var el = document.getElementById('db-stok-wrap');
   if(!el) return;
   var list = [];
   try{ list = daftarBelanjaStok(); }catch(e){ list = []; }
-  window._stokList = list;
+  var rmap = stokRencanaMap(), todo = [], nPlan = 0;
+  list.forEach(function(x){ if(rmap[x.nama]==='rencana') nPlan++; else todo.push(x); });
+  window._stokList = todo; window._stokPlanned = nPlan;
+  if(!el._stokBound){
+    el._stokBound = true;
+    el.addEventListener('click', function(ev){
+      var bt = ev.target.closest ? ev.target.closest('[data-stok-act]') : null; if(!bt) return;
+      ev.stopPropagation();
+      if(bt.getAttribute('data-stok-act')==='tambah') stokTambahKeRencana();
+    });
+  }
   if(!list.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
-  list.sort(function(a,b){
-    var ha = a.stok<=0 ? -1 : a.hariLagi, hb = b.stok<=0 ? -1 : b.hariLagi;
-    return ha-hb;
-  });
-  var habis = list.filter(function(x){ return x.stok<=0; }).length;
-  var menipis = list.length - habis;
-  var maxChip = 8;
-  var chips = list.slice(0,maxChip).map(function(x){
-    var h = x.stok<=0;
-    var c = h ? 'var(--danger)' : 'var(--warn)';
-    var txt = h ? 'Habis' : (x.stok+' '+x.satuan);
-    return '<span class="sk-chip" style="--c:'+c+';"><span class="sk-st"><i></i>'+escapeHtml(txt)+'</span><span class="sk-n">'+escapeHtml(x.nama)+'</span></span>';
-  }).join('');
-  if(list.length>maxChip) chips += '<span class="sk-more"><b>+'+(list.length-maxChip)+'</b>lainnya</span>';
-  var sub = [];
-  if(habis) sub.push('<b style="--c:var(--danger);">'+habis+' habis</b>');
-  if(menipis) sub.push('<b style="--c:var(--warn);">'+menipis+' menipis</b>');
-  el.innerHTML = '<div class="al-head"><span class="al-ic" style="--c:var(--danger);">'+(ICONS.box||'')+'</span>'+
-    '<span class="al-tx"><span class="al-ttl">Stok perlu dibeli</span><span class="al-sub">'+sub.join(' · ')+'</span></span>'+
-    '<span class="al-go">Lihat<span data-icon="chevronRight" style="width:14px;height:14px;"></span></span></div>'+
-    '<div class="sk-chips">'+chips+'</div>';
+  if(!todo.length){
+    el.setAttribute('data-goto','rencana-belanja');
+    el.innerHTML = '<div class="al-head"><span class="al-ic" style="--c:var(--pos);">'+(ICONS.box||'')+'</span>'+
+      '<span class="al-tx"><span class="al-ttl">Stok perlu dibeli</span><span class="al-sub"><b style="--c:var(--pos);">Semua sudah ada di rencana ('+nPlan+')</b></span></span>'+
+      '<span class="al-go">Rencana<span data-icon="chevronRight" style="width:14px;height:14px;"></span></span></div>';
+  } else {
+    el.setAttribute('data-goto','stok-barang');
+    todo.sort(function(a,b){
+      var ha = a.stok<=0 ? -1 : a.hariLagi, hb = b.stok<=0 ? -1 : b.hariLagi;
+      return ha-hb;
+    });
+    var habis = todo.filter(function(x){ return x.stok<=0; }).length;
+    var menipis = todo.length - habis;
+    var maxChip = 8;
+    var chips = todo.slice(0,maxChip).map(function(x){
+      var h = x.stok<=0, tn = rmap[x.nama]==='tunda';
+      var c = h ? 'var(--danger)' : 'var(--warn)';
+      var txt = tn ? 'Ditunda' : (h ? 'Habis' : (x.stok+' '+x.satuan));
+      return '<span class="sk-chip'+(tn?' sk-tunda':'')+'" style="--c:'+c+';"><span class="sk-st"><i></i>'+escapeHtml(txt)+'</span><span class="sk-n">'+escapeHtml(x.nama)+'</span></span>';
+    }).join('');
+    if(todo.length>maxChip) chips += '<span class="sk-more"><b>+'+(todo.length-maxChip)+'</b>lainnya</span>';
+    var sub = [];
+    if(habis) sub.push('<b style="--c:var(--danger);">'+habis+' habis</b>');
+    if(menipis) sub.push('<b style="--c:var(--warn);">'+menipis+' menipis</b>');
+    if(nPlan) sub.push('<b style="--c:var(--text-2);">'+nPlan+' sudah direncanakan</b>');
+    el.innerHTML = '<div class="al-head"><span class="al-ic" style="--c:var(--danger);">'+(ICONS.box||'')+'</span>'+
+      '<span class="al-tx"><span class="al-ttl">Stok perlu dibeli</span><span class="al-sub">'+sub.join(' · ')+'</span></span>'+
+      '<span class="al-go">Stok<span data-icon="chevronRight" style="width:14px;height:14px;"></span></span></div>'+
+      '<div class="sk-chips">'+chips+'</div>'+
+      '<button type="button" class="sk-act" data-stok-act="tambah">+ Tambah ke rencana belanja</button>';
+  }
   el.style.display = '';
   el.querySelectorAll('[data-icon]').forEach(function(i){ var n = i.getAttribute('data-icon'); if(ICONS[n]) i.innerHTML = ICONS[n]; });
 }
@@ -13634,6 +13712,7 @@ function goalFormFill(){
   if(!g('goal-jenis')) return;
   var keep = function(id, html){ var el = g(id); if(!el) return; var cur = el.value; el.innerHTML = html; if(cur){ for(var i=0;i<el.options.length;i++){ if(el.options[i].value===cur){ el.value = cur; break; } } } };
   var jenis = g('goal-jenis').value, sumber = g('goal-sumber-aset').value;
+  if(jenis==='stok') sumber = 'baru';
   keep('goal-untuk', (DATA.untukSiapa||[]).map(function(x){ return '<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>'; }).join(''));
   keep('goal-jenis-pg', (DATA.jenisPengeluaran||[]).map(function(x){ return '<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>'; }).join(''));
   keep('goal-rekening-asal', '<option value="">Pilih nanti saat setor pertama</option>'+ACCOUNTS.map(function(a){ return '<option value="'+escapeHtml(a)+'">'+escapeHtml(accountOptionLabel(a))+'</option>'; }).join(''));
@@ -13649,6 +13728,8 @@ function goalFormFill(){
     g('goal-sumber-aset').options[1].textContent = jenis==='stok' ? 'Item yang sudah ada di master stok' : 'Aset yang sudah ada di master data';
   }
   if(jenis==='stok') keep('goal-satuan', SATUAN_BELANJA.map(function(u){ return '<option>'+escapeHtml(u)+'</option>'; }).join(''));
+  if(g('goal-sumber-aset').parentNode) g('goal-sumber-aset').parentNode.style.display = jenis==='stok' ? 'none' : '';
+  if(g('goal-jenis-hint')) g('goal-jenis-hint').style.display = jenis==='stok' ? '' : 'none';
   g('goal-stok-wrap').style.display = jenis==='stok' ? 'flex' : 'none';
   g('goal-aset-wrap').style.display = isAset ? '' : 'none';
   g('goal-biasa-wrap').style.display = jenis==='biasa' ? '' : 'none';
@@ -13665,10 +13746,12 @@ function tambahGoal(){
   var rekeningTujuan = rekTujuanInput ? rekTujuanInput.value : '';
   var jenis = document.getElementById('goal-jenis').value;
   var sumber = document.getElementById('goal-sumber-aset').value;
+  if(jenis==='stok') sumber = 'baru';
   var rekAsal = document.getElementById('goal-rekening-asal').value;
   if(!nama){ toast('Isi nama target dulu'); return; }
   if(!target || target<=0){ toast('Isi jumlah target dulu'); return; }
   if(!rekeningTujuan){ toast('Pilih rekening tujuan (kantong tabungan) dulu'); return; }
+  if(jenis==='stok' && allItemBelanja().some(function(x){ return String(x[0]||'').trim().toLowerCase()===nama.toLowerCase(); })){ toast('"'+nama+'" sudah ada di master stok. Masukkan lewat Rencana Belanja'); return; }
   var g = { id:genId('goal'), nama:nama, target:target, terkumpul:0, tanggalTarget:tanggalInput.value||'', dibuatTanggal:todayISO(), rekeningTujuan:rekeningTujuan, jenis:jenis };
   if(rekAsal) g.rekeningAsal = rekAsal;
   if(jenis==='inv' || jenis==='bio' || jenis==='stok'){
@@ -16318,23 +16401,6 @@ function daftarBelanjaStok(){
   out.sort(function(a,b){ var ha = a.mode==='pola' ? 998 : (a.stok<=0?-1:a.hariLagi), hb = b.mode==='pola' ? 998 : (b.stok<=0?-1:b.hariLagi); return ha-hb; });
   return out;
 }
-/* Cek estimasi daftar belanja terhadap sisa anggaran kategori bulan ini (hanya kategori yang punya anggaran) */
-function stokCekAnggaran(list){
-  var r = bulanIniRange(), used = belanjaTerpakaiKategori(r.s, r.e), per = {}, out = [];
-  list.forEach(function(x){ if(x.kategori) per[x.kategori] = (per[x.kategori]||0) + (x.est||0); });
-  Object.keys(per).forEach(function(k){
-    var bud = (DATA.budgetBelanja||{})[k]||0; if(!(bud>0)) return;
-    var sisa = bud - (used[k]||0);
-    out.push({ kat:k, est:per[k], sisa:sisa, lewat: per[k] > Math.max(0,sisa) });
-  });
-  return out;
-}
-function stokCekAnggaranHtml(list){
-  var cek = stokCekAnggaran(list);
-  return cek.map(function(c){
-    return '<div class="meta-sub" style="margin-top:3px; color:'+(c.lewat?'var(--danger)':'var(--text-2)')+';">'+(c.lewat?'⚠️ ':'✓ ')+escapeHtml(c.kat)+': estimasi '+fmt(c.est)+(c.sisa>=0 ? ', sisa anggaran bulan ini '+fmt(c.sisa) : ', anggaran bulan ini sudah lewat '+fmt(-c.sisa))+(c.lewat ? ' — melebihi anggaran' : '')+'</div>';
-  }).join('');
-}
 function stokBukaPengaturan(){
   var f = document.getElementById('stk-atur-form'); if(!f) return;
   if(f.style.display!=='none'){ f.style.display = 'none'; return; }
@@ -16378,36 +16444,6 @@ function invRingkasan(upTo){
 function stokRingkasAlasan(x){
   if(x.mode==='pola') return 'biasa dibeli tiap ±'+x.selang+' hari, terakhir '+x.sejak+' hari lalu · belum ada catatan pakai';
   return 'pakai ±'+x.perMinggu+'/minggu · '+(x.stok<=0?'stok habis':'sisa '+x.stok+', habis ±'+x.hariLagi+' hari')+' · data '+x.yakin+(x.blend?' (pemakaian mungkin kurang dicatat)':'')+(x.kemasan>1?' · biasa beli '+x.kemasan:'');
-}
-function teksDaftarBelanja(list){
-  var tot = 0;
-  var lines = list.map(function(x){ tot += x.est; return '☐ '+x.nama+' — '+x.qty+' '+x.satuan+(x.est>0?' (±'+fmt(x.est)+')':''); });
-  return '🛒 Daftar Belanja ('+todayISO()+')\n'+lines.join('\n')+(tot>0?'\n\nEstimasi total: ±'+fmt(tot):'');
-}
-function bukaDaftarBelanja(){
-  var list = daftarBelanjaStok();
-  var box = document.getElementById('dbl-isi');
-  if(!list.length){ toast('Belum ada barang yang perlu dibeli'); return; }
-  var tot = 0, html = '';
-  list.forEach(function(x){
-    tot += x.est;
-    html += '<div style="font-size:13px; margin-bottom:6px;">☐ <b>'+escapeHtml(x.nama)+'</b> — '+x.qty+' '+escapeHtml(x.satuan)+
-      '<div class="meta-sub">'+escapeHtml(stokRingkasAlasan(x))+(x.est>0?' • ±'+fmt(x.est):'')+'</div>'+(x.termurah?'<div class="meta-sub">💡 '+escapeHtml(x.termurah)+'</div>':'')+'</div>';
-  });
-  if(tot>0) html += '<div style="font-weight:700; font-size:13px; margin-top:8px;">Estimasi total: ±'+fmt(tot)+'</div>'+stokCekAnggaranHtml(list);
-  box.innerHTML = html;
-  box.setAttribute('data-teks', teksDaftarBelanja(list));
-  document.getElementById('dbl-modal-overlay').classList.add('show');
-}
-function salinDaftarBelanja(){
-  var t = document.getElementById('dbl-isi').getAttribute('data-teks')||'';
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(function(){ toast('Daftar belanja disalin'); }).catch(function(){ toast('Gagal menyalin'); });
-  } else { toast('Browser tidak mendukung salin'); }
-}
-function kirimDaftarBelanjaWA(){
-  var t = document.getElementById('dbl-isi').getAttribute('data-teks')||'';
-  window.open('https://wa.me/?text='+encodeURIComponent(t), '_blank');
 }
 /* Catat pemakaian cepat (1 klik) = Keluarkan, alasan "Dipakai Sendiri", tanggal hari ini. */
 function pakaiCepatStok(nama, qty){
@@ -16472,19 +16508,28 @@ function renderStokBarangList(){
         ? '✓ Cek FIFO (semua barang): pembelian '+fmt(rk.beli)+' = stok '+fmt(rk.sisa)+' + terpakai '+fmt(rk.pakai)
         : '⚠️ Cek FIFO: pembelian '+fmt(rk.beli)+' ≠ stok '+fmt(rk.sisa)+' + terpakai '+fmt(rk.pakai)+' (selisih '+fmt(Math.abs(rk.selisih))+(rk.adaKurang ? ', ada pengeluaran melebihi stok' : '')+')')+'</div>';
     }
-    if(beli.length){
-      var totEst = 0;
-      h += '<div class="card" style="padding:12px; margin-bottom:12px; border:1.5px solid var(--warn);"><div style="font-weight:700; font-size:13px; margin-bottom:6px;">🛒 Perlu dibeli ('+beli.length+')</div>';
-      beli.forEach(function(x){
-        totEst += x.est;
-        h += '<div style="font-size:12.5px; margin-bottom:7px;"><div style="display:flex; justify-content:space-between; gap:8px;"><span>'+escapeHtml(x.nama)+'</span><b style="white-space:nowrap;">beli '+x.qty+' '+escapeHtml(x.satuan)+'</b></div>'+
-          '<div class="meta-sub" style="display:flex; justify-content:space-between; gap:8px; margin-top:1px;"><span>'+escapeHtml(stokRingkasAlasan(x))+'</span><a data-stk-abaikan="'+escapeHtml(x.nama)+'" style="cursor:pointer; text-decoration:underline; white-space:nowrap;">abaikan</a></div></div>';
-      });
-      var minRw = Math.min.apply(null, beli.map(function(x){ return x.riwayatHari||0; })), nRendah = beli.filter(function(x){ return x.yakin==='rendah'; }).length;
-      h += (totEst>0?'<div class="meta-sub" style="margin-top:4px;">Estimasi ±'+fmt(totEst)+' untuk stok sampai belanja berikutnya (±'+beli[0].hari+' hari)</div>':'')+
-        stokCekAnggaranHtml(beli)+
-        '<div class="meta-sub" style="margin-top:2px; line-height:1.4;">Dasar: pemakaian yang kamu catat (Dikeluarkan) 4 minggu terakhir, minggu terbaru lebih berbobot, ditambah kebiasaan jarak belanjamu (±'+beli[0].interval+' hari).'+(nRendah ? ' <b>'+nRendah+' item datanya masih tipis, jumlahnya dibatasi untuk 7 hari.</b>' : '')+'</div>'+
-        '<button type="button" class="btn ghost" id="stk-btn-daftar" style="margin-top:10px; font-size:13px; padding:9px;">Buka Daftar Belanja</button></div>';
+    var rmapS = stokRencanaMap(), beliT = [], nPlanS = 0;
+    beli.forEach(function(x){ if(rmapS[x.nama]==='rencana') nPlanS++; else beliT.push(x); });
+    if(beliT.length){
+      var totEst = 0, MAXB = 5;
+      beliT.forEach(function(x){ totEst += x.est; });
+      function brow(x){
+        var tn = rmapS[x.nama]==='tunda';
+        return '<div style="font-size:12.5px; margin-bottom:7px;'+(tn?' opacity:.6;':'')+'"><div style="display:flex; justify-content:space-between; gap:8px;"><span>'+escapeHtml(x.nama)+'</span><b style="white-space:nowrap;">beli '+x.qty+' '+escapeHtml(x.satuan)+'</b></div>'+
+          '<div class="meta-sub" style="display:flex; justify-content:space-between; gap:8px; margin-top:1px;"><span>'+escapeHtml(stokRingkasAlasan(x))+(tn?' · ditunda di rencana':'')+'</span><a data-stk-abaikan="'+escapeHtml(x.nama)+'" style="cursor:pointer; text-decoration:underline; white-space:nowrap;">abaikan</a></div>'+
+          (x.termurah ? '<div class="meta-sub">\ud83d\udca1 '+escapeHtml(x.termurah)+'</div>' : '')+'</div>';
+      }
+      h += '<div class="card" style="padding:12px; margin-bottom:12px; border:1.5px solid var(--warn);"><div style="font-weight:700; font-size:13px; margin-bottom:6px;">\ud83d\uded2 Perlu dibeli ('+beliT.length+')</div>'+
+        beliT.slice(0,MAXB).map(brow).join('')+
+        (beliT.length>MAXB ? '<div id="stk-beli-extra" style="display:none;">'+beliT.slice(MAXB).map(brow).join('')+'</div><button type="button" class="rm-toggle" id="stk-beli-toggle" style="margin:0 0 8px;">Lihat semua ('+beliT.length+')</button>' : '');
+      var nRendah = beliT.filter(function(x){ return x.yakin==='rendah'; }).length;
+      h += (totEst>0?'<div class="meta-sub" style="margin-top:4px;">Estimasi \u00b1'+fmt(totEst)+' untuk stok sampai belanja berikutnya (\u00b1'+beliT[0].hari+' hari)</div>':'')+
+        '<div class="meta-sub" style="margin-top:2px; line-height:1.4;">Dasar: pemakaian yang kamu catat (Dikeluarkan) 4 minggu terakhir, minggu terbaru lebih berbobot, ditambah kebiasaan jarak belanjamu (\u00b1'+beliT[0].interval+' hari).'+(nRendah ? ' <b>'+nRendah+' item datanya masih tipis, jumlahnya dibatasi untuk 7 hari.</b>' : '')+'</div>'+
+        (nPlanS ? '<div class="meta-sub" style="margin-top:6px;">\u2713 '+nPlanS+' item lain sudah ada di <a data-goto="rencana-belanja" style="cursor:pointer; text-decoration:underline;">Rencana Belanja</a></div>' : '')+
+        '<button type="button" class="btn ghost" data-stok-act="tambah" style="margin-top:10px; font-size:13px; padding:9px;">+ Masukkan ke rencana belanja</button>'+'</div>';
+    } else if(nPlanS){
+      h += '<div class="card" style="padding:12px; margin-bottom:12px; border:1.5px solid var(--pos);"><div style="font-weight:700; font-size:13px; margin-bottom:6px;">\u2713 Semua yang perlu dibeli sudah ada di rencana ('+nPlanS+')</div>'+
+        '<button type="button" class="btn ghost" data-goto="rencana-belanja" style="font-size:13px; padding:9px;">Buka Rencana Belanja</button></div>';
     }
     var cek = list.filter(function(x){ return x.an.flags.length; });
     if(cek.length){
@@ -16498,7 +16543,11 @@ function renderStokBarangList(){
     try{ skCountUp(sumEl, nilai, biaya); }catch(e){}
     try{ skWireSum(sumEl, list); }catch(e){}
     var atur = document.getElementById('stk-atur'); if(atur) atur.addEventListener('click', stokBukaPengaturan);
-    var bd = document.getElementById('stk-btn-daftar'); if(bd) bd.addEventListener('click', bukaDaftarBelanja);
+    var tgB = document.getElementById('stk-beli-toggle');
+    if(tgB) tgB.addEventListener('click', function(){ var ex = document.getElementById('stk-beli-extra'), op = ex.style.display==='none'; ex.style.display = op ? '' : 'none'; tgB.textContent = op ? 'Ringkas' : tgB.getAttribute('data-lbl'); });
+    if(tgB) tgB.setAttribute('data-lbl', tgB.textContent);
+    var btT = sumEl.querySelector('[data-stok-act="tambah"]');
+    if(btT) btT.addEventListener('click', function(ev){ ev.stopPropagation(); stokTambahKeRencana(); });
     sumEl.querySelectorAll('[data-stk-abaikan]').forEach(function(a){
       a.addEventListener('click', function(){
         if(!DATA.stokAbaikan) DATA.stokAbaikan = [];
@@ -19955,9 +20004,6 @@ function wireEvents(){
   document.getElementById('stk-search').addEventListener('input', renderStokBarangList);
   document.getElementById('stk-filter-kategori').addEventListener('change', renderStokBarangList);
   document.getElementById('keluar-stok-cancel').addEventListener('click', tutupKeluarStok);
-  document.getElementById('dbl-tutup').addEventListener('click', function(){ document.getElementById('dbl-modal-overlay').classList.remove('show'); });
-  document.getElementById('dbl-salin').addEventListener('click', salinDaftarBelanja);
-  document.getElementById('dbl-wa').addEventListener('click', kirimDaftarBelanjaWA);
   document.getElementById('keluar-stok-simpan').addEventListener('click', simpanKeluarStok);
   document.getElementById('keluar-stok-modal-overlay').addEventListener('click', function(ev){
     if(ev.target.id==='keluar-stok-modal-overlay') tutupKeluarStok();
@@ -21464,6 +21510,11 @@ if(document.readyState==='loading'){
     "lot belum dicatat":"lots not recorded",
     "*lot terjual diperkirakan dari modal":"*lots sold estimated from cost",
     "Sudah terjual semua":"All sold"
+  });
+  (function(extra){ for(var k in extra) D[k]=extra[k]; })({
+    "Bikin target nabung (misal buat laptop, liburan, dana darurat). Pilih dulu target ini nanti jadi apa (Inventaris, Aset Biologis, Stok Item Baru, atau Pengeluaran Biasa). Begitu uangnya terkumpul penuh, otomatis dibayar dan dicatat sesuai pilihan itu.":"Create a savings goal (e.g. for a laptop, a holiday, an emergency fund). First choose what this goal becomes (Inventory, Biological Asset, New Stock Item, or Regular Spending). Once the money is fully collected, it is paid and recorded automatically according to that choice.",
+    "Stok Item Baru (belum ada di master stok)":"New Stock Item (not yet in the stock master)",
+    "Khusus item stok yang belum ada di master stok. Nama target jadi nama item barunya. Item yang sudah ada di master stok, masukkan lewat Rencana Belanja.":"Only for stock items not yet in the stock master. The goal name becomes the new item's name. For items already in the stock master, add them through Shopping Plans."
   });
   RXC = [
     [/^Lot belum dicatat di (\d+) pembelian, jadi jumlah lot dan harga rata-rata belum dihitung\. Edit pembelian lalu isi lotnya\.$/, "Lots not recorded in $1 purchases, so the lot count and average price can't be calculated yet. Edit the purchases and fill in the lots."],
@@ -25916,7 +25967,7 @@ function dcInsight(){
   var lastSame = bebanOperasional(firstDayStr(prevY, prevM), prevY+'-'+String(prevM).padStart(2,'0')+'-'+String(dSama).padStart(2,'0'));
   var avg = dHari>0 ? thisM/dHari : 0, pct = null;
   if(lastSame>0){ var diff = thisM-lastSame; pct = Math.round(Math.abs(diff)/lastSame*100); if(pct<1) pct = 0; else if(diff<0) pct = -pct; }
-  var DN = isEN() ? ['Su','Mo','Tu','We','Th','Fr','Sa'] : ['M','S','S','R','K','J','S'], week = [], wmax = 1;
+  var DN = isEN() ? ['Su','Mo','Tu','We','Th','Fr','Sa'] : ['Mg','Sn','Sl','Rb','Km','Jm','Sb'], week = [], wmax = 1;
   for(var k=6; k>=0; k--){
     var dt = new Date(now.getFullYear(), now.getMonth(), now.getDate()-k);
     var ds = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
@@ -25993,23 +26044,30 @@ function renderDashCompact(){
     var icoK = ins.pct===null ? 'sparkles' : (ins.pct===0 ? 'activity' : (ins.pct>0 ? 'trendUp' : 'trendDown'));
     var cap = ins.pct===null ? L('Pengeluaran bulan ini','Spending this month') : L('vs periode sama bln lalu','vs same period last mo.');
     insC = bc;
-    var wk = '';
-    if(ins.week && ins.week.some(function(x){ return x.v>0; })){
-      wk = '<div class="dc-wk" title="'+L('7 hari terakhir','Last 7 days')+'">'+ins.week.map(function(x){
-        return '<div class="dc-wc'+(x.today?' on':'')+'"><div class="dc-wcol"><i style="height:'+(x.v>0?Math.max(10,Math.round(x.v/ins.wmax*100)):4)+'%"></i></div><em>'+x.d+'</em></div>';
-      }).join('')+'</div>';
-    }
+    var nowD = new Date(), tp = null;
+    try{ tp = insightTopPos(nowD.getFullYear(), nowD.getMonth()+1); }catch(e){}
+    var hasWk = ins.week && ins.week.some(function(x){ return x.v>0; });
+    var w7 = hasWk ? ins.week.reduce(function(a2,x){ return a2+x.v; },0) : 0;
+    var wk = hasWk
+      ? '<div class="dci-wh"><span>'+L('7 hari terakhir','Last 7 days')+'</span><b>'+fmtShort(w7)+'</b></div><div class="dci-wk">'+ins.week.map(function(x){
+          return '<div class="dci-wc'+(x.today?' on':'')+'" title="'+fmt(x.v)+'"><div class="dci-wcol"><i style="height:'+(x.v>0?Math.max(8,Math.round(x.v/ins.wmax*100)):3)+'%"></i></div><em>'+x.d+'</em></div>';
+        }).join('')+'</div>'
+      : '<div class="dci-wempty">'+L('Belum ada pengeluaran dalam 7 hari terakhir.','No spending in the last 7 days.')+'</div>';
     var cmp = '';
     if(ins.pct!==null){
       var mx = Math.max(ins.thisM, ins.lastSame, 1);
-      cmp = '<div class="dc-cmp">'+
-        '<div class="dc-cr"><span>'+L('Bulan ini','This month')+'</span><div class="dc-ct"><i style="width:'+Math.max(4,Math.round(ins.thisM/mx*100))+'%"></i></div><b>'+fmtShort(ins.thisM)+'</b></div>'+
-        '<div class="dc-cr prev"><span>'+L('Bulan lalu','Last month')+'</span><div class="dc-ct"><i style="width:'+Math.max(4,Math.round(ins.lastSame/mx*100))+'%"></i></div><b>'+fmtShort(ins.lastSame)+'</b></div></div>';
+      cmp = '<div class="dci-cmp">'+
+        '<div class="dci-cr"><span>'+L('Bulan ini','This month')+'</span><div class="dci-ct"><i style="width:'+Math.max(4,Math.round(ins.thisM/mx*100))+'%"></i></div><b>'+fmtShort(ins.thisM)+'</b></div>'+
+        '<div class="dci-cr prev"><span>'+L('Bulan lalu','Last month')+'</span><div class="dci-ct"><i style="width:'+Math.max(4,Math.round(ins.lastSame/mx*100))+'%"></i></div><b>'+fmtShort(ins.lastSame)+'</b></div></div>';
     }
-    ib = '<div class="dc-ins-top"><span class="dc-ins-badge">'+(ICONS[icoK]||'')+'</span>'+
-      '<div class="dc-ins-main"><span class="dc-ins-chip">'+chipT+'</span><div class="dc-big">'+big+'</div><div class="dc-s">'+cap+'</div></div>'+wk+'</div>'+
-      cmp+
-      '<div class="dc-mini"><div><span>'+L('Bulan ini','This month')+'</span><b>'+fmtShort(ins.thisM)+'</b></div><div><span>'+L('Rata-rata/hari','Avg / day')+'</span><b>'+fmtShort(ins.avg)+'</b></div><div><span>'+L('Proyeksi bln','Month est.')+'</span><b>'+fmtShort(ins.proj)+'</b></div></div>';
+    var stats = '<div class="dci-stats">'+
+      '<div><span>'+L('Rata-rata/hari','Avg / day')+'</span><b>'+fmtShort(ins.avg)+'</b></div>'+
+      '<div><span>'+L('Proyeksi akhir bln','Month-end est.')+'</span><b>'+fmtShort(ins.proj)+'</b></div>'+
+      ((tp && tp.total>0) ? '<div><span>'+L('Pos terbesar','Top category')+'</span><b class="t" title="'+escapeHtml(tp.jenis)+'">'+escapeHtml(tp.jenis)+' · '+Math.round(tp.val/tp.total*100)+'%</b></div>' : '')+'</div>';
+    ib = '<div class="dci"><div class="dci-l">'+
+      '<div class="dci-hero"><span class="dc-ins-badge">'+(ICONS[icoK]||'')+'</span><div class="dci-hm"><span class="dc-ins-chip">'+chipT+'</span><div class="dci-big'+(ins.pct===null?' sm':'')+'">'+big+'</div></div></div>'+
+      '<div class="dci-cap">'+cap+'</div>'+stats+'</div>'+
+      '<div class="dci-r">'+wk+cmp+'</div></div>';
   }
   h += '<div class="card dc-t dc-insc" data-goto="insight" style="--c:'+insC+'; grid-column:3 / span 2; grid-row:3;">'+dcHead('sparkles','var(--gold-text,var(--warn))','Insight','')+'<div class="dc-ib">'+ib+'</div></div>';
 
@@ -26041,7 +26099,7 @@ function renderDashCompact(){
   var sl = window._stokList || [];
   var habis = sl.filter(function(x){ return x.stok<=0; }).length;
   if(!sl.length){
-    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:3 / span 2; grid-row:5;">'+dcHead('box','var(--pos)',L('Stok barang','Item stock'),'')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+L('Semua stok aman.','All stock is fine.')+'</span></div></div>';
+    h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:3 / span 2; grid-row:5;">'+dcHead('box','var(--pos)',L('Stok barang','Item stock'),'')+'<div class="dc-ok">'+ICONS.checkCircle+'<span>'+(window._stokPlanned>0 ? L('Semua stok habis sudah ada di rencana.','All low stock is already planned.') : L('Semua stok aman.','All stock is fine.'))+'</span></div></div>';
   } else {
     var sc = habis ? 'var(--danger)' : 'var(--warn)', maxS = 14;
     var sorted = sl.slice().sort(function(a,b){ return (a.stok<=0 ? -1 : (a.hariLagi==null ? 9999 : a.hariLagi)) - (b.stok<=0 ? -1 : (b.hariLagi==null ? 9999 : b.hariLagi)); });
@@ -26050,7 +26108,7 @@ function renderDashCompact(){
       return '<div class="dc-r" style="--c:'+c+';"><span class="dc-rt">'+escapeHtml(x.nama)+'</span><span class="dc-rb">'+(hb ? L('Habis','Out') : escapeHtml(x.stok+' '+x.satuan))+'</span></div>';
     }).join('');
     h += '<div class="card dc-t" data-goto="stok-barang" style="grid-column:3 / span 2; grid-row:5;">'+
-      dcHead('box',sc,L('Stok perlu dibeli','Stock to buy'),'<span class="dc-pill" style="--c:'+sc+';">'+(habis ? habis+L(' habis',' out') : sl.length+L(' menipis',' low'))+'</span>')+
+      dcHead('box',sc,L('Stok perlu dibeli','Stock to buy'),'<span class="dc-pill" style="--c:'+sc+';">'+(habis ? habis+L(' habis',' out') : sl.length+L(' menipis',' low'))+(window._stokPlanned>0 ? ' \u00b7 '+window._stokPlanned+L(' direncanakan',' planned') : '')+'</span>')+
       '<div class="dc-list" data-extra="'+Math.max(0,sorted.length-maxS)+'">'+srows+'<div class="dc-more"></div></div></div>';
   }
 
@@ -26067,6 +26125,11 @@ function dcFit(){
     if(cmp && ib.scrollHeight>ib.clientHeight+1) cmp.style.display = 'none';
     if(mini && ib.scrollHeight>ib.clientHeight+1) mini.style.display = 'none';
     if(cap && ib.scrollHeight>ib.clientHeight+1) cap.style.display = 'none';
+  });
+  document.querySelectorAll('#db-compact .dci').forEach(function(d){
+    var parts = ['.dci-cmp','.dci-stats','.dci-cap'].map(function(q){ return d.querySelector(q); }).filter(Boolean);
+    parts.forEach(function(e){ e.style.display = ''; });
+    for(var i=0; i<parts.length && d.scrollHeight>d.clientHeight+1; i++) parts[i].style.display = 'none';
   });
   document.querySelectorAll('#db-compact .dc-list').forEach(function(l){
     var rows = [].slice.call(l.querySelectorAll('.dc-r')), more = l.querySelector('.dc-more');
@@ -27936,6 +27999,55 @@ html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):
 html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) #lp-pane-analisis > .card[style*="background:var(--primary)"]{background:#121212 !important; background-image:none !important; --on-primary:#EDEDED; color:#EDEDED !important; box-shadow:inset 0 1px 0 rgba(45,212,191,.35), 0 10px 22px -18px rgba(0,0,0,.9) !important;}
 html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) #lp-pane-analisis > .card[style*="background:var(--primary)"] h3{color:#fff !important;}
 html:not([data-theme="light"]) body .view:not(#view-dashboard):not(#view-catat):not(#view-widget):not(#tk-a):not(#tk-b):not(#tk-c) #lp-pane-analisis > .card[style*="background:var(--primary)"] h3 .dot{background:var(--primary) !important;}
+</style>
+<style id="tk-rb-filter">
+.rb-fbar{position:relative; display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; margin:0 0 2px; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+.rb-fbar::-webkit-scrollbar{display:none;}
+.rb-fc{flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:6px 14px; border-radius:999px; font:inherit; font-size:13px; font-weight:700; white-space:nowrap; cursor:pointer; color:var(--text-2); background:transparent; border:1.5px solid color-mix(in srgb,var(--text) 22%,transparent);}
+.rb-fc .rb-fn{font-size:11px; font-weight:800; opacity:.75;}
+.rb-fc.on{background:var(--primary); color:var(--on-primary); border-color:var(--primary);}
+</style>
+<style id="tk-stok-rencana">
+.sk-chip.sk-tunda{opacity:.55;}
+.sk-act{display:block; width:100%; margin:10px 0 0; padding:10px; border:0; border-radius:14px; background:var(--primary-dim); color:var(--primary); font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; text-align:center;}
+</style>
+<style id="tk-insight-desktop-v2">
+/* Insight desktop v2: dua kolom (angka utama + statistik | grafik 7 hari + perbandingan), sama untuk mode terang & gelap.
+   Warna aksen mengikuti --c kartu (hijau hemat / merah naik / teal netral); teks mengikuti --text & --text-2. */
+html[data-layout="desktop"] #db-compact > .dc-t.dc-insc{box-shadow:inset 0 3px 0 var(--c) !important;}
+html[data-layout="desktop"] #db-compact .dc-insc .dc-ib{container-type:inline-size; overflow:hidden;}
+.dci{flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); grid-template-rows:minmax(0,1fr); gap:0 16px; overflow:hidden;}
+.dci-l, .dci-r{min-width:0; min-height:0; display:flex; flex-direction:column; gap:6px;}
+.dci-r{padding-left:16px; border-left:1px solid color-mix(in srgb,var(--text) 12%,transparent);}
+.dci-hero{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+.dci-hero .dc-ins-badge{width:42px; height:42px; border-radius:13px; flex-shrink:0;}
+.dci-hm{display:flex; flex-direction:column; align-items:flex-start; gap:3px; min-width:0;}
+.dci-big{font-family:ui-monospace,Menlo,monospace; font-weight:800; font-size:30px; line-height:1; letter-spacing:-.02em; color:var(--c); white-space:nowrap; animation:none; filter:none; text-shadow:none;}
+.dci-big.sm{font-size:20px;}
+.dci-cap{font-size:11px; line-height:1.3; color:var(--text-2); flex-shrink:0;}
+.dci-stats{margin-top:auto; display:flex; flex-direction:column; flex-shrink:0;}
+.dci-stats div{display:flex; justify-content:space-between; align-items:baseline; gap:8px; min-width:0; padding:4px 0; border-top:1px dashed color-mix(in srgb,var(--text) 16%,transparent);}
+.dci-stats span{font-size:10.5px; font-weight:600; color:var(--text-2); white-space:nowrap;}
+.dci-stats b{font-family:ui-monospace,Menlo,monospace; font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+.dci-stats b.t{font-family:inherit;}
+.dci-wh{display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-shrink:0; font-size:10.5px; font-weight:600; color:var(--text-2);}
+.dci-wh b{font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--text);}
+.dci-wk{flex:1; min-height:40px; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px;}
+.dci-wc{display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; min-height:0;}
+.dci-wcol{flex:1; min-height:0; width:100%; display:flex; align-items:flex-end; overflow:hidden; border-radius:6px; background:color-mix(in srgb,var(--text) 7%,transparent);}
+.dci-wcol i{display:block; width:100%; border-radius:5px 5px 0 0; background:color-mix(in srgb,var(--c) 48%,transparent);}
+.dci-wc.on .dci-wcol i{background:var(--c);}
+.dci-wc em{font-style:normal; font-size:9px; font-weight:700; line-height:1; flex-shrink:0; color:var(--text-2);}
+.dci-wc.on em{color:var(--c);}
+.dci-wempty{flex:1; display:grid; place-items:center; text-align:center; font-size:11px; color:var(--text-2);}
+.dci-cmp{display:flex; flex-direction:column; gap:5px; flex-shrink:0; padding-top:2px;}
+.dci-cr{display:grid; grid-template-columns:56px minmax(0,1fr) auto; align-items:center; gap:7px; font-size:10.5px;}
+.dci-cr span{font-weight:600; color:var(--text-2); white-space:nowrap;}
+.dci-cr b{font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--text); white-space:nowrap;}
+.dci-ct{height:7px; border-radius:99px; overflow:hidden; background:color-mix(in srgb,var(--text) 10%,transparent);}
+.dci-ct i{display:block; height:100%; border-radius:99px; background:var(--c);}
+.dci-cr.prev .dci-ct i{background:color-mix(in srgb,var(--text) 38%,transparent);}
+@container (max-width:380px){ .dci-stats{display:none;} .dci-big{font-size:26px;} }
 </style>
 </body>
 </html>
