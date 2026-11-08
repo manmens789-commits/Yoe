@@ -1443,6 +1443,29 @@
     #print-area .pr-kpi .sb{font-size:9px; color:#555; margin-top:3px; line-height:1.35;}
     #print-area .pr-kpi .sb.pos-p{color:#2E7D32;}
     #print-area .pr-kpi .sb.neg-p{color:#C1533D;}
+    #print-area .pr-hero{display:flex; gap:10px; margin:0 0 14px; page-break-inside:avoid; break-inside:avoid;}
+    #print-area .pr-hero-main{flex:0 0 38%; min-width:0; background:#EEF8F6; border:1px solid #CFE9E4; border-left:6px solid #0F9D8E; border-radius:8px; padding:12px 14px; display:flex; flex-direction:column; justify-content:center;}
+    #print-area .pr-hero-main.neg{background:#FCF1EE; border-color:#F0D3CC; border-left-color:#C1533D;}
+    #print-area .pr-hero-main .lb{font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; font-weight:700; color:#2F4A46;}
+    #print-area .pr-hero-main.neg .lb{color:#6B3329;}
+    #print-area .pr-hero-main .vl{font-family:'JetBrains Mono',monospace; font-weight:800; margin:6px 0 5px; line-height:1.1; color:#0D0D0D; white-space:nowrap;}
+    #print-area .pr-hero-main .sb{font-size:9.5px; color:#3A3A3A; line-height:1.4; margin-top:2px;}
+    #print-area .pr-hero-main .sb.pos-p{color:#2E7D32; font-weight:700;}
+    #print-area .pr-hero-main .sb.neg-p{color:#B03A24; font-weight:700;}
+    #print-area .pr-hero-side{flex:1; min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:7px;}
+    #print-area .pr-mk{min-width:0; border:1px solid #E7E7E7; border-left:3px solid #171717; border-radius:6px; padding:5px 9px 5px;}
+    #print-area .pr-mk.pos{border-left-color:#2E7D32;}
+    #print-area .pr-mk.neg{border-left-color:#C1533D;}
+    #print-area .pr-mk .lb{font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:#434343; font-weight:700;}
+    #print-area .pr-mk .vl{font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; margin-top:1px; color:#0D0D0D; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    #print-area .pr-mk .sb{font-size:9px; color:#555; line-height:1.3;}
+    #print-area .pr-mk .sb.pos-p{color:#2E7D32;}
+    #print-area .pr-mk .sb.neg-p{color:#C1533D;}
+    #print-area .pr-toc{border:1px solid #E7E7E7; border-radius:8px; padding:9px 14px 7px; margin:0 0 16px; page-break-inside:avoid; break-inside:avoid;}
+    #print-area .pr-toc ol{list-style:none; margin:4px 0 0; padding:0; columns:3; column-gap:18px; font-size:9.5px; line-height:1.7;}
+    #print-area .pr-toc li{break-inside:avoid; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    #print-area .pr-toc a{color:#171717; text-decoration:none;}
+    #print-area .pr-toc .n{font-family:'JetBrains Mono',monospace; color:#B8860B; font-weight:700; margin-right:6px;}
     #print-area .pr-hl{border:1px solid #E7E7E7; border-left:3px solid #0F9D8E; border-radius:8px; padding:10px 14px; margin:0 0 18px; page-break-inside:avoid; break-inside:avoid;}
     #print-area .pr-hl-t{font-size:9px; letter-spacing:.06em; text-transform:uppercase; font-weight:700; color:#434343; margin-bottom:5px;}
     #print-area .pr-cmp-note{font-size:9px; color:#666; margin:-10px 0 16px; line-height:1.4;}
@@ -1511,6 +1534,8 @@
     #print-area .pr-grp em{font-style:normal; font-size:9.5px; color:#434343; margin-left:8px; font-weight:600;}
     #print-area tr.pr-sub td{font-weight:700; background:#F3F3F3; border-top:1px solid #D2D2D2; border-bottom:none;}
     #print-area .pr-zero{font-size:9.5px; color:#4E4E4E; margin:2px 0 6px; line-height:1.5;}
+    #print-area .pr-asof{display:inline-block; font-family:'Inter',sans-serif; font-size:8.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#8A5A00; background:#FFF4DB; border:1px solid #E8C873; border-radius:10px; padding:2px 8px; margin-left:8px; vertical-align:middle;}
+    #print-area .pr-asof-note{font-size:9.5px; color:#8A5A00; background:#FFF9EC; border-left:3px solid #E8C873; padding:6px 10px; margin:0 0 8px; line-height:1.5; page-break-inside:avoid; break-inside:avoid;}
     #print-area .pr-footer{margin-top:22px; padding-top:10px; border-top:1px solid #E7E7E7; font-size:8.5px; color:#A8A8A8; text-align:center; letter-spacing:.02em;}
   }
 
@@ -5176,7 +5201,7 @@ function pendapatanAkunHtml(start, end){
   var h = '<table class="pr-grp"><thead><tr><th style="width:44%;"><i class="pr-sw" style="background:#2E9E6B;"></i>Pendapatan per Akun</th><th>Porsi</th><th class="num">Jumlah</th></tr></thead><tbody>';
   list.forEach(function(a){
     var v = ap.map[a.k], pct = ap.total>0 ? v/ap.total*100 : 0;
-    h += '<tr><td>'+escapeHtml(a.k+' '+a.n)+'</td><td><div class="pr-mini"><span style="width:'+Math.min(v/maxV*100,100)+'%; background:#2E9E6B;"></span></div><em>'+(v>0 && pct<1 ? '<1%' : Math.round(pct)+'%')+'</em></td><td class="num">'+fmt(v)+'</td></tr>';
+    h += '<tr><td>'+escapeHtml(a.k+' '+a.n)+'</td><td><div class="pr-mini"><span style="width:'+Math.min(v/maxV*100,100)+'%; background:#2E9E6B;"></span></div><em>'+prPctTxt(v, ap.total)+'</em></td><td class="num">'+fmt(v)+'</td></tr>';
   });
   return h+'<tr class="pr-sub"><td colspan="2">Subtotal</td><td class="num">'+fmt(ap.total)+'</td></tr></tbody></table>';
 }
@@ -10244,7 +10269,7 @@ function dvPasifHtml(start, end){
   var h = '<table class="pr-grp"><thead><tr><th style="width:30%;"><i class="pr-sw" style="background:#7A5AF8;"></i>Penghasilan Pasif (Dividen)</th><th>Porsi</th><th class="num">Bruto</th><th class="num">Pajak</th><th class="num">Neto</th></tr></thead><tbody>';
   st.arr.forEach(function(a){
     var pct = st.neto>0 ? a.neto/st.neto*100 : 0;
-    h += '<tr><td>'+escapeHtml(a.k)+' ('+a.n+'x)</td><td><div class="pr-mini"><span style="width:'+Math.min(a.neto/maxV*100,100)+'%; background:#7A5AF8;"></span></div><em>'+(a.neto>0 && pct<1 ? '<1%' : Math.round(pct)+'%')+'</em></td><td class="num">'+fmt(a.bruto)+'</td><td class="num">'+fmt(a.pajak)+'</td><td class="num">'+fmt(a.neto)+'</td></tr>';
+    h += '<tr><td>'+escapeHtml(a.k)+' ('+a.n+'x)</td><td><div class="pr-mini"><span style="width:'+Math.min(a.neto/maxV*100,100)+'%; background:#7A5AF8;"></span></div><em>'+prPctTxt(a.neto, st.neto)+'</em></td><td class="num">'+fmt(a.bruto)+'</td><td class="num">'+fmt(a.pajak)+'</td><td class="num">'+fmt(a.neto)+'</td></tr>';
   });
   return h+'<tr class="pr-sub"><td colspan="2">Subtotal (sudah termasuk di Total Pemasukan)</td><td class="num">'+fmt(st.bruto)+'</td><td class="num">'+fmt(st.pajak)+'</td><td class="num">'+fmt(st.neto)+'</td></tr></tbody></table>';
 }
@@ -18852,6 +18877,14 @@ function svgPrintPerformaChart(start, end){
 
 /* Grafik kategori buat laporan PDF. Kalau cuma 1 periode (1 batang) -> tampil sebagai ranking bar horizontal
    + strip proporsi, jauh lebih informatif dari 1 batang tumpuk. Kalau >1 bulan -> tetap stacked bar + legend. */
+/* Persentase porsi untuk laporan: di bawah 0,1% ditulis '<0.1%', di bawah 10% satu desimal, selebihnya bulat (porsi kecil tidak tampil 0% atau 1%) */
+function prPctTxt(v, total){
+  if(!(total>0) || !(v>0)) return '0%';
+  var p = v/total*100;
+  if(p<0.1) return '<0.1%';
+  if(p<9.95) return p.toFixed(1)+'%';
+  return Math.round(p)+'%';
+}
 function printHBarChart(datasets, title){
   var items = datasets.map(function(d){ return {label:d.label, color:d.color, val:(d.data||[]).reduce(function(s,v){ return s+v; },0)}; })
     .filter(function(x){ return x.val>0; }).sort(function(a,b){ return b.val-a.val; });
@@ -18863,7 +18896,7 @@ function printHBarChart(datasets, title){
     items = items.slice(0,MAXN); items.push({label:'Lainnya ('+rest.length+')', color:'#BFBFBF', val:restVal});
   }
   var maxV = items[0].val;
-  function pct(v){ var p=v/total*100; return (p>0 && p<1) ? '<1%' : Math.round(p)+'%'; }
+  function pct(v){ return prPctTxt(v, total); }
   var h = '<div class="pr-hb">';
   h += '<div class="pr-hb-head"><span>'+(title||'Komposisi')+'</span><b>'+fmtShort(total)+'</b></div>';
   h += '<div class="pr-hb-strip">'+items.map(function(x){ return '<span style="width:'+(x.val/total*100)+'%; background:'+x.color+';"></span>'; }).join('')+'</div>';
@@ -18966,30 +18999,38 @@ function exportLaporanPDF(){
     '<div class="pr-meta"><b>'+periodeLabel+'</b>Dicetak '+fmtTglIndo(todayISO())+(ringkas||anonP ? '<br>'+[ringkas?'Versi ringkas':'', anonP?'Nama disamarkan':''].filter(Boolean).join(' \u2022 ') : '')+'</div>'+
   '</div>';
 
-  html += '<div class="pr-kpis">'+
-    '<div class="pr-kpi pos"><div class="lb">Total Pemasukan</div><div class="vl">'+fmt(totalPemasukan)+'</div>'+cmpSb(totalPemasukan,pPemasukan,true)+'</div>'+
-    '<div class="pr-kpi neg"><div class="lb">Beban Operasional</div><div class="vl">'+fmt(at.beban)+'</div>'+(pAt?cmpSb(at.beban,pAt.beban,false):'')+'</div>'+
-    '<div class="pr-kpi'+(surplusOps>=0?' pos':' neg')+'"><div class="lb">Surplus Operasional</div><div class="vl">'+fmt(surplusOps)+'</div>'+cmpSb(surplusOps,pSurplus,true)+'</div>'+
-    '<div class="pr-kpi"><div class="lb">Total Saldo Akhir</div><div class="vl">'+fmt(totalSaldoAkhir)+'</div>'+cmpSb(totalSaldoAkhir,pSaldo,true)+'</div>'+
-  '</div>';
-
-  html += '<div class="pr-bar-wrap"><div class="pr-bar"><div class="in" style="width:'+barMasuk+'%;"></div><div class="out" style="width:'+barKeluar+'%;"></div></div>'+
+  var heroEmitted = false;
+  var barHtml = '<div class="pr-bar-wrap"><div class="pr-bar"><div class="in" style="width:'+barMasuk+'%;"></div><div class="out" style="width:'+barKeluar+'%;"></div></div>'+
     '<div class="pr-bar-legend"><span>Pemasukan '+barMasuk+'%</span><span>Beban '+barKeluar+'%</span></div></div>';
 
   /* ===== Ringkasan eksekutif (halaman pertama): KPI tambahan + sorotan periode ===== */
   try{
     var dPx = nwParse(start); dPx.setDate(dPx.getDate()-1);
-    var nwA0 = netWorthAt(nwIso(dPx)), nwB0 = netWorthAt(end);
+    var nwA0 = {net:0}, nwB0 = {net:0}, nwOk = true;
+    try{ nwA0 = netWorthAt(nwIso(dPx)); nwB0 = netWorthAt(end); }catch(eN){ nwOk = false; console.error('Net worth ringkasan gagal', eN); }
     var nwD0 = nwB0.net - nwA0.net;
     var nwP0 = nwA0.net!==0 ? nwD0/Math.abs(nwA0.net)*100 : null;
     var rasio0 = totalPemasukan>0 ? surplusOps/totalPemasukan*100 : null;
     var sgn0 = function(v){ return (v>0?'+':(v<0?'\u2212':''))+fmt(Math.abs(v)); };
     var pct0 = function(v){ return (v>0?'\u25B2 ':(v<0?'\u25BC ':''))+Math.abs(v).toFixed(1)+'%'; };
-    html += '<div class="pr-kpis">'+
-      '<div class="pr-kpi'+(nwB0.net>=0?' pos':' neg')+'"><div class="lb">Kekayaan Bersih</div><div class="vl">'+fmt(nwB0.net)+'</div><div class="sb '+(nwD0>=0?'pos-p':'neg-p')+'">'+sgn0(nwD0)+(nwP0!==null?' ('+pct0(nwP0)+')':'')+' sejak awal periode</div></div>'+
-      '<div class="pr-kpi'+(rasio0!==null && rasio0>=0?' pos':' neg')+'"><div class="lb">Rasio Menabung</div><div class="vl">'+(rasio0===null?'-':rasio0.toFixed(1)+'%')+'</div><div class="sb">Surplus operasional \u00F7 pemasukan</div></div>'+
-      '<div class="pr-kpi'+(netCashflow>=0?' pos':' neg')+'"><div class="lb">Arus Kas Bersih</div><div class="vl">'+fmt(netCashflow)+'</div><div class="sb">Setelah semua uang keluar</div>'+cmpSb(netCashflow,pNet,true)+'</div>'+
-    '</div>';
+    /* Hierarki halaman 1: satu angka utama (Surplus Operasional) + enam angka pendukung yang lebih kecil */
+    var hVal = fmt(surplusOps), hSz = hVal.length>15 ? 18 : (hVal.length>12 ? 21 : 25);
+    var hCmp = cmpOk ? cmpSb(surplusOps, pSurplus, true) : '';
+    var mk = function(tone, lb, vl, sb){ return '<div class="pr-mk'+(tone?' '+tone:'')+'"><div class="lb">'+lb+'</div><div class="vl">'+vl+'</div>'+(sb||'')+'</div>'; };
+    html += '<div class="pr-hero">'+
+      '<div class="pr-hero-main'+(surplusOps>=0?' pos':' neg')+'"><div class="lb">Surplus Operasional</div>'+
+        '<div class="vl" style="font-size:'+hSz+'px;">'+hVal+'</div>'+
+        '<div class="sb">Pemasukan '+fmt(totalPemasukan)+' \u2212 beban '+fmt(at.beban)+'</div>'+hCmp+'</div>'+
+      '<div class="pr-hero-side">'+
+        mk('pos','Total Pemasukan',fmt(totalPemasukan),cmpSb(totalPemasukan,pPemasukan,true))+
+        mk('neg','Beban Operasional',fmt(at.beban),(pAt?cmpSb(at.beban,pAt.beban,false):''))+
+        mk(netCashflow>=0?'pos':'neg','Arus Kas Bersih',fmt(netCashflow),cmpSb(netCashflow,pNet,true) || '<div class="sb">Setelah semua uang keluar</div>')+
+        mk(rasio0!==null && rasio0>=0?'pos':'neg','Rasio Menabung',(rasio0===null?'-':rasio0.toFixed(1)+'%'),'<div class="sb">Surplus \u00F7 pemasukan</div>')+
+        mk(nwOk?(nwB0.net>=0?'pos':'neg'):'','Kekayaan Bersih',(nwOk?fmt(nwB0.net):'-'),(nwOk?'<div class="sb '+(nwD0>=0?'pos-p':'neg-p')+'">'+sgn0(nwD0)+(nwP0!==null?' ('+pct0(nwP0)+')':'')+' sejak awal</div>':''))+
+        mk('','Total Saldo Akhir',fmt(totalSaldoAkhir),cmpSb(totalSaldoAkhir,pSaldo,true))+
+      '</div></div>';
+    heroEmitted = true;
+    html += barHtml;
     var pts0 = [];
     if(totalPemasukan>0 || totalKeluar>0){
       pts0.push(netCashflow>=0
@@ -19017,8 +19058,9 @@ function exportLaporanPDF(){
     if(pts0.length){
       html += '<div class="pr-hl"><div class="pr-hl-t">Sorotan periode ini</div><ul>'+pts0.map(function(t){ return '<li>'+t+'</li>'; }).join('')+'</ul></div>';
     }
-  }catch(e){ console.error('Ringkasan eksekutif PDF gagal', e); }
+  }catch(e){ console.error('Ringkasan eksekutif PDF gagal', e); if(!heroEmitted) html += barHtml; }
   if(cmpOk) html += '<div class="pr-cmp-note">Pembanding: periode sebelumnya dengan panjang sama ('+lenHari+' hari), yaitu '+fmtTglIndo(pStart)+' \u2013 '+fmtTglIndo(pEnd)+'.</div>';
+  html += '<!--TOC-->';
 
   html += '<div class="pr-section"><h2><span class="n">01</span>Grafik Performa '+(perfBuckets(start,end).mode==='minggu'?'Mingguan':'Bulanan')+'</h2>'+
     '<div class="pr-chart-wrap"><div class="pr-chart-title">'+(perfBuckets(start,end).mode==='minggu'?'Per minggu':'Per bulan')+'</div>'+svgPrintPerformaChart(start, end)+
@@ -19047,12 +19089,118 @@ function exportLaporanPDF(){
   })();
 
   var skipFromP = html.length;
+  var tdyAsOf = todayISO();
+  var asofTag = '<span class="pr-asof">Posisi per '+fmtTglIndo(tdyAsOf)+'</span>';
+  var asofWarn = end < tdyAsOf ? '<div class="pr-asof-note">Periode laporan berakhir '+fmtTglIndo(end)+', sedangkan bagian ini menggambarkan kondisi saat dicetak ('+fmtTglIndo(tdyAsOf)+'), bukan kondisi di akhir periode.</div>' : '';
+
+  /* ===== Seksi 03: Laporan Arus Kas & Rekonsiliasi Saldo =====
+     Saldo awal dan akhir = jumlah saldo semua rekening (sumber sama dengan seksi Saldo per Rekening).
+     Selisih yang tidak terjelaskan komponen mana pun ditampilkan terbuka di baris "Selisih lain", bukan disembunyikan. */
+  try{
+    (function(){
+      var dB = nwParse(start); dB.setDate(dB.getDate()-1); var isoB = nwIso(dB);
+      var kasAwal = ACCOUNTS.reduce(function(t,a){ return t+saldoAkun(a, isoB); },0);
+      var kasAkhir = totalSaldoAkhir, delta = kasAkhir - kasAwal;
+      var apC = akunPendapatanTotals(start, end);
+      var jualAset = apC.map['4-300']||0;
+      var masukOps = totalPemasukan - jualAset;
+      var opsNet = masukOps - at.bebanKas - at.persed;
+      var invNet = jualAset - at.modal;
+      var dHut = totalHutang(end) - totalHutang(isoB);
+      var dPiu = totalPiutang(end) - totalPiutang(isoB);
+      var dTit = totalTitipan(end) - totalTitipan(isoB);
+      var danaNet = dHut - dPiu + dTit;
+      var korek = (DATA.koreksi||[]).reduce(function(t,k){ return (k.tanggal>=start && k.tanggal<=end) ? t+(k.jumlah||0) : t; },0);
+      var lain = delta - opsNet - invNet - danaNet - korek;
+      var sg = function(v){ return (v>0?'+':(v<0?'\u2212':''))+fmt(Math.abs(v)); };
+      var cl = function(v){ return v>0 ? 'pos-p' : (v<0 ? 'neg-p' : ''); };
+      function rw(lbl, v, o){
+        o = o||{};
+        if(!v && !o.always) return '';
+        var trc = o.total ? ' class="total-row"' : (o.sub ? ' class="pr-sub"' : '');
+        return '<tr'+trc+'><td'+(o.ind?' style="padding-left:20px;"':'')+'>'+lbl+'</td><td class="num '+(o.plain?'':cl(v))+'">'+(o.plain?fmt(v):sg(v))+'</td></tr>';
+      }
+      var h = '<div class="pr-section"><h2><span class="n">03</span>Laporan Arus Kas &amp; Rekonsiliasi Saldo</h2>';
+      h += '<div class="pr-kpis" style="grid-template-columns:repeat(3,1fr);">'+
+        '<div class="pr-kpi'+(opsNet>=0?' pos':' neg')+'"><div class="lb">Arus kas operasional</div><div class="vl">'+sg(opsNet)+'</div></div>'+
+        '<div class="pr-kpi'+(invNet>=0?' pos':' neg')+'"><div class="lb">Arus kas investasi</div><div class="vl">'+sg(invNet)+'</div></div>'+
+        '<div class="pr-kpi'+(danaNet>=0?' pos':' neg')+'"><div class="lb">Pendanaan &amp; pihak ketiga</div><div class="vl">'+sg(danaNet)+'</div></div></div>';
+      h += '<table><thead><tr><th>Pos</th><th class="num">Jumlah</th></tr></thead><tbody>';
+      h += rw('Saldo awal ('+fmtTglIndo(isoB)+')', kasAwal, {sub:true, plain:true, always:true});
+      h += '<tr class="pr-sub"><td colspan="2">Aktivitas operasional</td></tr>';
+      h += rw('Pemasukan (di luar penjualan aset &amp; stok)', masukOps, {ind:true});
+      h += rw('Beban (pengeluaran umum &amp; tagihan)', -at.bebanKas, {ind:true});
+      h += rw('Pembelian stok (belanja item)', -at.persed, {ind:true});
+      h += rw('Arus kas operasional', opsNet, {total:true, always:true});
+      h += '<tr class="pr-sub"><td colspan="2">Aktivitas investasi</td></tr>';
+      h += rw('Hasil penjualan aset &amp; stok', jualAset, {ind:true});
+      h += rw('Pembelian aset (inventaris, aset biologis, investasi)', -at.modal, {ind:true});
+      h += rw('Arus kas investasi', invNet, {total:true, always:true});
+      h += '<tr class="pr-sub"><td colspan="2">Pendanaan &amp; pihak ketiga</td></tr>';
+      h += rw('Hutang &amp; tagihan: tambahan (pelunasan) bersih', dHut, {ind:true});
+      h += rw('Piutang: pemberian (penerimaan) bersih', -dPiu, {ind:true});
+      h += rw('Dana titipan: diterima (dikembalikan) bersih', dTit, {ind:true});
+      h += rw('Arus kas pendanaan &amp; pihak ketiga', danaNet, {total:true, always:true});
+      h += rw('Koreksi saldo (hasil rekonsiliasi)', korek);
+      h += rw('Selisih lain (Dana Patungan, data lama, pembulatan)', Math.abs(lain)<1 ? 0 : lain);
+      h += rw('Kenaikan (penurunan) kas bersih', delta, {total:true, always:true});
+      h += rw('Saldo akhir ('+fmtTglIndo(end)+')', kasAkhir, {sub:true, plain:true, always:true});
+      h += '</tbody></table>';
+      var big = Math.abs(lain) > 0.02*Math.max(totalPemasukan, totalKeluar, Math.abs(delta), 1);
+      var notes = [];
+      notes.push(Math.abs(lain)<1 ? 'Seluruh perubahan saldo terjelaskan oleh komponen di atas.' : 'Ada selisih lain '+fmt(Math.abs(lain))+' yang belum terpetakan ke komponen di atas.'+(big?' Nilainya cukup besar, sebaiknya cek menu Rekonsiliasi Saldo.':''));
+      notes.push('Tagihan yang belum dibayar dicatat sebagai beban, lalu dikoreksi di baris hutang &amp; tagihan. Perpindahan uang antar rekening (termasuk ke rekening investasi) tidak mengubah total saldo.');
+      if(tanggalDiTahunArsip(start) || tanggalDiTahunArsip(end)) notes.push('Sebagian rentang berada di tahun yang sudah diarsipkan, jadi saldo awal atau akhir berupa perkiraan.');
+      h += '<div class="pr-zero">'+notes.join(' ')+'</div></div>';
+      html += h;
+    })();
+  }catch(e){ console.error('Seksi arus kas PDF gagal', e); }
+
+  /* ===== Seksi 04: Ketahanan Keuangan (rata-rata bulanan periode + dana darurat saat ini) ===== */
+  try{
+    (function(){
+      var sdQ = nwParse(start), edQ = nwParse(end);
+      var nHari = Math.round((edQ-sdQ)/86400000)+1;
+      var penuhQ = sdQ.getDate()===1 && edQ.getDate()===new Date(edQ.getFullYear(), edQ.getMonth()+1, 0).getDate();
+      var nBln = penuhQ ? ((edQ.getFullYear()-sdQ.getFullYear())*12 + edQ.getMonth()-sdQ.getMonth()+1) : nHari/30.4375; /* bulan kalender penuh dihitung apa adanya */
+      var incR = sumInRange(DATA.pemasukan, 'jumlah', start, end, function(x){ return !isPemasukanNonRutin(x); });
+      var expR = bebanRutin(start, end);
+      var aInc = incR/nBln, aExp = expR/nBln, aSur = aInc - aExp;
+      var ef = ksDanaDarurat(), dana = ef.ada ? ef.total : ksLiquidSaldo();
+      var ms = ksMonthSamples(), e3 = ms.expense.length ? ms.expense.reduce(function(a,b){ return a+b; },0)/ms.expense.length : 0;
+      var cic = ksCicilanBulanan().total;
+      var basis = (e3>0 ? e3 : aExp) + cic;
+      var cover = basis>0 ? dana/basis : null;
+      var nilai = cover===null ? '-' : (cover<1 ? 'Rendah (kurang dari 1 bulan)' : cover<3 ? 'Kurang (di bawah acuan 3 bulan)' : cover<6 ? 'Cukup (3\u20136 bulan)' : 'Kuat (6 bulan atau lebih)');
+      var nCls = cover===null ? '' : (cover<3 ? 'neg-p' : 'pos-p');
+      var h = '<div class="pr-section"><h2><span class="n">04</span>Ketahanan Keuangan</h2>';
+      h += '<div class="pr-kpis" style="grid-template-columns:repeat(3,1fr);">'+
+        '<div class="pr-kpi pos"><div class="lb">Pemasukan rutin / bulan</div><div class="vl">'+fmt(aInc)+'</div></div>'+
+        '<div class="pr-kpi neg"><div class="lb">Beban rutin / bulan</div><div class="vl">'+fmt(aExp)+'</div></div>'+
+        '<div class="pr-kpi'+(aSur>=0?' pos':' neg')+'"><div class="lb">Surplus / bulan</div><div class="vl">'+(aSur<0?'\u2212':'')+fmt(Math.abs(aSur))+'</div></div></div>';
+      h += '<table class="keep"><thead><tr><th>Rata-rata per bulan, periode ini</th><th class="num">Jumlah</th></tr></thead><tbody>'+
+        '<tr><td>Pemasukan rutin (tanpa jual aset dan keuntungan investasi)</td><td class="num pos-p">'+fmt(aInc)+'</td></tr>'+
+        '<tr><td>Beban rutin (tanpa pembelian aset/stok dan biaya investasi)</td><td class="num neg-p">'+fmt(aExp)+'</td></tr>'+
+        '<tr class="total-row"><td>Surplus rata-rata</td><td class="num '+(aSur>=0?'pos-p':'neg-p')+'">'+(aSur<0?'\u2212':'')+fmt(Math.abs(aSur))+'</td></tr></tbody></table>';
+      h += '<table class="keep"><thead><tr><th>Dana darurat '+asofTag+'</th><th class="num">Jumlah</th></tr></thead><tbody>'+
+        '<tr><td>Dana darurat bersih ('+(ef.ada ? 'rekening bertanda dana darurat' : 'saldo likuid non-investasi, belum ada rekening bertanda dana darurat')+')</td><td class="num">'+fmt(dana)+'</td></tr>'+
+        '<tr><td>Kebutuhan per bulan (rata-rata beban 3 bulan penuh terakhir'+(cic>0?' + cicilan hutang':'')+')</td><td class="num">'+fmt(basis)+'</td></tr>'+
+        '<tr class="total-row"><td>Cakupan dana darurat</td><td class="num '+nCls+'">'+(cover===null?'-':cover.toFixed(1)+' bulan')+'</td></tr>'+
+        '<tr><td>Penilaian (acuan umum 3\u20136 bulan)</td><td class="num '+nCls+'">'+nilai+'</td></tr></tbody></table>';
+      var nt = [];
+      if(nHari<28) nt.push('Periode kurang dari sebulan ('+nHari+' hari), jadi angka bulanan adalah proyeksi dari periode tersebut.');
+      nt.push('Cakupan dana darurat memakai metode yang sama dengan Skor Kesehatan Keuangan, jadi tidak ikut berubah mengikuti rentang tanggal laporan.');
+      h += '<div class="pr-zero">'+nt.join(' ')+'</div>'+asofWarn+'</div>';
+      html += h;
+    })();
+  }catch(e){ console.error('Seksi ketahanan keuangan PDF gagal', e); }
+
   /* ===== Seksi 03: Pengeluaran per Akun (COA) ===== */
   (function(){
     var base = Math.max(at.beban + at.modal + at.persed, 1);
-    function pctTxt(v){ var p = v/base*100; if(v>0 && p<1) return '<1%'; return Math.round(p)+'%'; }
-    var h = '<div class="pr-section"><h2><span class="n">03</span>Pengeluaran per Akun (COA)</h2>';
-    h += '<div style="font-size:10.5px; color:#666; margin-bottom:8px; line-height:1.5;">Beban = uang yang habis dipakai (termasuk nilai stok yang sudah dipakai). Aset dan Persediaan = uang yang berubah bentuk jadi barang yang masih bernilai, jadi bukan kerugian.</div>';
+    function pctTxt(v){ return prPctTxt(v, base); }
+    var h = '<div class="pr-section"><h2><span class="n">05</span>Pengeluaran per Akun (COA)</h2>';
+    h += '<div style="font-size:10.5px; color:#666; margin-bottom:8px; line-height:1.5;">Beban = uang yang habis dipakai (termasuk nilai stok yang sudah dipakai). Aset dan Persediaan = uang yang berubah bentuk jadi barang yang masih bernilai, jadi bukan kerugian. Seksi ini mengelompokkan menurut akun akuntansi dan memuat semua pengeluaran, termasuk tagihan, belanja item, dan pemakaian stok. Rincian menurut jenis yang kamu catat ada di Pengeluaran per Jenis.</div>';
     [['Beban','#C1533D'],['Aset','#4B4B4B']].forEach(function(g){
       var list = AKUN_COA.filter(function(a){ return a.t===g[0] && at.map[a.k]>0; }).sort(function(x,y){ return at.map[y.k]-at.map[x.k]; });
       if(!list.length) return;
@@ -19080,24 +19228,25 @@ function exportLaporanPDF(){
   var msPH = monthlyPiutangHutangSeries(start, end);
 
   html += '<div class="grid2col">'+
-    '<div class="pr-section"><h2><span class="n">04</span>Pemasukan per Sumber</h2>'+
+    '<div class="pr-section"><h2><span class="n">06</span>Pemasukan per Sumber</h2>'+
       printCatChart(msPemasukan, 'Total pemasukan')+
       '<table>'+rowsFor(DATA.pemasukan,sumberP,'Sumber')+'</table>'+pendapatanAkunHtml(start, end)+dvPasifHtml(start, end)+'</div>'+
-    '<div class="pr-section"><h2><span class="n">05</span>Pengeluaran per Jenis</h2>'+
+    '<div class="pr-section"><h2><span class="n">07</span>Pengeluaran per Jenis</h2>'+
       printCatChart(msPengeluaran, 'Total pengeluaran')+
-      '<table>'+rowsFor(pengeluaranPerJenis(),akunJenisKey,'Jenis')+'</table></div>'+
+      '<table>'+rowsFor(pengeluaranPerJenis(),akunJenisKey,'Jenis')+'</table>'+
+      '<div class="pr-zero">Total seksi ini '+fmt(sumInRange(pengeluaranPerJenis(),'jumlah',start,end))+', sedangkan Pengeluaran per Akun '+fmt(at.beban+at.modal+at.persed)+'. Selisihnya wajar: seksi ini hanya memuat pengeluaran yang dicatat per jenis (belanja item yang dipetakan ke jenis ikut dihitung), sedangkan tagihan, belanja item lain, dan pemakaian stok dilaporkan di seksi lain.</div></div>'+
   '</div>';
 
   html += '<div class="grid2col">'+
-    '<div class="pr-section"><h2><span class="n">06</span>Belanja per Item</h2>'+
+    '<div class="pr-section"><h2><span class="n">08</span>Belanja per Item</h2>'+
       printCatChart(msBelanja, 'Total belanja')+
       '<table>'+rowsFor(DATA.belanja,function(x){return x.item;},'Item')+'</table></div>'+
-    '<div class="pr-section"><h2><span class="n">07</span>Tagihan per Jenis</h2>'+
+    '<div class="pr-section"><h2><span class="n">09</span>Tagihan per Jenis</h2>'+
       printCatChart(msTagihan, 'Total tagihan')+
       '<table>'+rowsFor(DATA.tagihan,function(x){return x.jenis;},'Jenis')+'</table></div>'+
   '</div>';
 
-  html += '<div class="pr-section"><h2><span class="n">08</span>Produk Investasi Periode Ini</h2>'+
+  html += '<div class="pr-section"><h2><span class="n">10</span>Produk Investasi Periode Ini</h2>'+
     (msInvBeli.datasets.length || msInvJual.datasets.length ? '<div class="pr-mini-grid">'+
       '<div>'+(msInvBeli.datasets.length ? (true ? printCatChart(msInvBeli, 'Pembelian per instrumen') : '<div class="pr-chart-wrap"><div class="pr-chart-title">Pembelian per Instrumen</div>'+svgStackedBarChart(msInvBeli.labels, msInvBeli.datasets, true)+printChartLegend(msInvBeli.datasets, false)+'</div>') : '')+'</div>'+
       '<div>'+(msInvJual.datasets.length ? (true ? printCatChart(msInvJual, 'Penjualan per instrumen') : '<div class="pr-chart-wrap"><div class="pr-chart-title">Penjualan per Instrumen</div>'+svgStackedBarChart(msInvJual.labels, msInvJual.datasets, true)+printChartLegend(msInvJual.datasets, false)+'</div>') : '')+'</div>'+
@@ -19122,7 +19271,7 @@ function exportLaporanPDF(){
     });
     var total = totalSaldoAkhir;
     var base = total>0 ? total : 1;
-    function pctTxt(v){ var p = v/base*100; if(v>0 && p<1) return '<1%'; return Math.round(p)+'%'; }
+    function pctTxt(v){ return prPctTxt(v, base); }
     var aktif = rows.filter(function(r){ return r.v!==0; });
     var nol = rows.filter(function(r){ return r.v===0; });
     var groups = CATS.map(function(c){
@@ -19132,7 +19281,7 @@ function exportLaporanPDF(){
     }).filter(function(g){ return g.list.length; });
     var maxV = Math.max.apply(null, aktif.map(function(r){ return Math.abs(r.v); }).concat([1]));
 
-    html += '<div class="pr-section pr-saldo"><h2><span class="n">09</span>Saldo per Rekening (per '+fmtTglIndo(end)+')</h2>';
+    html += '<div class="pr-section pr-saldo"><h2><span class="n">11</span>Saldo per Rekening (per '+fmtTglIndo(end)+')</h2>';
     html += '<div class="pr-saldo-head"><div class="pr-saldo-total"><div class="lbl">Total Saldo</div><div class="val">'+fmt(total)+'</div></div>'+
             '<div class="pr-saldo-note">'+aktif.length+' dari '+rows.length+' rekening berisi saldo</div></div>';
     if(aktif.length){
@@ -19161,7 +19310,7 @@ function exportLaporanPDF(){
     html += '</div>';
   })();
 
-  html += '<div class="pr-section"><h2><span class="n">10</span>Piutang & Hutang (posisi per '+fmtTglIndo(end)+')</h2>'+
+  html += '<div class="pr-section"><h2><span class="n">12</span>Piutang & Hutang (posisi per '+fmtTglIndo(end)+')</h2>'+
     '<div class="pr-chart-wrap">'+svgLineChart(msPH.labels, msPH.datasets, true)+printChartLegend(msPH.datasets, true)+'</div>'+
     '<table><thead><tr><th>Pos</th><th class="num">Jumlah</th></tr></thead><tbody>'+
     '<tr><td>Piutang Berjalan</td><td class="num">'+fmt(totalPiutang(end))+'</td></tr>'+
@@ -19179,7 +19328,7 @@ function exportLaporanPDF(){
       var d = b-a;
       return '<tr'+(total?' class="total-row"':'')+'><td>'+lbl+'</td><td class="num">'+fmt(a)+'</td><td class="num">'+fmt(b)+'</td><td class="num '+cls(d*sign)+'">'+sg(d)+'</td></tr>';
     }
-    var h = '<div class="pr-section"><h2><span class="n">11</span>Kekayaan Bersih / Net Worth (per '+fmtTglIndo(end)+')</h2>';
+    var h = '<div class="pr-section"><h2><span class="n">13</span>Kekayaan Bersih / Net Worth (per '+fmtTglIndo(end)+')</h2>';
     h += '<div class="pr-kpis" style="grid-template-columns:repeat(3,1fr);">'+
       '<div class="pr-kpi"><div class="lb">Total Aset</div><div class="vl">'+fmt(nB.aset)+'</div></div>'+
       '<div class="pr-kpi neg"><div class="lb">Total Kewajiban</div><div class="vl">'+fmt(nB.kewajiban)+'</div></div>'+
@@ -19209,7 +19358,7 @@ function exportLaporanPDF(){
   (function(){
     var sr = stokRingkasan(), iv = invRingkasan(end);
     if(sr.n===0 && iv.n===0 && iv.bioN===0) return;
-    var h = '<div class="pr-section"><h2><span class="n">12</span>Stok Barang & Inventaris</h2>';
+    var h = '<div class="pr-section"><h2><span class="n">14</span>Stok Barang & Inventaris</h2>';
     if(sr.n>0){
       h += '<table><thead><tr><th>Stok barang habis pakai</th><th class="num">Jumlah</th></tr></thead><tbody>'+
         '<tr><td>Nilai stok saat ini (FIFO, per hari ini)</td><td class="num">'+fmt(sr.nilai)+'</td></tr>'+
@@ -19240,7 +19389,7 @@ function exportLaporanPDF(){
     var hsP = computeHealthScore();
     if(hsP && hsP.hasData){
       var hc = hsP.score>=70 ? 'pos-p' : (hsP.score>=40 ? '' : 'neg-p');
-      var hH = '<div class="pr-section"><h2><span class="n">13</span>Skor Kesehatan Keuangan</h2>';
+      var hH = '<div class="pr-section"><h2><span class="n">15</span>Skor Kesehatan Keuangan '+asofTag+'</h2>'+asofWarn;
       hH += '<div class="pr-kpis" style="grid-template-columns:repeat(2,1fr);"><div class="pr-kpi'+(hsP.score>=70?' pos':(hsP.score>=40?'':' neg'))+'"><div class="lb">Skor</div><div class="vl">'+hsP.score+' / 100</div></div>'+
         '<div class="pr-kpi'+(hsP.score>=70?' pos':(hsP.score>=40?'':' neg'))+'"><div class="lb">Penilaian</div><div class="vl">'+escapeHtml(hsP.grade)+'</div></div></div>';
       hH += '<table><thead><tr><th>Pilar</th><th class="num">Bobot</th><th class="num">Skor</th></tr></thead><tbody>'+
@@ -19257,8 +19406,49 @@ function exportLaporanPDF(){
   /* ===== Seksi 14: Anggaran Belanja vs Realisasi (bulan terakhir dalam rentang laporan) ===== */
   try{
     var bKey = end.slice(0,7), bSm = btSummary(bKey);
-    if(bSm.rows.length){
-      var bH = '<div class="pr-section"><h2><span class="n">14</span>Anggaran Belanja vs Realisasi ('+btLabel(bKey)+')</h2>';
+    var bMulti = (function(){
+      var ks = [], cy = +start.slice(0,4), cm = +start.slice(5,7), ey = +end.slice(0,4), em = +end.slice(5,7), nw0 = new Date(), nk = btKey(nw0.getFullYear(), nw0.getMonth()+1);
+      while(cy<ey || (cy===ey && cm<=em)){ var kk = btKey(cy,cm); if(kk<=nk) ks.push(kk); cm++; if(cm>12){ cm = 1; cy++; } }
+      return ks.slice(-12);
+    })();
+    if(bMulti.length>1){
+      var cats = {}, mRows = [], gTl = 0, gTu = 0;
+      bMulti.forEach(function(key){
+        var ar = (DATA.budgetArsip||[]).filter(function(e){ return e.bulan===key; })[0];
+        var cur = btSummary(key), tl = 0, tu = 0;
+        (DATA.kategoriBelanja||[]).forEach(function(k){
+          var l = (ar && ar.limit) ? (ar.limit[k]||0) : (DATA.budgetBelanja[k]||0);
+          var u = (ar && ar.terpakai && ar.terpakai[k]!=null) ? ar.terpakai[k] : (cur.used[k]||0);
+          var c = cats[k] || (cats[k] = {k:k, l:0, uL:0, u:0, mL:0, over:0});
+          c.u += u;
+          if(l>0){ c.l += l; c.uL += u; c.mL++; tl += l; tu += u; if(u>l) c.over++; }
+        });
+        gTl += tl; gTu += tu;
+        mRows.push({key:key, tl:tl, tu:tu});
+      });
+      var cList = Object.keys(cats).map(function(k){ return cats[k]; }).filter(function(c){ return c.mL>0 || c.u>0; })
+        .sort(function(a,b){ return (b.mL>0?b.uL:b.u) - (a.mL>0?a.uL:a.u); });
+      if(cList.length){
+        var mH = '<div class="pr-section"><h2><span class="n">16</span>Anggaran Belanja vs Realisasi ('+btLabel(bMulti[0])+' \u2013 '+btLabel(bMulti[bMulti.length-1])+')</h2>';
+        mH += '<table><thead><tr><th>Kategori</th><th class="num">Total limit</th><th class="num">Terpakai</th><th class="num">Sisa / Lebih</th><th class="num">Lewat limit</th></tr></thead><tbody>';
+        cList.forEach(function(c){
+          var used = c.mL>0 ? c.uL : c.u, diff = c.l - used;
+          mH += '<tr><td>'+escapeHtml(c.k)+'</td><td class="num">'+(c.mL>0?fmt(c.l):'-')+'</td><td class="num">'+fmt(used)+'</td>'+
+            '<td class="num '+(c.mL>0?(diff>=0?'pos-p':'neg-p'):'')+'">'+(c.mL>0?(diff>=0?fmt(diff):'\u2212'+fmt(-diff)):'-')+'</td>'+
+            '<td class="num '+(c.over>0?'neg-p':'')+'">'+(c.mL>0?c.over+' dari '+c.mL+' bln':'-')+'</td></tr>';
+        });
+        mH += '<tr class="total-row"><td>Total kategori ber-limit</td><td class="num">'+fmt(gTl)+'</td><td class="num">'+fmt(gTu)+'</td><td class="num '+(gTl-gTu>=0?'pos-p':'neg-p')+'">'+(gTl-gTu>=0?fmt(gTl-gTu):'\u2212'+fmt(gTu-gTl))+'</td><td class="num">'+(gTl>0?Math.round(gTu/gTl*100)+'%':'-')+'</td></tr></tbody></table>';
+        mH += '<table class="keep"><thead><tr><th>Bulan</th><th class="num">Limit</th><th class="num">Terpakai</th><th class="num">%</th><th class="num">Status</th></tr></thead><tbody>'+
+          mRows.map(function(r){
+            var pc = r.tl>0 ? Math.round(r.tu/r.tl*100) : null, over = r.tl>0 && r.tu>r.tl;
+            return '<tr><td>'+btLabel(r.key)+'</td><td class="num">'+(r.tl>0?fmt(r.tl):'-')+'</td><td class="num">'+fmt(r.tu)+'</td><td class="num '+(over?'neg-p':'')+'">'+(pc===null?'-':pc+'%')+'</td><td class="num '+(r.tl>0?(over?'neg-p':'pos-p'):'')+'">'+(r.tl>0?(over?'Lewat '+fmt(r.tu-r.tl):'Dalam limit'):'Tanpa limit')+'</td></tr>';
+          }).join('')+'</tbody></table>';
+        var okM = mRows.filter(function(r){ return r.tl>0 && r.tu<=r.tl; }).length, nM = mRows.filter(function(r){ return r.tl>0; }).length;
+        mH += '<div class="pr-zero">'+(nM? okM+' dari '+nM+' bulan berlimit masih dalam limit. Rata-rata terpakai '+fmt(gTu/Math.max(nM,1))+' per bulan. ' : '')+'Dihitung per bulan penuh. Bulan yang sudah ditutup memakai limit dan pemakaian yang tersimpan saat ditutup; bulan lain memakai limit yang berlaku sekarang. Maksimal 12 bulan terakhir dalam rentang laporan.</div></div>';
+        html += mH;
+      }
+    } else if(bSm.rows.length){
+      var bH = '<div class="pr-section"><h2><span class="n">16</span>Anggaran Belanja vs Realisasi ('+btLabel(bKey)+')</h2>';
       bH += '<table><thead><tr><th>Kategori</th><th class="num">Limit</th><th class="num">Terpakai</th><th class="num">Sisa / Lebih</th><th class="num">%</th></tr></thead><tbody>';
       bSm.rows.forEach(function(r){
         var diff = r.l - r.u, pc = r.l>0 ? Math.round(r.u/r.l*100) : null;
@@ -19268,7 +19458,7 @@ function exportLaporanPDF(){
       });
       bH += '<tr class="total-row"><td>Total kategori ber-limit</td><td class="num">'+fmt(bSm.tl)+'</td><td class="num">'+fmt(bSm.tu)+'</td><td class="num '+(bSm.tl-bSm.tu>=0?'pos-p':'neg-p')+'">'+(bSm.tl-bSm.tu>=0?fmt(bSm.tl-bSm.tu):'\u2212'+fmt(bSm.tu-bSm.tl))+'</td><td class="num">'+(bSm.tl>0?Math.round(bSm.tu/bSm.tl*100)+'%':'-')+'</td></tr>';
       bH += '</tbody></table>';
-      bH += '<div class="pr-zero">'+(bSm.n? bSm.ok+' dari '+bSm.n+' kategori masih dalam limit. ' : '')+'Limit yang dipakai adalah limit yang berlaku saat ini. Untuk rentang lebih dari satu bulan, yang ditampilkan hanya bulan terakhir.</div></div>';
+      bH += '<div class="pr-zero">'+(bSm.n? bSm.ok+' dari '+bSm.n+' kategori masih dalam limit. ' : '')+'Limit yang dipakai adalah limit yang berlaku saat ini.</div></div>';
       html += bH;
     }
   }catch(e){ console.error('Seksi anggaran PDF gagal', e); }
@@ -19279,7 +19469,7 @@ function exportLaporanPDF(){
     var gAktif = gAll.filter(function(g){ return !g.dibeli; });
     var gDone = gAll.filter(function(g){ return g.dibeli && g.dibeli.tanggal && g.dibeli.tanggal>=start && g.dibeli.tanggal<=end; });
     if(gAktif.length || gDone.length){
-      var gH = '<div class="pr-section"><h2><span class="n">15</span>Progres Target Nabung</h2>';
+      var gH = '<div class="pr-section"><h2><span class="n">17</span>Progres Target Nabung</h2>';
       if(gAktif.length){
         var gTk = 0, gTt = 0;
         gH += '<table class="pr-grp"><thead><tr><th style="width:30%;">Target</th><th>Progres</th><th class="num">Terkumpul</th><th class="num">Target</th><th class="num">Tenggat</th></tr></thead><tbody>';
@@ -19312,15 +19502,15 @@ function exportLaporanPDF(){
     var topTbl = function(rows, total, labelFn){
       return '<table class="keep"><thead><tr><th>Keterangan</th><th class="num">Jumlah</th><th class="num">%</th></tr></thead><tbody>'+
         rows.map(function(x){
-          return '<tr><td>'+escapeHtml(cut(labelFn(x),38))+'<div style="font-size:9px;color:#666;">'+fmtTglIndo(x.tanggal)+'</div></td><td class="num">'+fmt(x.jumlah)+'</td><td class="num">'+(total>0?Math.round(x.jumlah/total*100):0)+'%</td></tr>';
+          return '<tr><td>'+escapeHtml(cut(labelFn(x),38))+'<div style="font-size:9px;color:#666;">'+fmtTglIndo(x.tanggal)+'</div></td><td class="num">'+fmt(x.jumlah)+'</td><td class="num">'+prPctTxt(x.jumlah, total)+'</td></tr>';
         }).join('')+'</tbody></table>';
     };
     var byAmt = function(a,b){ return b.jumlah-a.jumlah; };
     var topK = listK.slice().sort(byAmt).slice(0,5), topM = listM.slice().sort(byAmt).slice(0,5);
     if(!ringkas && (topK.length || topM.length)){
       html += '<div class="grid2col">'+
-        '<div class="pr-section"><h2><span class="n">16</span>5 Pengeluaran Terbesar</h2>'+(topK.length ? topTbl(topK, sumK, function(x){ return (x.jenis||'-')+(!anonP && x.ket?' \u2022 '+x.ket:''); }) : '<div class="pr-zero">Tidak ada data</div>')+'</div>'+
-        '<div class="pr-section"><h2><span class="n">17</span>5 Pemasukan Terbesar</h2>'+(topM.length ? topTbl(topM, sumM, function(x){
+        '<div class="pr-section"><h2><span class="n">18</span>5 Pengeluaran Terbesar</h2>'+(topK.length ? topTbl(topK, sumK, function(x){ return (x.jenis||'-')+(!anonP && x.ket?' \u2022 '+x.ket:''); }) : '<div class="pr-zero">Tidak ada data</div>')+'</div>'+
+        '<div class="pr-section"><h2><span class="n">19</span>5 Pemasukan Terbesar</h2>'+(topM.length ? topTbl(topM, sumM, function(x){
           var sm = x.sumber||'-';
           if(anonP && sm!=='-' && (DATA.sumberPemasukan||[]).concat(typeof SUMBER_PEMASUKAN!=='undefined'?SUMBER_PEMASUKAN:[]).indexOf(sm)===-1 && !/^Hasil Panen/.test(sm)) sm = 'Sumber lain';
           return sm+(!anonP && x.ket?' \u2022 '+x.ket:''); }) : '<div class="pr-zero">Tidak ada data</div>')+'</div>'+
@@ -19346,7 +19536,7 @@ function exportLaporanPDF(){
       var inT = dueL.filter(function(x){ return !x.out; }).reduce(function(t,x){ return t+x.v; },0);
       var lateN = dueL.filter(function(x){ return x.jt<tdyP; }).length;
       var shownD = dueL.slice(0,15);
-      var dH = '<div class="pr-section"><h2><span class="n">18</span>Jatuh Tempo 30 Hari ke Depan (per '+fmtTglIndo(tdyP)+')</h2>';
+      var dH = '<div class="pr-section"><h2><span class="n">20</span>Jatuh Tempo 30 Hari ke Depan '+asofTag+'</h2>'+asofWarn;
       dH += '<div class="pr-kpis" style="grid-template-columns:repeat(2,1fr);"><div class="pr-kpi neg"><div class="lb">Harus dibayar / dikembalikan</div><div class="vl">'+fmt(outT)+'</div></div><div class="pr-kpi pos"><div class="lb">Akan diterima</div><div class="vl">'+fmt(inT)+'</div></div></div>';
       dH += '<table><thead><tr><th>Jenis</th><th>Nama</th><th class="num">Jatuh tempo</th><th class="num">Jumlah</th></tr></thead><tbody>'+
         shownD.map(function(x){
@@ -19358,7 +19548,36 @@ function exportLaporanPDF(){
     }
   }catch(e){ console.error('Seksi jatuh tempo PDF gagal', e); }
 
+  html += '<div class="pr-zero" style="margin-top:14px;">Catatan: persentase porsi dibulatkan (di bawah 10% memakai satu desimal), jadi jumlah porsi dalam satu tabel bisa berbeda tipis dari 100%.</div>';
   html += '<div class="pr-footer">Laporan ini dibuat otomatis oleh aplikasi Tumbuh Kaya &bull; Data bersifat pribadi dan rahasia<br>Created by Ridho Aprilian Syahputra</div>';
+
+  /* Daftar isi: id di tiap judul seksi + tautan (tautan internal ikut tersimpan di file PDF). Nomor halaman tidak ditampilkan karena tidak bisa dihitung andal sebelum dicetak. */
+  html = html.replace(/<h2><span class="n">(\d\d)<\/span>/g, '<h2 id="pr-s$1"><span class="n">$1</span>');
+  var tocHtml = '';
+  if(!ringkas){
+    var tocItems = [], tocRe = /<h2 id="pr-s(\d\d)"><span class="n">\d\d<\/span>(.*?)<\/h2>/g, tm;
+    while((tm = tocRe.exec(html))){
+      var tt = tm[2].replace(/<span class="pr-asof">.*?<\/span>/g,'').replace(/<[^>]+>/g,'').replace(/\s*\(.*\)\s*$/,'').trim();
+      if(tt) tocItems.push('<li><a href="#pr-s'+tm[1]+'"><span class="n">'+tm[1]+'</span>'+tt+'</a></li>');
+    }
+    if(tocItems.length>3) tocHtml = '<div class="pr-toc"><div class="pr-hl-t">Isi laporan</div><ol>'+tocItems.join('')+'</ol></div>';
+  }
+  html = html.replace('<!--TOC-->', tocHtml);
+
+  /* Header dan footer tiap halaman lewat kotak margin @page (Chrome/Edge terbaru). Browser yang belum mendukung mengabaikannya, tampilan tetap seperti biasa. Halaman 1 tanpa header karena sudah punya banner. */
+  try{
+    var en = isEN(), qs = function(t){ return String(t).replace(/\\/g,'').replace(/"/g,'\\"'); };
+    var bx = 'font-family:Inter,Arial,sans-serif; font-size:8.5px; color:#666;';
+    var pgCss = '@media print{ @page{ '+
+      '@top-left{ content:"Tumbuh Kaya \u00B7 '+(en?'Personal Financial Report':'Laporan Keuangan Pribadi')+'"; '+bx+' font-weight:600; vertical-align:bottom; padding-bottom:3mm; } '+
+      '@top-right{ content:"'+qs(periodeLabel)+'"; '+bx+' vertical-align:bottom; padding-bottom:3mm; } '+
+      '@bottom-left{ content:"'+(en?'Private and confidential':'Data pribadi dan rahasia')+'"; '+bx+' vertical-align:top; padding-top:4mm; } '+
+      '@bottom-right{ content:"'+(en?'Page ':'Hal. ')+'" counter(page) " '+(en?'of':'dari')+' " counter(pages); '+bx+' font-weight:600; vertical-align:top; padding-top:4mm; } } '+
+      '@page :first{ @top-left{ content:none; } @top-right{ content:none; } } }';
+    var pgEl = document.getElementById('pr-pagebox');
+    if(!pgEl){ pgEl = document.createElement('style'); pgEl.id = 'pr-pagebox'; document.head.appendChild(pgEl); }
+    pgEl.textContent = pgCss;
+  }catch(e){ console.error('Header/footer halaman gagal', e); }
 
   var paEl = document.getElementById('print-area');
   paEl.innerHTML = html;
