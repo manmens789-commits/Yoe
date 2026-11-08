@@ -3119,7 +3119,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div class="meta" style="margin-top:8px; font-size:12px; color:var(--text-2); line-height:1.45;"><b>Hemat</b>: paling ringan, tanpa mesin efek. <b>Penuh</b>: semua efek. <b>Kustom</b>: pilih sendiri bagian mana saja yang beranimasi.</div>
       <div id="anim-parts" class="ap-panel" hidden>
         <div class="ap-head">Bagian yang dianimasikan</div>
-        <div id="ap-list"></div>
+        <div id="ap-anim-list"></div>
         <div class="ap-actions">
           <button type="button" class="ap-btn" data-ap-all="1">Hidupkan semua</button>
           <button type="button" class="ap-btn" data-ap-all="0">Matikan semua</button>
@@ -3177,6 +3177,15 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <span class="menu-left"><span class="menu-ic" data-icon="key"></span><span class="menu-lb">Cadangan Otomatis (di server)</span></span>
         <span class="menu-chevron" data-icon="chevronRight"></span>
       </div>
+      <div class="menu-row" id="btn-backup-export">
+        <span class="menu-left"><span class="menu-ic" data-icon="download"></span><span class="menu-lb">Unduh Cadangan ke File (.json)</span></span>
+        <span class="menu-chevron" data-icon="chevronRight"></span>
+      </div>
+      <div class="menu-row" id="btn-backup-import">
+        <span class="menu-left"><span class="menu-ic" data-icon="upload"></span><span class="menu-lb">Pulihkan dari File Cadangan (.json)</span></span>
+        <span class="menu-chevron" data-icon="chevronRight"></span>
+      </div>
+      <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
       <div class="menu-row" data-goto="sampah">
         <span class="menu-left"><span class="menu-ic" data-icon="trash"></span><span class="menu-lb">Tempat Sampah (Pulihkan Transaksi yang Dihapus)</span></span>
         <span class="menu-chevron" data-icon="chevronRight"></span>
@@ -3788,14 +3797,14 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <option value="Gagal Panen">Gagal Panen</option>
       </select></div>
       <div class="field" id="ap-jumlah-wrap"><label id="ap-jumlah-label">Nilai Hasil Panen (Rp)</label><input type="text" class="money-input" id="ap-jumlah" placeholder="0" inputmode="numeric"></div>
-      <div class="field" id="ap-fisik-wrap"><label>Jumlah Fisik Hasil (opsional)</label><div style="display:flex; gap:8px;"><input type="number" id="ap-qty" inputmode="decimal" min="0" step="any" placeholder="cth: 15" style="flex:1; margin:0;"><input type="text" id="ap-satuan" list="ap-satuan-list" placeholder="kg / butir / ekor" autocomplete="off" style="flex:1; margin:0;"><datalist id="ap-satuan-list"><option value="kg"><option value="gram"><option value="butir"><option value="buah"><option value="ekor"><option value="ikat"><option value="liter"><option value="pohon"></datalist></div></div>
+      <div class="field" id="ap-fisik-wrap"><label>Jumlah Fisik Hasil (opsional)</label><div style="display:flex; gap:8px;"><input type="number" id="ap-qty" inputmode="decimal" min="0" step="any" placeholder="cth: 15" style="flex:1; margin:0;"><input type="text" id="ap-satuan" list="ap-satuan-list" placeholder="kg / butir / ekor" autocomplete="off" style="flex:1; margin:0;"><datalist id="ap-satuan-list"><option value="kg"><option value="gram"><option value="butir"><option value="buah"><option value="ekor"><option value="ikat"><option value="liter"><option value="pohon"></datalist></div><div style="margin-top:8px;"><label style="font-size:12px;">Tambahkan ke Stok Barang (opsional)</label><select id="ap-stok-item" style="margin-top:4px;"></select><div class="hint" style="margin-top:4px;">Pilih item stok agar hasil panen ini menambah stoknya (satuan dasar item stok).</div></div></div>
       <div class="field" id="ap-rekening-wrap"><label>Rekening Penerima</label><select id="ap-rekening"></select></div>
       <div class="field"><label>Keterangan (opsional)</label><input type="text" id="ap-ket" maxlength="100" placeholder="cth: 20 butir telur, 5kg buah, gagal karena diserang hama"></div>
       <button class="btn" id="btn-asetbio-panen">Simpan Hasil Panen</button>
     </div>
 
     <div class="card"><h3><span class="dot"></span>Ringkasan Hasil per Tahun</h3><div id="ap-summary"></div></div>
-    <div class="card"><h3><span class="dot"></span>Riwayat Panen</h3><div id="ap-list"></div></div>
+    <div class="card"><h3><span class="dot"></span>Riwayat Panen</h3><div id="ap-panen-list"></div></div>
 
     <div class="card" id="benih-card">
       <h3><span class="dot"></span>🌱 Stok Biji / Benih</h3>
@@ -4641,7 +4650,13 @@ function fillRekeningBlankSelect(id, presetValue){
   if(!el) return;
   var val = (presetValue!==undefined) ? presetValue : el.value;
   fillSelectAccountsWithBlank(id, ACCOUNTS, LABEL_TANPA_POTONG_SALDO);
-  if(val && ACCOUNTS.indexOf(val)>-1) el.value = val;
+  if(val && ACCOUNTS.indexOf(val)===-1){ var o = document.createElement('option'); o.value = val; o.textContent = val; el.appendChild(o); }
+  if(val) el.value = val;
+}
+/* Barang yang dibeli dari Target Nabung: rekening pembayarannya = rekening tujuan target. Dipakai sebagai cadangan kalau catatan pengeluarannya tidak ketemu. */
+function goalBeliRekening(itemId){
+  var g = (DATA.goals||[]).filter(function(x){ return x.dibeli && x.dibeli.itemId===itemId; })[0];
+  return g ? { rek:g.rekeningTujuan||'', harga:(g.dibeli&&g.dibeli.harga)||0, tanggal:(g.dibeli&&g.dibeli.tanggal)||'', nama:g.nama } : null;
 }
 function rekeningUsedIn(acc){
   return (DATA.saldoAwal[acc]||0)!==0 ||
@@ -4657,7 +4672,12 @@ function rekeningUsedIn(acc){
     (DATA.ipo||[]).some(function(o){ return o.status==='menunggu' && o.platform===acc; }) ||
     DATA.tagihan.some(function(t){ return t.metode===acc || cicilanOf(t).some(function(c){ return c.metode===acc; }); }) ||
     DATA.recurring.some(function(r){ return r.metode===acc; }) ||
-    DATA.goals.some(function(g){ return g.rekeningTujuan===acc; });
+    DATA.goals.some(function(g){ return g.rekeningTujuan===acc; }) ||
+    (DATA.koreksi||[]).some(function(k){ return k.metode===acc; }) ||
+    (DATA.splitbill||[]).some(function(x){ return x.metode===acc; }) ||
+    (DATA.patungan||[]).some(function(r){ return r.rekening===acc; }) ||
+    (DATA.panenAsetBio||[]).some(function(x){ return x.rekening===acc; }) ||
+    (DATA.rencanaBelanja||[]).some(function(r){ return r.metode===acc; });
 }
 /* Refresh semua dropdown "Rekening/Metode" di seluruh app setelah rekening ditambah/dihapus */
 function refreshAccountSelectsAfterChange(){
@@ -5944,11 +5964,12 @@ function handleImportFile(file){
     catch(e){ toast('File tidak valid / rusak'); return; }
     var incoming = parsed && parsed.data ? parsed.data : parsed;
     if(!incoming || typeof incoming !== 'object'){ toast('Format file tidak dikenali'); return; }
-    var known = ['saldoAwal','accountsCustom','accountInfo','budgetBelanja','kategoriBelanja','itemBelanjaCustom','untukSiapa','jenisPengeluaran','jenisTagihan','sumberPemasukan','goals','recurring','transfer','pemasukan','pengeluaran','piutang','hutang','belanja','invbeli','invjual','tagihan','splitbill','stokKeluar','stokAbaikan','stokPengaturan','koreksi','rekon','ipo','rencanaBelanja'];
+    var known = ['saldoAwal', 'akunJenis', 'akunSumber', 'accountsCustom', 'accountInfo', 'budgetBelanja', 'kategoriBelanja', 'itemBelanjaCustom', 'stokAbaikan', 'stokPengaturan', 'untukSiapa', 'jenisPengeluaran', 'jenisTagihan', 'kategoriInventaris', 'tempatBeliInventaris', 'lokasiInventaris', 'lokasiInventarisMaps', 'sumberPemasukan', 'goals', 'recurring', 'transfer', 'pemasukan', 'pengeluaran', 'piutang', 'hutang', 'titipan', 'belanja', 'invbeli', 'invjual', 'tagihan', 'inventaris', 'splitbill', 'stokKeluar', 'asetbio', 'panenAsetBio', 'sampah', 'ipo', 'rencanaBelanja', 'rekeningAktif', 'koreksi', 'rekon', 'coaCustom', 'patungan', 'patunganPool', 'budgetArsip', 'budgetNext', 'saldoArsip', 'arsip', 'benih', 'prefs', 'profil'];
     var looksValid = known.some(function(k){ return k in incoming; });
     if(!looksValid){ toast('Format file tidak dikenali'); return; }
     showConfirm('Pulihkan data dari file ini? Semua data saat ini di akun ini akan DITIMPA oleh isi backup.', function(){
-      known.forEach(function(k){ if(!(k in incoming)) incoming[k] = (k==='saldoAwal'||k==='budgetBelanja'||k==='accountInfo'||k==='rekon'||k==='stokPengaturan') ? {} : []; });
+      var OBJK = ['saldoAwal','budgetBelanja','accountInfo','rekon','stokPengaturan','akunJenis','akunSumber','lokasiInventarisMaps','rekeningAktif','prefs','profil','saldoArsip','budgetNext','patunganPool'];
+      known.forEach(function(k){ if(k in incoming) return; if(['arsip','coaCustom','budgetArsip','patunganPool','prefs','profil','saldoArsip','budgetNext'].indexOf(k)>-1) return; incoming[k] = OBJK.indexOf(k)>-1 ? {} : []; });
       if(!incoming.saldoAwal) incoming.saldoAwal = {};
       if(!incoming.accountsCustom) incoming.accountsCustom = [];
       if(!incoming.accountInfo) incoming.accountInfo = {};
@@ -7449,6 +7470,23 @@ function settlePiutangAt(idx, cara){
 }
 /* Hapus transaksi turunan (fee & untung/rugi) yang tertaut ke sebuah transaksi invbeli/invjual,
    dipakai sebelum membuat ulang turunan saat edit, atau saat transaksi induknya dihapus. */
+/* Saat sebuah catatan diedit lewat form, record baru dibuat dari nol. Tautan ke fitur lain (linkId/linkKind/linkGoal, rekurring, IPO, split) harus ikut dibawa,
+   kalau tidak catatan turunan (potongan beli aset, biaya admin, hasil panen, setoran target) jadi "yatim" dan tidak ikut terhapus/terupdate. */
+/* Catatan turunan yang angkanya terikat ke sumbernya (aset, panen, stok, target): ubah/hapus lewat sumbernya, bukan langsung dari daftar riwayat. */
+var LINK_KIND_TERIKAT = {'inv-beli':'Inventaris','asetbio-beli':'Aset Biologis','benih-beli':'Benih','inv-jual':'Inventaris','asetbio-jual':'Aset Biologis','inv-jual-rusak':'Inventaris','asetbio-panen':'Aset Biologis (Hasil Panen)','stok-jual':'Stok Barang'};
+function terikatSumber(type, item){
+  if((type!=='pengeluaran' && type!=='pemasukan') || !item || !item.linkKind) return '';
+  return LINK_KIND_TERIKAT[item.linkKind] || '';
+}
+function keepLinks(old, rec){
+  if(!old || !rec) return rec;
+  Object.keys(old).forEach(function(k){
+    if(/^link/.test(k) || k==='recId' || k==='recDue' || k==='ipoId' || k==='splitId' || k==='splitBillId' || k==='pid'){
+      if(rec[k]===undefined) rec[k] = old[k];
+    }
+  });
+  return rec;
+}
 function removeDerivedFor(linkId){
   if(!linkId) return;
   /* Dana titipan yang dibuat dari transfer ini ikut terhapus; titipan yang sempat dipindah lokasinya balik ke rekening asal */
@@ -8451,7 +8489,7 @@ function submitTransfer(){
   if(pl) pesan = 'Pulsa '+fmt(pl.pulsa)+' terjual • uang masuk '+fmt(pl.terima)+(pl.biaya>0 ? ' • admin '+fmt(pl.biaya) : '');
   if(vl) pesan = 'Konversi '+vl.currency+' '+fmtValas(vl.v)+' tersimpan'+(vl.spread>0 ? ' • selisih kurs '+fmt(vl.spread) : '')+(biaya>0 ? ' • biaya '+fmt(biaya) : '');
   var isNewTf = editState.type!=='transfer';
-  if(editState.type==='transfer'){ DATA.transfer[editState.index]=record; finishEdit('transfer', biaya>0 ? ('Transfer diperbarui + Biaya admin '+fmt(biaya)) : 'Transfer diperbarui'); }
+  if(editState.type==='transfer'){ keepLinks(DATA.transfer[editState.index], record); DATA.transfer[editState.index]=record; finishEdit('transfer', biaya>0 ? ('Transfer diperbarui + Biaya admin '+fmt(biaya)) : 'Transfer diperbarui'); }
   else { DATA.transfer.push(record); toast(pesan); }
   saveData();
   document.getElementById('tf-jumlah').value=''; document.getElementById('tf-biaya').value=''; document.getElementById('tf-ket').value='';
@@ -8486,7 +8524,7 @@ function submitPemasukan(){
     return;
   }
   var isNewPm = editState.type!=='pemasukan';
-  if(editState.type==='pemasukan'){ DATA.pemasukan[editState.index]=record; finishEdit('pemasukan','Pemasukan diperbarui'); }
+  if(editState.type==='pemasukan'){ keepLinks(DATA.pemasukan[editState.index], record); DATA.pemasukan[editState.index]=record; finishEdit('pemasukan','Pemasukan diperbarui'); }
   else { DATA.pemasukan.push(record); toast('Pemasukan '+fmt(jumlah)+' tersimpan'); }
   saveData();
   document.getElementById('pm-jumlah').value=''; document.getElementById('pm-ket').value='';
@@ -8557,7 +8595,7 @@ function submitPengeluaran(){
     if(editState.type==='pengeluaran'){
       var oldItem = DATA.pengeluaran[editState.index];
       if(oldItem && oldItem.splitId) record.splitId = oldItem.splitId;
-      DATA.pengeluaran[editState.index]=record; finishEdit('pengeluaran','Pengeluaran diperbarui');
+      keepLinks(oldItem, record); DATA.pengeluaran[editState.index]=record; finishEdit('pengeluaran','Pengeluaran diperbarui');
     }
     else { DATA.pengeluaran.push(record); toast('Pengeluaran '+fmt(jumlah)+' tersimpan'); isNewPg = true; }
   }
@@ -9480,7 +9518,7 @@ function submitInvBeli(){
     DATA.pengeluaran.push({tanggal:record.tanggal, metode:record.metode, untuk:'Investasi', jenis:'Fee Beli Investasi',
       jumlah:fee, ket:'Fee beli '+labelBeli, linkId:record.id, linkKind:'fee'});
   }
-  if(editState.type==='invbeli'){ DATA.invbeli[editState.index]=record; finishEdit('invbeli','Pembelian investasi diperbarui'); }
+  if(editState.type==='invbeli'){ keepLinks(DATA.invbeli[editState.index], record); DATA.invbeli[editState.index]=record; finishEdit('invbeli','Pembelian investasi diperbarui'); }
   else { DATA.invbeli.push(record); toast('Pembelian '+record.instrumen+' '+fmt(jumlah)+' tersimpan'); }
   saveData();
   document.getElementById('ib-jumlah').value=''; document.getElementById('ib-kode').value=''; document.getElementById('ib-fee').value=''; document.getElementById('ib-ket').value='';
@@ -9537,7 +9575,7 @@ function submitInvJual(){
     DATA.pengeluaran.push({tanggal:record.tanggal, metode:record.metode, untuk:'Investasi', jenis:'Kerugian Investasi',
       jumlah:Math.abs(grossPL), ket:'Rugi jual '+labelJual, linkId:record.id, linkKind:'rugi'});
   }
-  if(editState.type==='invjual'){ DATA.invjual[editState.index]=record; finishEdit('invjual','Penjualan investasi diperbarui'); }
+  if(editState.type==='invjual'){ keepLinks(DATA.invjual[editState.index], record); DATA.invjual[editState.index]=record; finishEdit('invjual','Penjualan investasi diperbarui'); }
   else {
     DATA.invjual.push(record);
     var urMsg = record.untungRugi>=0 ? ('untung '+fmt(record.untungRugi)) : ('rugi '+fmt(Math.abs(record.untungRugi)));
@@ -9610,7 +9648,7 @@ function submitTagihan(){
   var pesanBiaya = biaya>0 ? (' + Biaya admin '+fmt(biaya)) : '';
   var pesanSplit = tgSplitEnabled ? (' • porsi kamu '+fmt(jumlahUntukRecord)+' dari total '+fmt(totalTagihan)) : '';
   var pesan = 'Tagihan '+fmt(jumlahUntukRecord)+pesanBiaya+pesanSplit+' tersimpan';
-  if(editState.type==='tagihan'){ stampTglLunas(record, oldT); DATA.tagihan[editState.index]=record; finishEdit('tagihan', 'Tagihan diperbarui'+pesanBiaya+pesanSplit); }
+  if(editState.type==='tagihan'){ stampTglLunas(record, oldT); keepLinks(oldT, record); DATA.tagihan[editState.index]=record; finishEdit('tagihan', 'Tagihan diperbarui'+pesanBiaya+pesanSplit); }
   else { DATA.tagihan.push(record); toast(pesan); }
   saveData();
   document.getElementById('tg-jumlah').value=''; document.getElementById('tg-biaya').value=''; document.getElementById('tg-jatuh-tempo').value=''; document.getElementById('tg-ket').value=''; document.getElementById('tg-cicilan-bln').value=''; document.getElementById('tg-cicilan-tgl').value=''; setMerchant('tg','');
@@ -10615,8 +10653,6 @@ function renderDashboard(){
     gEl.innerHTML = '<span class="gr-s">'+escapeHtml(gn ? gs+',' : gs)+'</span>'+(gn ? ' <span class="gr-n">'+escapeHtml(gn)+'</span>' : '');
     gEl.title = greetingText();
   }
-  var cnEl = document.getElementById('db-card-number');
-  if(cnEl) cnEl.textContent = cardNumberDisplay(CURRENT_USER && CURRENT_USER.id);
 
   var newTotal = totalSaldo(), newPiutang = totalPiutang(), newHutang = totalHutang(), newTitipan = totalTitipan();
   var elTotal = document.getElementById('db-total');
@@ -12544,6 +12580,30 @@ function renderReminders(){
 
   items = items.concat(cicilanBulanIniItems());
 
+  /* Pengingat tambahan: transaksi berulang terlambat, IPO menunggu penjatahan, biji kedaluwarsa, aset dipinjam */
+  try{
+    (DATA.recurring||[]).forEach(function(r){
+      if(!r.aktif || !r.nextDue) return;
+      var d = daysUntil(r.nextDue);
+      if(d!==null && d<=3) items.push({days:d, tanggal:r.nextDue, tipe:'Berulang', label:(r.label||'-'), jumlah:r.jumlah, goto:'recurring'});
+    });
+    (DATA.ipo||[]).forEach(function(o){
+      if(o.status!=='menunggu') return;
+      var d = o.tanggalJatah ? daysUntil(o.tanggalJatah) : null;
+      items.push({days:(d!==null?d:0), tanggal:(o.tanggalJatah||''), tipe:'IPO', label:(o.kode||'-'), ket:'Menunggu penjatahan', jumlah:ipoNilai(o), badge:'Menunggu', goto:'investasi-beli'});
+    });
+    (DATA.benih||[]).forEach(function(b){
+      if(!b.exp) return;
+      var d = daysUntil(b.exp);
+      if(d!==null && d<=7) items.push({days:d, tanggal:b.exp, tipe:'Benih', label:(b.nama||'-'), ket:(d<0?'Sudah lewat batas simpan':'Mendekati batas simpan'), sub:'—', goto:'asetbio'});
+    });
+    (DATA.inventaris||[]).forEach(function(x){
+      if(x.status!=='Dipinjam' || !x.tglPinjam || x.terjual || x.dikeluarkan) return;
+      var lama = -daysUntil(x.tglPinjam);
+      if(lama>=30) items.push({days:0, tanggal:x.tglPinjam, tipe:'Aset Dipinjam', label:(x.nama||'-')+(x.dipinjamOleh?' ('+x.dipinjamOleh+')':''), ket:'Dipinjam '+lama+' hari', sub:'—', badge:'Dipinjam', goto:'inventaris'});
+    });
+  }catch(e){}
+
   /* Saldo rekening minus = kamu lagi berhutang (mis. kena overdraft / dana keluar melebihi saldo): ingatkan segera ditutup */
   var adaMinus = false;
   try{
@@ -12568,7 +12628,7 @@ function renderReminders(){
   var showAll = !!window._remExpanded;
   var urgent = items.filter(function(x){ return x.days<=0 || x.badge; }).length;
   var AL_IC = { 'Saldo Minus':'alertTri', 'Hutang':'receive', 'Piutang':'send', 'Titipan':'lock', 'Tagihan':'receipt',
-    'Cicilan Hutang':'repeat', 'Cicilan Piutang':'repeat', 'Cicilan Tagihan':'repeat' };
+    'Berulang':'repeat', 'IPO':'receipt', 'Benih':'alertTri', 'Aset Dipinjam':'lock', 'Cicilan Hutang':'repeat', 'Cicilan Piutang':'repeat', 'Cicilan Tagihan':'repeat' };
   var sisaItem = items.length - urgent;
   var subRm = [];
   if(urgent) subRm.push('<b style="--c:var(--danger);">'+urgent+' mendesak</b>');
@@ -13321,7 +13381,8 @@ function simpanEditKategoriBelanja(lama, baruRaw, budgetBaru){
 }
 function hapusKategoriBelanja(kat){
   var dipakai = DATA.belanja.some(function(b){ return b.kategori===kat; }) ||
-    (DATA.itemBelanjaCustom||[]).some(function(x){ return x.kategori===kat; });
+    (DATA.itemBelanjaCustom||[]).some(function(x){ return x.kategori===kat; }) ||
+    (DATA.rencanaBelanja||[]).some(function(p){ return (p.items||[]).some(function(it){ return it.kategori===kat; }); });
   var pesan = dipakai
     ? 'Kategori "'+kat+'" masih dipakai di data belanja/item. Riwayat lama tetap tersimpan, tapi kategori ini nggak akan bisa dipilih lagi untuk item baru. Lanjut hapus?'
     : 'Hapus kategori "'+kat+'"?';
@@ -13450,7 +13511,10 @@ function hapusItemBelanjaCustom(idx){
   var list = DATA.itemBelanjaCustom||[];
   var x = list[idx];
   if(!x) return;
-  var dipakai = DATA.belanja.some(function(b){ return b.item===x.item; });
+  var dipakai = DATA.belanja.some(function(b){ return b.item===x.item; }) ||
+    (DATA.rencanaBelanja||[]).some(function(p){ return (p.items||[]).some(function(it){ return it.item===x.item; }); }) ||
+    (DATA.stokKeluar||[]).some(function(k){ return k.item===x.item; }) ||
+    (DATA.stokAbaikan||[]).indexOf(x.item)>-1 || !!(DATA.stokPengaturan && DATA.stokPengaturan[x.item]);
   var pesan = dipakai
     ? 'Item "'+x.item+'" masih ada di riwayat belanja/stok. Riwayat lama tetap tersimpan, tapi item ini nggak akan bisa dipilih lagi untuk belanja baru. Lanjut hapus?'
     : 'Hapus item "'+x.item+'"?';
@@ -13485,16 +13549,18 @@ function tambahItemBelanjaCustom(){
 var CUSTOM_LIST_CONFIG = {
   untukSiapa: {
     getList: function(){ return DATA.untukSiapa; },
-    usedIn: function(val){ return DATA.pengeluaran.some(function(p){ return p.untuk===val; }); },
+    usedIn: function(val){ return DATA.pengeluaran.some(function(p){ return p.untuk===val; }) || DATA.goals.some(function(g){ return g.untuk===val; }); },
     renameRefs: function(oldVal, newVal){
       DATA.pengeluaran.forEach(function(p){ if(p.untuk===oldVal) p.untuk = newVal; });
+      DATA.goals.forEach(function(g){ if(g.untuk===oldVal) g.untuk = newVal; });
     }
   },
   jenisPengeluaran: {
     getList: function(){ return DATA.jenisPengeluaran; },
-    usedIn: function(val){ return DATA.pengeluaran.some(function(p){ return p.jenis===val; }); },
+    usedIn: function(val){ return DATA.pengeluaran.some(function(p){ return p.jenis===val; }) || DATA.goals.some(function(g){ return g.jenisPg===val; }); },
     renameRefs: function(oldVal, newVal){
       DATA.pengeluaran.forEach(function(p){ if(p.jenis===oldVal) p.jenis = newVal; });
+      DATA.goals.forEach(function(g){ if(g.jenisPg===oldVal) g.jenisPg = newVal; });
       if(DATA.akunJenis && (oldVal in DATA.akunJenis)){ DATA.akunJenis[newVal] = DATA.akunJenis[oldVal]; delete DATA.akunJenis[oldVal]; }
     }
   },
@@ -14804,12 +14870,16 @@ function submitInventaris(){
          dulu catatan pengeluaran lama yang tertaut, baru bikin ulang yang baru kalau
          memang masih ada rekening yang dipotong. Ini otomatis nangani semua kasus:
          harga berubah, nama berubah, rekening diganti, atau rekening dikosongin/diisi. */
+      var lamaInv = DATA.pengeluaran.filter(function(x){ return x.linkId===existing.id && x.linkKind==='inv-beli'; })[0];
+      var dariGoalInv = goalBeliRekening(existing.id);
+      /* Dibeli dari Target Nabung: potongan saldo tidak boleh hilang diam-diam kalau pilihan rekening terkosongkan */
+      if(!rekeningBeli && dariGoalInv){ rekeningBeli = (lamaInv && lamaInv.metode) || dariGoalInv.rek || ''; }
       removeDerivedFor(existing.id);
       if(harga>0 && rekeningBeli){
         DATA.pengeluaran.push({
-          tanggal: todayISO(), metode: rekeningBeli, untuk: 'Inventaris',
+          tanggal: (lamaInv && lamaInv.tanggal) || (dariGoalInv && dariGoalInv.tanggal) || todayISO(), metode: rekeningBeli, untuk: 'Inventaris',
           jenis: 'Beli Aset: '+nama, jumlah: harga,
-          ket: 'Beli aset inventaris "'+nama+'"', linkId: existing.id, linkKind: 'inv-beli'
+          ket: (lamaInv && lamaInv.ket && /dari target/.test(lamaInv.ket)) ? 'Beli aset inventaris "'+nama+'" (dari target "'+(dariGoalInv?dariGoalInv.nama:'')+'")' : 'Beli aset inventaris "'+nama+'"', linkId: existing.id, linkKind: 'inv-beli'
         });
       }
       toast('Aset diperbarui');
@@ -14875,7 +14945,8 @@ function invEditStart(id){
      dan biar submitInventaris bisa pakai 1 alur yang sama persis buat kasus baru & edit.
      */
   var pengeluaranTerkaitInv = DATA.pengeluaran.filter(function(p){ return p.linkId===id && p.linkKind==='inv-beli'; })[0];
-  fillRekeningBlankSelect('inv-rekening-beli', pengeluaranTerkaitInv ? pengeluaranTerkaitInv.metode : '');
+  var goalInvEdit = goalBeliRekening(id);
+  fillRekeningBlankSelect('inv-rekening-beli', pengeluaranTerkaitInv ? pengeluaranTerkaitInv.metode : (goalInvEdit ? goalInvEdit.rek : ''));
   var rekWrap = document.getElementById('inv-rekening-beli-wrap');
   if(rekWrap) rekWrap.style.display = '';
   fillSelectWithBlank('inv-tempat-beli', DATA.tempatBeliInventaris, 'Belum diisi');
@@ -15528,12 +15599,15 @@ function submitAsetBio(){
       /* PENTING (rapi-rapi #1): pola disamain kayak Tagihan & Inventaris -- hapus dulu
          catatan pengeluaran lama yang tertaut, baru bikin ulang kalau masih ada
          rekening yang dipotong. */
+      var lamaAb = DATA.pengeluaran.filter(function(x){ return x.linkId===existing.id && x.linkKind==='asetbio-beli'; })[0];
+      var dariGoalAb = goalBeliRekening(existing.id);
+      if(!rekeningBeli && dariGoalAb){ rekeningBeli = (lamaAb && lamaAb.metode) || dariGoalAb.rek || ''; }
       removeDerivedFor(existing.id);
       if(harga>0 && rekeningBeli){
         DATA.pengeluaran.push({
           tanggal: tanggal, metode: rekeningBeli, untuk: 'Aset Biologis',
           jenis: 'Beli Aset Biologis: '+nama, jumlah: harga,
-          ket: 'Beli aset biologis "'+nama+'"', linkId: existing.id, linkKind: 'asetbio-beli'
+          ket: (lamaAb && lamaAb.ket && /dari target/.test(lamaAb.ket)) ? 'Beli aset biologis "'+nama+'" (dari target "'+(dariGoalAb?dariGoalAb.nama:'')+'")' : 'Beli aset biologis "'+nama+'"', linkId: existing.id, linkKind: 'asetbio-beli'
         });
       }
       toast('Aset biologis diperbarui');
@@ -15587,7 +15661,8 @@ function asetBioEditStart(id){
   /* PENTING (rapi-rapi #1): ditampilkan lagi & diisi otomatis sama rekening yang lagi
      kepotong (kalau ada), sama kayak yang diterapkan di Inventaris. */
   var pengeluaranTerkaitAb = DATA.pengeluaran.filter(function(p){ return p.linkId===id && p.linkKind==='asetbio-beli'; })[0];
-  fillRekeningBlankSelect('ab-rekening-beli', pengeluaranTerkaitAb ? pengeluaranTerkaitAb.metode : '');
+  var goalAbEdit = goalBeliRekening(id);
+  fillRekeningBlankSelect('ab-rekening-beli', pengeluaranTerkaitAb ? pengeluaranTerkaitAb.metode : (goalAbEdit ? goalAbEdit.rek : ''));
   var rekWrap = document.getElementById('ab-rekening-beli-wrap');
   if(rekWrap) rekWrap.style.display = '';
   var btn = document.getElementById('btn-asetbio');
@@ -15718,6 +15793,12 @@ function onApJenisChange(){
   var rekeningWrap = document.getElementById('ap-rekening-wrap');
   var isDijual = jenis==='Dijual';
   if(rekeningWrap) rekeningWrap.style.display = isDijual ? '' : 'none';
+  var stSel = document.getElementById('ap-stok-item');
+  if(stSel){
+    var curSt = stSel.value, hSt = '<option value="">Tidak ditambahkan ke stok</option>';
+    try{ allItemBelanja().forEach(function(x){ hSt += '<option value="'+escapeHtml(x[0])+'">'+escapeHtml(x[0])+'</option>'; }); }catch(e){}
+    stSel.innerHTML = hSt; stSel.value = curSt || '';
+  }
   var fisikWrap = document.getElementById('ap-fisik-wrap'); if(fisikWrap) fisikWrap.style.display = (jenis==='Gagal Panen') ? 'none' : '';
   if(jenis==='Gagal Panen'){
     if(jumlahWrap) jumlahWrap.style.display = 'none';
@@ -15738,14 +15819,16 @@ function submitAsetBioPanen(){
   var qtyHasil = parseFloat(document.getElementById('ap-qty').value) || 0;
   var satuan = (document.getElementById('ap-satuan').value||'').trim();
   if(qtyHasil>0 && !satuan){ toast('Isi satuannya juga (kg, butir, ekor, ...)'); return; }
+  var stokItemSel = (document.getElementById('ap-stok-item')||{}).value || '';
   var fisik = qtyHasil>0 ? {qtyHasil:qtyHasil, satuan:satuan} : {};
+  if(qtyHasil>0 && stokItemSel) fisik.stokItem = stokItemSel;
   var panenId = generateAsetBioPanenId();
 
   if(jenis==='Dijual'){
     if(!jumlah){ toast('Isi nilai hasil panen dulu'); return; }
     var rekening = document.getElementById('ap-rekening').value;
     if(!rekening){ toast('Pilih rekening penerima'); return; }
-    DATA.panenAsetBio.push({ id:panenId, asetBioId:asetId, tanggal:tanggal, jenis:jenis, jumlah:jumlah, rekening:rekening, keterangan:ket, qtyHasil:fisik.qtyHasil, satuan:fisik.satuan });
+    DATA.panenAsetBio.push({ id:panenId, asetBioId:asetId, tanggal:tanggal, jenis:jenis, jumlah:jumlah, rekening:rekening, keterangan:ket, qtyHasil:fisik.qtyHasil, satuan:fisik.satuan, stokItem:fisik.stokItem });
     DATA.pemasukan.push({
       tanggal: tanggal, sumber: 'Hasil Panen: '+item.nama, metode: rekening,
       jumlah: jumlah, ket: ket || ('Hasil panen '+item.nama), linkId: panenId, linkKind: 'asetbio-panen'
@@ -15755,7 +15838,7 @@ function submitAsetBioPanen(){
     renderPemasukanList();
   } else {
     if(jenis==='Gagal Panen') jumlah = 0;
-    DATA.panenAsetBio.push({ id:panenId, asetBioId:asetId, tanggal:tanggal, jenis:jenis, jumlah:jumlah, rekening:'', keterangan:ket, qtyHasil:fisik.qtyHasil, satuan:fisik.satuan });
+    DATA.panenAsetBio.push({ id:panenId, asetBioId:asetId, tanggal:tanggal, jenis:jenis, jumlah:jumlah, rekening:'', keterangan:ket, qtyHasil:fisik.qtyHasil, satuan:fisik.satuan, stokItem:fisik.stokItem });
     saveData();
     var pesanJenis = { 'Konsumsi Sendiri':'Konsumsi sendiri', 'Dibagikan':'Bagi hasil', 'Gagal Panen':'Gagal panen' };
     toast((pesanJenis[jenis]||jenis)+' dicatat, tidak memengaruhi saldo');
@@ -15764,6 +15847,7 @@ function submitAsetBioPanen(){
   document.getElementById('ap-ket').value = '';
   document.getElementById('ap-qty').value = '';
   document.getElementById('ap-satuan').value = '';
+  var stR = document.getElementById('ap-stok-item'); if(stR) stR.value = '';
   document.getElementById('ap-jenis').value = 'Dijual';
   onApJenisChange();
   renderAsetBioPanenList();
@@ -15848,7 +15932,7 @@ function renderPanenSummary(){
 function renderAsetBioPanenList(){
   renderPanenSummary();
   renderMusimBanner();
-  var el = document.getElementById('ap-list');
+  var el = document.getElementById('ap-panen-list');
   if(!el) return;
   if(DATA.panenAsetBio.length===0){ el.innerHTML = '<div class="empty">Belum ada hasil panen dicatat.</div>'; return; }
   var list = DATA.panenAsetBio.slice().sort(function(a,b){ return (b.tanggal||'').localeCompare(a.tanggal||'') || (b.id||'').localeCompare(a.id||''); });
@@ -16438,6 +16522,7 @@ function hitungStokItem(nama){
   DATA.belanja.forEach(function(b){ if(b.item===nama) masuk += qtyDasarBelanja(b); });
   var keluar = 0;
   (DATA.stokKeluar||[]).forEach(function(k){ if(k.item===nama) keluar += (k.qty||0); });
+  (DATA.panenAsetBio||[]).forEach(function(p){ if(p.stokItem===nama && p.qtyHasil>0) masuk += p.qtyHasil; }); /* hasil panen yang ditambahkan ke stok */
   return stokBulat(masuk - keluar);
 }
 /* Analisis pemakaian: dari riwayat "Dikeluarkan" + riwayat belanja dihitung laju pakai per hari,
@@ -17298,6 +17383,8 @@ function cancelEdit(){
 function startEdit(type, index){
   var item = DATA[type][index];
   if(!item) return;
+  var tSrc = terikatSumber(type, item);
+  if(tSrc){ toast('Catatan ini dibuat otomatis dari '+tSrc+'. Ubah lewat halaman '+tSrc+'.'); return; }
   if(type==='pemasukan' && item.dividen && window.dvStartEdit){ dvStartEdit(index); return; }
   if(type==='titipan' && item.status==='Dijadikan Hutang'){ toast('Titipan ini sudah dijadikan hutang. Ubah lewat catatan Hutang-nya.'); return; }
   editState = {type:type, index:index};
@@ -17581,6 +17668,8 @@ function renderSampah(){
   el.innerHTML = html + '<div style="text-align:center; padding:12px 0 8px;"><span class="sp-act" style="color:var(--danger);" data-sampah="kosongkan">Kosongkan Tempat Sampah</span></div>';
 }
 function deleteTransaction(type, index){
+  var tSrcD = terikatSumber(type, DATA[type] && DATA[type][index]);
+  if(tSrcD){ toast('Catatan ini dibuat otomatis dari '+tSrcD+'. Hapus lewat halaman '+tSrcD+' supaya data tetap sinkron.'); return; }
   var peringatanInv = '';
   if(type==='invbeli' && DATA.invbeli[index]){
     var bx = DATA.invbeli[index], modalBeli = 0, modalJual = 0, adaJual = false;
@@ -22677,7 +22766,7 @@ document.addEventListener('change', function(e){ if(e.target && e.target.id==='g
       if(splitEl){ (kids.indexOf(k) > splitIdx ? R : L).appendChild(k); return; }
       var toRight = hasList(k) || (!k.classList.contains('card') && rest[idx+1] && hasList(rest[idx+1]) && !rest[idx+1].classList.contains('card'));
       /* Aset Biologis: Riwayat Panen ikut kolom kiri bersama form panen & ringkasannya, biar tidak tenggelam di bawah daftar aset yang panjang */
-      if(view.id==='view-asetbio' && k.querySelector('#ap-list')) toRight = false;
+      if(view.id==='view-asetbio' && k.querySelector('#ap-panen-list')) toRight = false;
       /* Stok Barang: Riwayat Dikeluarkan ke kolom kiri di bawah pencarian/filter, supaya kolom kiri tidak kosong dan kolom kanan fokus ke Stok Saat Ini */
       if(view.id==='view-stok-barang' && k.querySelector('#stk-riwayat-list'))toRight = false;
       k.style.setProperty('--ph-order', String(idx));
@@ -24267,7 +24356,7 @@ html.fx-scrolling .sparkle{animation-play-state:paused !important;}
 </style>
 <script id="anim-parts-js">
 (function(){
-  var h=document.documentElement, AP=window.tkAP, box=document.getElementById('anim-parts'), list=document.getElementById('ap-list');
+  var h=document.documentElement, AP=window.tkAP, box=document.getElementById('anim-parts'), list=document.getElementById('ap-anim-list');
   if(!AP||!box||!list) return;
   var META=[
     {k:'login',  t:'Layar login',          s:'Bola cahaya, koin jatuh, logo berputar, bintang',            heavy:1},
@@ -28521,5 +28610,20 @@ html[data-layout="desktop"] #db-compact .dc-insc .dc-ib{container-type:inline-si
 .dci-cr.prev .dci-ct i{background:color-mix(in srgb,var(--text) 38%,transparent);}
 @container (max-width:380px){ .dci-stats{display:none;} .dci-big{font-size:26px;} }
 </style>
+<script id="tk-backup-file-js">
+(function(){
+  document.addEventListener('click', function(e){
+    var t = e.target && e.target.closest ? e.target.closest('#btn-backup-export, #btn-backup-import') : null;
+    if(!t) return;
+    if(t.id==='btn-backup-export'){ try{ exportDataBackup(); }catch(err){ toast('Gagal mengunduh cadangan'); } }
+    else { try{ triggerImportData(); }catch(err){} }
+  });
+  document.addEventListener('change', function(e){
+    var el = e.target; if(!el || el.id!=='import-file-input') return;
+    var f = el.files && el.files[0]; el.value = '';
+    if(f) handleImportFile(f);
+  });
+})();
+</script>
 </body>
 </html>
