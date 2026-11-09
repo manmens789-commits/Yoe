@@ -404,6 +404,16 @@
   .sub-balances .pill{display:flex; flex-direction:column; justify-content:space-between;}
 
   main{padding:16px 16px 10px;}
+  .pj-row{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:3px 0; font-size:13px;}
+  .pj-row .l{color:var(--text-2); min-width:0;}
+  .pj-row .v{font-weight:600; white-space:nowrap;}
+  .pj-total{border-top:1px dashed var(--line); margin-top:6px; padding-top:8px; font-size:14px;}
+  .pj-total .l{color:var(--text); font-weight:700;}
+  .pj-total .v{font-weight:800; font-size:15.5px;}
+  .pj-note{font-size:11.5px; color:var(--text-2); line-height:1.5; margin-top:8px;}
+  .pj-h{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-2); margin:14px 0 4px;}
+  .pj-warn{font-size:12px; line-height:1.5; color:var(--danger); background:rgba(229,72,77,0.1); border-radius:10px; padding:8px 10px; margin-top:10px;}
+  .pj-link{display:inline-block; margin:8px 8px 0 0; padding:6px 12px; border-radius:999px; border:1px solid var(--line); font-size:12px; font-weight:600; color:var(--text); cursor:pointer; background:transparent;}
   .card{background:var(--surface); border-radius:var(--radius); padding:17px; box-shadow:var(--shadow); margin-bottom:14px; border:1px solid var(--line); position:relative; overflow:hidden;}
   .card::before{
     content:""; position:absolute; z-index:0; pointer-events:none;
@@ -1967,6 +1977,13 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div class="qa" data-goto="keluar"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div class="lb">Keluar</div></div>
         <div class="qa" data-goto="catat"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="lb">Lainnya</div></div>
       </div>
+      <div class="card" id="db-proyeksi-card" data-detail="proyeksi" style="display:none; cursor:pointer;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span style="display:flex; align-items:center; gap:8px;"><span class="dot" style="background:var(--primary);"></span>Proyeksi Dana</span>
+          <span style="font-size:11.5px; color:var(--text-2); font-weight:500;">Rincian <span style="opacity:.6;">&rsaquo;</span></span>
+        </h3>
+        <div id="db-proyeksi-body"></div>
+      </div>
       <div class="card" id="db-today-card">
         <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <span style="display:flex; align-items:center; gap:8px;"><span class="dot" style="background:var(--info);"></span>Ringkasan Hari Ini</span>
@@ -3121,55 +3138,9 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div id="set-akun-info"></div>
     </div>
 
-    <details class="card set-acc" data-sec="tampilan">
-      <summary><span class="sa-ic" data-icon="moon"></span><span class="sa-tx"><span class="sa-t">Tampilan &amp; Bahasa</span><span class="sa-s">Tema, animasi, mode layar, bahasa</span></span><span class="sa-chev" data-icon="chevronRight"></span></summary>
-      <div class="sa-body">
-      <div class="set-lbl first">Tema</div>
-      <div class="toggle-row" id="theme-toggle-row" style="margin-bottom:0;">
-        <div class="toggle" data-theme-choice="system">Sistem</div>
-        <div class="toggle" data-theme-choice="light">Terang</div>
-        <div class="toggle" data-theme-choice="dark">Gelap</div>
-      </div>
-      <div class="set-lbl">Palet warna <span>(kartu Total Saldo)</span></div>
-      <div class="vpal-row" id="vpal-row"></div>
-      <div class="meta" style="margin-top:8px; font-size:12px; color:var(--text-2); line-height:1.45;">Mengubah warna kartu Total Saldo yang bergelombang di Beranda. Di tema Terang, kartunya tetap gelap dan yang berganti warna adalah gelombang dan lingkarannya.</div>
-      <div class="set-lbl">Animasi &amp; efek visual <span>(bawaan: Mati)</span></div>
-      <div class="toggle-row" id="anim-toggle-row" style="margin-bottom:0;">
-        <div class="toggle" data-anim-choice="off">Mati</div>
-        <div class="toggle" data-anim-choice="lite">Hemat</div>
-        <div class="toggle" data-anim-choice="full">Penuh</div>
-        <div class="toggle" data-anim-choice="auto">Otomatis</div>
-        <div class="toggle" data-anim-choice="custom">Kustom</div>
-      </div>
-      <div class="meta" style="margin-top:8px; font-size:12px; color:var(--text-2); line-height:1.45;"><b>Hemat</b>: paling ringan, tanpa mesin efek. <b>Penuh</b>: semua efek. <b>Kustom</b>: pilih sendiri bagian mana saja yang beranimasi.</div>
-      <div id="anim-parts" class="ap-panel" hidden>
-        <div class="ap-head">Bagian yang dianimasikan</div>
-        <div id="ap-anim-list"></div>
-        <div class="ap-actions">
-          <button type="button" class="ap-btn" data-ap-all="1">Hidupkan semua</button>
-          <button type="button" class="ap-btn" data-ap-all="0">Matikan semua</button>
-          <button type="button" class="ap-btn" data-ap-reset="1">Rekomendasi</button>
-        </div>
-        <div class="ap-note">Bagian <b>berat</b> paling sering bikin HP ngelag. Bagian <b>mesin</b> menyalakan mesin efek: pertama kali dihidupkan aplikasi muat ulang sekali, dan setelah itu terasa lebih berat. Hidupkan satu-satu sambil lihat mana yang masih lancar.</div>
-      </div>
-      <div id="ap-autobox" class="ap-panel" hidden>
-        <label class="ap-row"><span class="ap-tx"><b>Hemat otomatis</b><small>Kalau HP terasa berat (layar tersendat), animasi dikurangi sendiri</small></span><input type="checkbox" class="ap-sw" id="ap-auto-sw" aria-label="Hemat otomatis"></label>
-        <div id="ap-degraded" class="ap-note" hidden>Animasi sedang dihemat otomatis karena HP terasa berat. <button type="button" class="ap-btn" id="ap-degraded-retry" style="margin-top:8px;">Coba animasi lagi</button></div>
-      </div>
-      <div class="set-lbl">Mode Layar</div>
-      <div class="toggle-row" id="layout-toggle-row" style="margin-bottom:0;">
-        <div class="toggle" data-layout-choice="auto">Otomatis</div>
-        <div class="toggle" data-layout-choice="mobile">HP</div>
-        <div class="toggle" data-layout-choice="desktop">Desktop</div>
-      </div>
-      <div class="meta" style="margin-top:8px; font-size:12px; color:var(--text-2); line-height:1.45;">Desktop: tampilan melebar seperti di komputer dan menu pindah ke samping. Di HP, layar dirender pada resolusi desktop. Otomatis: desktop kalau layarnya lebar.</div>
-      <div class="set-lbl">Bahasa / Language</div>
-      <div class="toggle-row" id="lang-toggle-row" style="margin-bottom:0;">
-        <div class="toggle" data-lang-choice="id">Indonesia</div>
-        <div class="toggle" data-lang-choice="en">English</div>
-      </div>
-      </div>
-    </details>
+    <div class="card set-acc set-link" data-sec="tampilan" data-goto="tampilan" role="button" tabindex="0">
+      <span class="sa-ic" data-icon="moon"></span><span class="sa-tx"><span class="sa-t">Tampilan &amp; Bahasa</span><span class="sa-s" id="set-tampilan-sum">Tema, animasi, mode layar, bahasa</span></span><span class="sa-chev" data-icon="chevronRight"></span>
+    </div>
     </div><div class="pg-r"><details class="card set-acc" data-sec="keuangan" open>
       <summary><span class="sa-ic" data-icon="bank"></span><span class="sa-tx"><span class="sa-t">Keuangan</span><span class="sa-s">Analisis AI, rekening, kategori, akun</span></span><span class="sa-chev" data-icon="chevronRight"></span></summary>
       <div class="sa-body menu-body">
@@ -3179,6 +3150,10 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       </div>
       <div class="menu-row" data-goto="rekonsiliasi">
         <span class="menu-left"><span class="menu-ic" data-icon="checkCircle"></span><span class="menu-lb">Rekonsiliasi Saldo (Cocokkan dengan Saldo Asli)</span></span>
+        <span class="menu-chevron" data-icon="chevronRight"></span>
+      </div>
+      <div class="menu-row" data-goto="tutup-buku">
+        <span class="menu-left"><span class="menu-ic" data-icon="lock"></span><span class="menu-lb">Tutup Buku Bulanan (Kunci Periode)</span></span>
         <span class="menu-chevron" data-icon="chevronRight"></span>
       </div>
       <div class="menu-row" data-goto="edit-saldo-awal">
@@ -3332,11 +3307,94 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   <div class="view" id="view-rekonsiliasi"><main>
     <div class="back-row" data-goto="pengaturan"><span data-icon="chevronLeft"></span><span>Kembali ke Pengaturan</span></div>
     <div class="section-title"><span data-icon="checkCircle"></span>Rekonsiliasi Saldo</div>
-    <div class="hint">Cocokkan saldo di Tumbuh Kaya dengan saldo asli di aplikasi bank / e-wallet / dompetmu. Kalau beda, kamu bisa langsung sesuaikan. Penyesuaian dicatat sebagai "Koreksi Saldo" yang hanya mengubah saldo rekening, <b>tidak</b> dihitung sebagai pemasukan atau pengeluaran di laporan.</div>
+    <div class="hint">Cocokkan saldo di aplikasi dengan saldo asli. Koreksi hanya mengubah saldo rekening, <b>tidak</b> dihitung sebagai pemasukan/pengeluaran.</div>
     <div class="card" id="rekon-summary" style="margin-bottom:12px;"></div>
+    <div class="card" id="rekon-histlink" data-goto="rekon-riwayat" style="margin-bottom:12px; padding:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"></div>
     <div class="card" id="rekon-list" style="padding:4px 14px;"></div>
-    <div class="section-title" style="margin-top:22px;"><span data-icon="clock"></span>Riwayat Koreksi</div>
-    <div class="card" id="rekon-history"></div>
+  </main></div>
+
+  <div class="view" id="view-tutup-buku"><main>
+    <div class="back-row" data-goto="pengaturan"><span data-icon="chevronLeft"></span><span>Kembali ke Pengaturan</span></div>
+    <div class="section-title"><span data-icon="lock"></span>Tutup Buku Bulanan</div>
+    <div class="hint">Tutup buku mengunci semua transaksi sampai akhir bulan dan menyimpan saldo penutupnya. Saldo itu jadi saldo awal bulan berikutnya.</div>
+    <div class="card" id="tb-status" style="margin-bottom:12px;"></div>
+    <div class="card" id="tb-form" style="margin-bottom:12px;"></div>
+    <div class="section-title" style="margin-top:18px;"><span data-icon="clock"></span>Bulan yang Sudah Ditutup</div>
+    <div class="card" id="tb-hist"></div>
+  </main></div>
+
+  <div class="view" id="view-rekon-riwayat"><main>
+    <div class="back-row" data-goto="rekonsiliasi"><span data-icon="chevronLeft"></span><span>Kembali ke Rekonsiliasi</span></div>
+    <div class="section-title"><span data-icon="clock"></span>Riwayat Koreksi</div>
+    <div id="rkh-filter" style="display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; -webkit-overflow-scrolling:touch;"></div>
+    <div id="rkh-list"></div>
+    <div style="margin-top:12px;"><button class="btn ghost" id="rkh-more" style="display:none; width:100%;">Tampilkan lebih banyak</button></div>
+  </main></div>
+
+  <div class="view" id="view-tampilan"><main>
+    <div class="back-row" data-goto="pengaturan"><span data-icon="chevronLeft"></span><span>Kembali ke Pengaturan</span></div>
+    <div class="section-title"><span data-icon="moon"></span>Tampilan &amp; Bahasa</div>
+
+    <div class="card tp-card">
+      <h3><span class="dot" style="background:var(--primary);"></span>Tema dan warna</h3>
+      <div class="set-lbl first">Tema</div>
+      <div class="toggle-row" id="theme-toggle-row" style="margin-bottom:0;">
+        <div class="toggle" data-theme-choice="system">Sistem</div>
+        <div class="toggle" data-theme-choice="light">Terang</div>
+        <div class="toggle" data-theme-choice="dark">Gelap</div>
+      </div>
+      <div class="set-lbl">Palet warna <span>(kartu Total Saldo)</span></div>
+      <div class="vpal-row" id="vpal-row"></div>
+      <details class="tp-more"><summary>Penjelasan</summary>
+        <div class="meta">Mengubah warna kartu Total Saldo yang bergelombang di Beranda. Di tema Terang, kartunya tetap gelap dan yang berganti warna adalah gelombang dan lingkarannya.</div>
+      </details>
+    </div>
+
+    <div class="card tp-card">
+      <h3><span class="dot" style="background:var(--info);"></span>Animasi &amp; efek visual <span class="tp-def">(bawaan: Mati)</span></h3>
+      <div class="toggle-row" id="anim-toggle-row" style="margin-bottom:0;">
+        <div class="toggle" data-anim-choice="off">Mati</div>
+        <div class="toggle" data-anim-choice="lite">Hemat</div>
+        <div class="toggle" data-anim-choice="full">Penuh</div>
+        <div class="toggle" data-anim-choice="auto">Otomatis</div>
+        <div class="toggle" data-anim-choice="custom">Kustom</div>
+      </div>
+      <details class="tp-more"><summary>Penjelasan</summary>
+        <div class="meta"><b>Hemat</b>: paling ringan, tanpa mesin efek. <b>Penuh</b>: semua efek. <b>Kustom</b>: pilih sendiri bagian mana saja yang beranimasi.</div>
+      </details>
+      <div id="anim-parts" class="ap-panel" hidden>
+        <div class="ap-head">Bagian yang dianimasikan</div>
+        <div id="ap-anim-list"></div>
+        <div class="ap-actions">
+          <button type="button" class="ap-btn" data-ap-all="1">Hidupkan semua</button>
+          <button type="button" class="ap-btn" data-ap-all="0">Matikan semua</button>
+          <button type="button" class="ap-btn" data-ap-reset="1">Rekomendasi</button>
+        </div>
+        <div class="ap-note">Bagian <b>berat</b> paling sering bikin HP ngelag. Bagian <b>mesin</b> menyalakan mesin efek: pertama kali dihidupkan aplikasi muat ulang sekali, dan setelah itu terasa lebih berat. Hidupkan satu-satu sambil lihat mana yang masih lancar.</div>
+      </div>
+      <div id="ap-autobox" class="ap-panel" hidden>
+        <label class="ap-row"><span class="ap-tx"><b>Hemat otomatis</b><small>Kalau HP terasa berat (layar tersendat), animasi dikurangi sendiri</small></span><input type="checkbox" class="ap-sw" id="ap-auto-sw" aria-label="Hemat otomatis"></label>
+        <div id="ap-degraded" class="ap-note" hidden>Animasi sedang dihemat otomatis karena HP terasa berat. <button type="button" class="ap-btn" id="ap-degraded-retry" style="margin-top:8px;">Coba animasi lagi</button></div>
+      </div>
+    </div>
+
+    <div class="card tp-card">
+      <h3><span class="dot" style="background:var(--warn, #E8A33D);"></span>Layar dan bahasa</h3>
+      <div class="set-lbl first">Mode Layar</div>
+      <div class="toggle-row" id="layout-toggle-row" style="margin-bottom:0;">
+        <div class="toggle" data-layout-choice="auto">Otomatis</div>
+        <div class="toggle" data-layout-choice="mobile">HP</div>
+        <div class="toggle" data-layout-choice="desktop">Desktop</div>
+      </div>
+      <details class="tp-more"><summary>Penjelasan</summary>
+        <div class="meta">Desktop: tampilan melebar seperti di komputer dan menu pindah ke samping. Di HP, layar dirender pada resolusi desktop. Otomatis: desktop kalau layarnya lebar.</div>
+      </details>
+      <div class="set-lbl">Bahasa / Language</div>
+      <div class="toggle-row" id="lang-toggle-row" style="margin-bottom:0;">
+        <div class="toggle" data-lang-choice="id">Indonesia</div>
+        <div class="toggle" data-lang-choice="en">English</div>
+      </div>
+    </div>
   </main></div>
 
   <div class="view" id="view-sampah"><main>
@@ -4478,6 +4536,8 @@ function isHybridTabunganInvestasi(acc){
    ini -- nomor versi yang ditampilkan di halaman Pengaturan otomatis ikut ke-update,
    nggak perlu ubah HTML manual. */
 var CHANGELOG = [
+  { versi:"1.12.6", catatan:'Pengaturan lebih ringkas: "Tampilan & Bahasa" sekarang halaman sendiri (tidak lagi melebar di halaman Pengaturan). Isinya dikelompokkan jadi Tema dan warna, Animasi, serta Layar dan bahasa, dengan penjelasan panjang yang bisa dibuka lewat tombol Penjelasan. Menu di Pengaturan menampilkan ringkasan pilihanmu saat ini.' },
+  { versi:"1.12.5", catatan:'Kartu baru "Proyeksi Dana" di Home: saldo sekarang dikurangi dana titipan, dana tersisih untuk target nabung, dan rencana belanja yang belum dibeli, jadi kelihatan saldo bebas setelah semua rencana. Tap kartunya untuk rincian per bulan, skenario (hanya wajib / wajib + perlu / semua), dan setoran per bulan agar target tepat waktu.' },
   { versi:"1.12.4", catatan:'Merchant baru di Tagihan: PLN dan PDAM (Tirta Dharma). Pilih lewat Merchant / Aplikasi di form Tagihan, logonya tampil di riwayat tagihan. Keduanya khusus Tagihan, tidak muncul di daftar merchant Pengeluaran.' },
   { versi:"1.12.3", catatan:'Menu baru "Analisis Pengeluaran" (Pengeluaran > Analisis Pengeluaran): pilih periode (7 hari, 30 hari, bulan ini, bulan lalu, tahun ini, semua waktu, atau tanggal sendiri) lalu lihat uangmu paling banyak habis untuk apa. Bisa dikelompokkan per Jenis, Merchant, Untuk, atau Rekening, lengkap dengan persentase, perbandingan dengan periode sebelumnya, kategori yang paling naik, rata-rata per hari, dan daftar transaksi terbesar. Ketuk satu kelompok untuk melihat transaksi di dalamnya. Ada Export CSV.' },
   { versi:"1.12.2", catatan:'Rencana Belanja jadi pusat belanja: ada filter kategori, tombol Kirim WA, dan "Dari stok" tidak lagi menambah item yang sudah ada di rencana lain. Kartu "Stok perlu dibeli" (Beranda dan halaman Stok) sekarang tahu mana yang sudah direncanakan, dan modal Daftar Belanja lama dihapus. Target Nabung jenis Stok kini khusus item baru yang belum ada di master stok. Kartu Insight desktop dirancang ulang (dua kolom, grafik 7 hari lebih jelas).' },
@@ -5546,6 +5606,109 @@ function showConfirm(message, onConfirm, okLabel){
 }
 
 /* ============ MODAL RINCIAN PIUTANG / HUTANG (dari dashboard) ============ */
+/* ============ PROYEKSI DANA ============
+   Saldo bebas setelah rencana = saldo - dana titipan - dana tersisih untuk target nabung - rencana belanja yang belum dibeli.
+   Target nabung (barang baru) dan Rencana Belanja (restok stok yang sudah ada di master) saling terpisah, jadi tidak ada hitungan ganda.
+   Dana titipan dan dana target SUDAH ada di dalam saldo rekening, jadi dikurangkan, bukan ditambahkan. */
+function proyeksiDanaHitung(){
+  var nowIso = todayISO(), nowM = nowIso.slice(0,7);
+  var saldo = totalSaldo(), titip = 0, tersisih = 0;
+  ACCOUNTS.forEach(function(a){ titip += titipanAkun(a); tersisih += goalDisisihkanAkun(a); });
+  var goals = (DATA.goals||[]).filter(function(g){ return !g.dibeli; }).map(function(g){
+    var sisa = Math.max(0, (g.target||0)-(g.terkumpul||0)), bln = null, lewat = false;
+    if(g.tanggalTarget && sisa>0){
+      var dd = (nwParse(g.tanggalTarget)-nwParse(nowIso))/86400000;
+      lewat = dd<0; bln = Math.max(1, Math.round(dd/30.4375));
+    }
+    return { nama:g.nama||'-', target:g.target||0, terkumpul:g.terkumpul||0, sisa:sisa, tgl:g.tanggalTarget||'', bln:bln, lewat:lewat, perBln:(bln ? Math.ceil(sisa/bln) : null) };
+  });
+  var sisaTarget = 0, perBlnTotal = 0, nBerTanggal = 0;
+  goals.forEach(function(g){ sisaTarget += g.sisa; if(g.perBln!==null){ perBlnTotal += g.perBln; nBerTanggal++; } });
+  var bulan = {}, rencana = 0, prio = {wajib:0, perlu:0, boleh:0}, nTunda = 0, nItem = 0;
+  (DATA.rencanaBelanja||[]).forEach(function(p){
+    var bk = rbBulan(p); if(bk<nowM) return; /* rencana bulan lalu yang tidak jadi dibeli tidak ikut diproyeksikan */
+    (p.items||[]).forEach(function(it){
+      var st = rbStatus(it);
+      if(st==='tunda'){ nTunda++; return; }
+      if(st!=='rencana') return;
+      var e = rbEst(it), pr = it.prio||'perlu'; if(!prio.hasOwnProperty(pr)) pr = 'perlu';
+      var b = bulan[bk] || (bulan[bk] = {est:0, wajib:0, perlu:0, boleh:0});
+      b.est += e; b[pr] += e; prio[pr] += e; rencana += e; nItem++;
+    });
+  });
+  var bebasSebelum = saldo - titip - tersisih;
+  var cum = 0, kurangBulan = null, kurang = 0;
+  Object.keys(bulan).sort().forEach(function(k){ cum += bulan[k].est; if(kurangBulan===null && cum>bebasSebelum){ kurangBulan = k; kurang = cum - bebasSebelum; } });
+  return { saldo:saldo, titip:titip, tersisih:tersisih, rencana:rencana, prio:prio, bulan:bulan, nItem:nItem, nTunda:nTunda,
+    goals:goals, sisaTarget:sisaTarget, perBlnTotal:perBlnTotal, nBerTanggal:nBerTanggal,
+    bebasSebelum:bebasSebelum, bebas:bebasSebelum-rencana, kurangBulan:kurangBulan, kurang:kurang };
+}
+function renderProyeksiDana(){
+  var card = document.getElementById('db-proyeksi-card'), body = document.getElementById('db-proyeksi-body');
+  if(!card || !body) return;
+  if(window.PTG && PTG.mode()==='patungan'){ card.style.display = 'none'; return; }
+  var d = proyeksiDanaHitung();
+  if(d.goals.length===0 && d.nItem===0){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  var row = function(l, v, cls){ return '<div class="pj-row"><span class="l">'+l+'</span><span class="v mono '+(cls||'')+'">'+v+'</span></div>'; };
+  var h = row('Saldo sekarang', maskOrFmt(d.saldo));
+  if(d.titip>0) h += row('\u2212 Dana titipan aktif', maskOrFmt(d.titip));
+  if(d.tersisih>0) h += row('\u2212 Tersisih untuk target nabung', maskOrFmt(d.tersisih));
+  if(d.rencana>0) h += row('\u2212 Rencana belanja ('+d.nItem+' item)', maskOrFmt(d.rencana));
+  h += '<div class="pj-row pj-total"><span class="l">Saldo bebas setelah rencana</span><span class="v mono" style="color:'+(d.bebas<0?'var(--danger)':'var(--pos)')+';">'+(d.bebas<0 && !saldoHidden?'\u2212':'')+maskOrFmt(Math.abs(d.bebas))+'</span></div>';
+  var kebutuhan = d.sisaTarget + d.rencana;
+  if(kebutuhan>0){
+    h += '<div class="pj-note">Kebutuhan ke depan '+escapeHtml(maskOrFmt(kebutuhan))+' (sisa target '+escapeHtml(maskOrFmt(d.sisaTarget))+' + rencana belanja '+escapeHtml(maskOrFmt(d.rencana))+')'+
+      (d.nBerTanggal>0 && d.perBlnTotal>0 ? '. Agar target tercapai tepat waktu, sisihkan sekitar '+escapeHtml(maskOrFmt(d.perBlnTotal))+' per bulan.' : '.')+'</div>';
+  }
+  if(d.bebas<0) h += '<div class="pj-warn">Dana belum cukup untuk semua rencana, kurang '+escapeHtml(maskOrFmt(-d.bebas))+'.</div>';
+  body.innerHTML = h;
+}
+function renderProyeksiModal(titleEl, totalEl, listEl, manageBtn){
+  var d = proyeksiDanaHitung();
+  titleEl.textContent = 'Proyeksi Dana';
+  totalEl.textContent = 'Saldo bebas setelah rencana '+(d.bebas<0?'\u2212':'')+fmt(Math.abs(d.bebas));
+  var row = function(l, v, cls){ return '<div class="pj-row"><span class="l">'+l+'</span><span class="v mono '+(cls||'')+'">'+v+'</span></div>'; };
+  var bln = function(k){ return (typeof btLabel==='function') ? btLabel(k) : k; };
+  var h = '<div class="pj-h">Ringkasan</div>'+row('Saldo sekarang', fmt(d.saldo));
+  if(d.titip>0) h += row('\u2212 Dana titipan aktif', fmt(d.titip));
+  if(d.tersisih>0) h += row('\u2212 Tersisih untuk target nabung', fmt(d.tersisih));
+  h += row('= Saldo bebas sebelum rencana', fmt(d.bebasSebelum));
+  /* rencana belanja per bulan + skenario prioritas */
+  var keys = Object.keys(d.bulan).sort();
+  h += '<div class="pj-h">Rencana belanja per bulan</div>';
+  if(!keys.length) h += '<div class="pj-note">Belum ada rencana belanja yang menunggu dibeli.'+(d.nTunda?' ('+d.nTunda+' item ditunda tidak dihitung)':'')+'</div>';
+  keys.forEach(function(k){
+    var b = d.bulan[k];
+    h += row(escapeHtml(bln(k)), fmt(b.est));
+    h += '<div class="pj-note" style="margin:-1px 0 4px;">Wajib '+fmt(b.wajib)+' \u2022 Perlu '+fmt(b.perlu)+' \u2022 Boleh '+fmt(b.boleh)+'</div>';
+  });
+  if(keys.length){
+    var sk = function(l, v){ var sisa = d.bebasSebelum - v; return row(l, (sisa<0?'\u2212':'')+fmt(Math.abs(sisa)), ''); };
+    h += '<div class="pj-h">Saldo bebas bila yang dibeli</div>'+
+      sk('Hanya yang wajib', d.prio.wajib)+sk('Wajib + perlu', d.prio.wajib+d.prio.perlu)+sk('Semua rencana', d.rencana);
+    if(d.nTunda) h += '<div class="pj-note">'+d.nTunda+' item yang ditunda tidak dihitung.</div>';
+  }
+  /* target nabung */
+  h += '<div class="pj-h">Target nabung (barang baru)</div>';
+  if(!d.goals.length) h += '<div class="pj-note">Belum ada target nabung aktif.</div>';
+  d.goals.forEach(function(g){
+    var ket = fmt(g.terkumpul)+' dari '+fmt(g.target);
+    if(g.sisa<=0) ket += ' \u2022 sudah terkumpul';
+    else if(g.tgl) ket += ' \u2022 '+(g.lewat?'lewat tanggal target ('+fmtTglIndo(g.tgl)+')':'target '+fmtTglIndo(g.tgl))+' \u2022 sekitar '+fmt(g.perBln)+'/bln';
+    h += row(escapeHtml(g.nama), 'sisa '+fmt(g.sisa))+'<div class="pj-note" style="margin:-1px 0 4px;">'+ket+'</div>';
+  });
+  if(d.nBerTanggal>0) h += '<div class="pj-note">Total setoran bulanan agar semua target bertanggal tepat waktu: <b>'+fmt(d.perBlnTotal)+'</b>.</div>';
+  if(d.kurangBulan){
+    h += '<div class="pj-warn">Mulai '+escapeHtml(bln(d.kurangBulan))+', rencana belanja yang menumpuk sudah melebihi saldo bebas, kurang '+fmt(d.kurang)+'. Angka ini belum menghitung pemasukan baru.</div>';
+  } else if(d.rencana>0) {
+    h += '<div class="pj-note">Proyeksi memakai saldo hari ini dan belum menghitung pemasukan atau pengeluaran rutin yang akan datang.</div>';
+  }
+  h += '<div><button type="button" class="pj-link" onclick="document.getElementById(\'detail-modal-overlay\').classList.remove(\'show\'); go(\'rencana-belanja\');">Buka Rencana Belanja</button></div>';
+  listEl.innerHTML = h;
+  manageBtn.textContent = 'Kelola Target';
+  manageBtn.setAttribute('data-target', 'goals');
+}
 function openDetailModal(type){
   var overlay = document.getElementById('detail-modal-overlay');
   var titleEl = document.getElementById('detail-modal-title');
@@ -5554,6 +5717,8 @@ function openDetailModal(type){
   var manageBtn = document.getElementById('detail-modal-manage');
   var rows = [];
   var total = 0;
+  if(type==='proyeksi'){ renderProyeksiModal(titleEl, totalEl, listEl, manageBtn); overlay.classList.add('show'); return; }
+  manageBtn.textContent = 'Kelola';
 
   if(type==='piutang'){
     titleEl.textContent = 'Rincian Piutang Berjalan';
@@ -5792,7 +5957,7 @@ function dataSanitize(){
   });
   ['coaCustom','sampah','patungan','budgetArsip','tempatBeliInventaris','lokasiInventaris'].forEach(function(k){ if(!Array.isArray(DATA[k])) DATA[k] = []; });
   ['kategoriBelanja','untukSiapa','jenisPengeluaran','jenisTagihan','kategoriInventaris','sumberPemasukan'].forEach(function(k){ if(DATA[k]!==undefined && !Array.isArray(DATA[k])) delete DATA[k]; });
-  ['saldoAwal','accountInfo','rekeningAktif','budgetBelanja','lokasiInventarisMaps','akunJenis','akunSumber','rekon'].forEach(function(k){
+  ['saldoAwal','accountInfo','rekeningAktif','budgetBelanja','lokasiInventarisMaps','akunJenis','akunSumber','rekon','tutupBuku'].forEach(function(k){
     if(DATA[k]!==undefined && (!DATA[k] || typeof DATA[k]!=='object' || Array.isArray(DATA[k]))) DATA[k] = {};
   });
 }
@@ -5856,6 +6021,7 @@ function applyDataDefaultsCore(){
   });
   DATA.titipan.forEach(function(t){ if(t && !t.id) t.id = genId('tt'); });
   if(!DATA.rekon || Array.isArray(DATA.rekon)) DATA.rekon = {};
+  if(!DATA.tutupBuku || Array.isArray(DATA.tutupBuku)) DATA.tutupBuku = {};
   if(!Array.isArray(DATA.sampah)) DATA.sampah = [];
   sampahPurge();
   // Migrasi data lama: piutang yang dulu "diikhlasin" (flag diberikan) dapat cara pelunasan + id, dan pengeluarannya ditautkan
@@ -5994,11 +6160,11 @@ function handleImportFile(file){
     catch(e){ toast('File tidak valid / rusak'); return; }
     var incoming = parsed && parsed.data ? parsed.data : parsed;
     if(!incoming || typeof incoming !== 'object'){ toast('Format file tidak dikenali'); return; }
-    var known = ['saldoAwal', 'akunJenis', 'akunSumber', 'accountsCustom', 'accountInfo', 'budgetBelanja', 'kategoriBelanja', 'itemBelanjaCustom', 'stokAbaikan', 'stokPengaturan', 'untukSiapa', 'jenisPengeluaran', 'jenisTagihan', 'kategoriInventaris', 'tempatBeliInventaris', 'lokasiInventaris', 'lokasiInventarisMaps', 'sumberPemasukan', 'goals', 'recurring', 'transfer', 'pemasukan', 'pengeluaran', 'piutang', 'hutang', 'titipan', 'belanja', 'invbeli', 'invjual', 'tagihan', 'inventaris', 'splitbill', 'stokKeluar', 'asetbio', 'panenAsetBio', 'sampah', 'ipo', 'rencanaBelanja', 'rekeningAktif', 'koreksi', 'rekon', 'coaCustom', 'patungan', 'patunganPool', 'budgetArsip', 'budgetNext', 'saldoArsip', 'arsip', 'benih', 'prefs', 'profil'];
+    var known = ['saldoAwal', 'akunJenis', 'akunSumber', 'accountsCustom', 'accountInfo', 'budgetBelanja', 'kategoriBelanja', 'itemBelanjaCustom', 'stokAbaikan', 'stokPengaturan', 'untukSiapa', 'jenisPengeluaran', 'jenisTagihan', 'kategoriInventaris', 'tempatBeliInventaris', 'lokasiInventaris', 'lokasiInventarisMaps', 'sumberPemasukan', 'goals', 'recurring', 'transfer', 'pemasukan', 'pengeluaran', 'piutang', 'hutang', 'titipan', 'belanja', 'invbeli', 'invjual', 'tagihan', 'inventaris', 'splitbill', 'stokKeluar', 'asetbio', 'panenAsetBio', 'sampah', 'ipo', 'rencanaBelanja', 'rekeningAktif', 'koreksi', 'rekon', 'tutupBuku', 'coaCustom', 'patungan', 'patunganPool', 'budgetArsip', 'budgetNext', 'saldoArsip', 'arsip', 'benih', 'prefs', 'profil'];
     var looksValid = known.some(function(k){ return k in incoming; });
     if(!looksValid){ toast('Format file tidak dikenali'); return; }
     showConfirm('Pulihkan data dari file ini? Semua data saat ini di akun ini akan DITIMPA oleh isi backup.', function(){
-      var OBJK = ['saldoAwal','budgetBelanja','accountInfo','rekon','stokPengaturan','akunJenis','akunSumber','lokasiInventarisMaps','rekeningAktif','prefs','profil','saldoArsip','budgetNext','patunganPool'];
+      var OBJK = ['saldoAwal','budgetBelanja','accountInfo','rekon','tutupBuku','stokPengaturan','akunJenis','akunSumber','lokasiInventarisMaps','rekeningAktif','prefs','profil','saldoArsip','budgetNext','patunganPool'];
       known.forEach(function(k){ if(k in incoming) return; if(['arsip','coaCustom','budgetArsip','patunganPool','prefs','profil','saldoArsip','budgetNext'].indexOf(k)>-1) return; incoming[k] = OBJK.indexOf(k)>-1 ? {} : []; });
       if(!incoming.saldoAwal) incoming.saldoAwal = {};
       if(!incoming.accountsCustom) incoming.accountsCustom = [];
@@ -7109,6 +7275,14 @@ function bioMenuClicked(){
 var NAV_STACK = [];
 var NAV_INITIALIZED = false;
 var NAV_FROM_POPSTATE = false;
+/* Ringkasan satu baris di menu Pengaturan: tema, palet, animasi, bahasa (dibaca dari pilihan yang aktif) */
+function updateTampilanSummary(){
+  var el = document.getElementById('set-tampilan-sum'); if(!el) return;
+  var t = function(sel){ var n = document.querySelector(sel); return n ? (n.textContent||'').trim() : ''; };
+  var parts = [], tema = t('#theme-toggle-row .toggle.active'), pal = t('#vpal-row .vpal-opt.on span:last-child'), an = t('#anim-toggle-row .toggle.active'), lg = t('#lang-toggle-row .toggle.active');
+  if(tema) parts.push(tema); if(pal) parts.push(pal); if(an) parts.push('Animasi '+an.toLowerCase()); if(lg && !/indonesia/i.test(lg)) parts.push(lg);
+  el.textContent = parts.length ? parts.join(' \u2022 ') : 'Tema, animasi, mode layar, bahasa';
+}
 function go(tab){
   var views = document.querySelectorAll('.view');
   for(var i=0;i<views.length;i++) views[i].classList.remove('active','in');
@@ -7122,7 +7296,7 @@ function go(tab){
   var navMap = {dashboard:'dashboard', insight:'dashboard', 'saldo-rekening':'dashboard', catat:'catat', transfer:'catat', masuk:'catat', keluar:'catat',
     piutang:'catat', hutang:'catat', titipan:'catat', belanja:'catat', 'rencana-belanja':'catat', 'investasi-beli':'catat', 'investasi-jual':'catat', dividen:'catat', tagihan:'catat',
     'atur-budget':'catat', goals:'catat', patungan:'catat', recurring:'catat', inventaris:'catat', 'inventaris-detail':'catat', asetbio:'catat', 'stok-barang':'catat', splitbill:'catat', 'untuk-orang':'catat', 'analisis-pengeluaran':'catat', kesehatan:'catat', riwayat:'riwayat',
-    laporan:'laporan', grafik:'laporan', pengaturan:'pengaturan', 'edit-saldo-awal':'pengaturan', rekonsiliasi:'pengaturan', sampah:'pengaturan', 'analisis-ai':'pengaturan', 'kelola-kategori':'pengaturan', coa:'pengaturan', 'riwayat-update':'pengaturan', widget:'dashboard', 'mutasi-rekening':'dashboard'};
+    laporan:'laporan', grafik:'laporan', pengaturan:'pengaturan', 'edit-saldo-awal':'pengaturan', rekonsiliasi:'pengaturan', 'rekon-riwayat':'pengaturan', 'tutup-buku':'pengaturan', sampah:'pengaturan', tampilan:'pengaturan', 'analisis-ai':'pengaturan', 'kelola-kategori':'pengaturan', coa:'pengaturan', 'riwayat-update':'pengaturan', widget:'dashboard', 'mutasi-rekening':'dashboard'};
   var navBtns = document.querySelectorAll('.navbtn');
   for(var j=0;j<navBtns.length;j++) navBtns[j].classList.remove('active');
   var activeNav = document.querySelector('.navbtn[data-nav="'+navMap[tab]+'"]');
@@ -7165,8 +7339,12 @@ function go(tab){
   if(tab==='edit-saldo-awal') renderPengaturan();
   if(tab==='analisis-ai') initAnalisisAI();
   if(tab==='rekonsiliasi'){ REKON_OPEN = null; renderRekonsiliasi(); }
+  if(tab==='rekon-riwayat'){ RKH_LIMIT = 20; renderRekonRiwayat(); }
+  if(tab==='tutup-buku'){ TB_SEL = ''; renderTutupBuku(); }
   if(tab==='sampah') renderSampah();
   if(tab==='kelola-kategori') renderKelolaKategori();
+  if(tab==='pengaturan' || tab==='tampilan'){ try{ updateTampilanSummary(); }catch(e){} }
+  if(tab==='tampilan'){ setTimeout(function(){ try{ window.dispatchEvent(new Event('resize')); }catch(e){} }, 60); } /* indikator geser tombol perlu dihitung ulang saat halaman tampil */
   if(tab==='coa') renderCoa();
 
   if(NAV_FROM_POPSTATE){
@@ -10721,6 +10899,7 @@ function renderDashboard(){
   renderHealthMini();
   try{ renderNetWorthMini(); }catch(e){}
   renderTodaySummary();
+  try{ renderProyeksiDana(); }catch(e){ console.error('Proyeksi dana gagal', e); }
 
   renderAccountsList();
 
@@ -11890,6 +12069,9 @@ function initAnalisisAI(){
 
 /* ============ REKONSILIASI SALDO (cocokkan saldo aplikasi vs saldo asli) ============ */
 var REKON_OPEN = null;
+var REKON_CAT_OPEN = {};
+var RKH_ACC = '';
+var RKH_LIMIT = 20;
 function rekonHariLalu(iso){
   if(!iso) return null;
   var p = iso.split('-');
@@ -11927,15 +12109,23 @@ function renderRekonsiliasi(){
     var d = RK_CATS.findIndex(function(c){return c.k===rkCat(x.a);}) - RK_CATS.findIndex(function(c){return c.k===rkCat(y.a);});
     return d || x.i-y.i;
   }).map(function(o){ return o.a; });
-  var rkLast = null;
+  var rkLast = null, rkHidden = false;
   accs.forEach(function(a){
     var ck = rkCat(a);
     if(ck!==rkLast){
       rkLast = ck;
-      var cnt = accs.filter(function(z){ return rkCat(z)===ck; }).length;
+      var inCat = accs.filter(function(z){ return rkCat(z)===ck; });
+      var cnt = inCat.length;
+      var warnN = inCat.filter(function(z){ return rekonStatus(z).warn; }).length;
+      var isOpen = !!REKON_CAT_OPEN[ck] || (REKON_OPEN && rkCat(REKON_OPEN)===ck);
+      rkHidden = !isOpen;
       var cl = RK_CATS.filter(function(c){return c.k===ck;})[0].l;
-      html += '<div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--primary); padding:14px 0 2px;">'+cl+' <span style="opacity:.6; font-weight:700;">('+cnt+')</span></div>';
+      html += '<div data-rekon-cat="'+ck+'" style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; padding:14px 0; border-bottom:1px solid var(--line);">'+
+        '<span style="font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--primary);">'+cl+' <span style="opacity:.6; font-weight:700;">('+cnt+')</span></span>'+
+        '<span style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:'+(warnN?'var(--gold-text)':'var(--text-2)')+';">'+(warnN?warnN+' perlu dicek':'Semua dicek')+
+        '<span style="display:inline-block; transition:transform .2s; transform:rotate('+(isOpen?'180':'0')+'deg);">&#9662;</span></span></div>';
     }
+    if(rkHidden) return;
     var saldo = saldoAkun(a);
     var st = rekonStatus(a);
     var r = DATA.rekon[a];
@@ -11962,14 +12152,55 @@ function renderRekonsiliasi(){
   });
   document.getElementById('rekon-list').innerHTML = html || '<div class="empty">Belum ada rekening.</div>';
 
-  var hist = '';
-  for(var i=DATA.koreksi.length-1; i>=0; i--){
-    var k = DATA.koreksi[i];
-    hist += '<div class="txn-row v2" style="padding:8px 0;"><div class="txn-body"><div class="txn-top"><span class="txn-title">'+escapeHtml(k.metode)+'</span><span class="badge">Koreksi</span>'+
-      '<span class="amt mono '+(k.jumlah<0?'neg':'pos')+'">'+(k.jumlah<0?'-':'+')+fmt(Math.abs(k.jumlah))+'</span></div>'+
-      '<div class="txn-bottom"><span class="txn-sub">'+escapeHtml(fmtTglIndo(k.tanggal)+(k.ket?' • '+k.ket:'')+' • '+maskOrFmt(k.saldoSebelum)+' → '+maskOrFmt(k.saldoAsli))+'</span>'+txnActions('koreksi', i)+'</div></div></div>';
+  var hl = document.getElementById('rekon-histlink');
+  if(hl){
+    var nK = DATA.koreksi.length;
+    hl.innerHTML = '<span style="display:flex; align-items:center; gap:10px;"><span data-icon="clock"></span><span><b style="font-size:14.5px;">Riwayat Koreksi</b><span style="display:block; font-size:11.5px; color:var(--text-2);">'+(nK?nK+' koreksi tercatat':'Belum ada koreksi')+'</span></span></span><span style="font-size:20px; color:var(--text-2);">&rsaquo;</span>';
+    hl.querySelectorAll('[data-icon]').forEach(function(i){ var n = i.getAttribute('data-icon'); if(window.ICONS && ICONS[n]) i.innerHTML = ICONS[n]; });
   }
-  document.getElementById('rekon-history').innerHTML = hist || '<div class="empty">Belum ada koreksi saldo.</div>';
+}
+function renderRekonRiwayat(){
+  var listEl = document.getElementById('rkh-list'); if(!listEl) return;
+  if(!DATA.koreksi) DATA.koreksi = [];
+  var rows = [];
+  for(var i=DATA.koreksi.length-1; i>=0; i--) rows.push({k:DATA.koreksi[i], i:i});
+  rows.sort(function(x,y){ return (y.k.tanggal||'').localeCompare(x.k.tanggal||'') || y.i-x.i; });
+  /* chip filter per rekening (hanya yang punya koreksi) */
+  var counts = {}; rows.forEach(function(r){ counts[r.k.metode] = (counts[r.k.metode]||0)+1; });
+  var names = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+  if(RKH_ACC && !counts[RKH_ACC]) RKH_ACC = '';
+  function chip(val, lb, n){ var on = RKH_ACC===val; return '<button class="btn '+(on?'':'ghost')+'" data-rkh-acc="'+escapeHtml(val)+'" style="flex:0 0 auto; width:auto; padding:6px 12px; font-size:12.5px; white-space:nowrap;">'+escapeHtml(lb)+' <span style="opacity:.7;">'+n+'</span></button>'; }
+  var fh = chip('', 'Semua', rows.length);
+  names.forEach(function(n){ fh += chip(n, n, counts[n]); });
+  document.getElementById('rkh-filter').innerHTML = names.length>1 ? fh : '';
+  if(RKH_ACC) rows = rows.filter(function(r){ return r.k.metode===RKH_ACC; });
+  var total = rows.length;
+  var shown = rows.slice(0, RKH_LIMIT);
+  var BLN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  var html = '', lastM = null;
+  shown.forEach(function(r){
+    var k = r.k, m = (k.tanggal||'').slice(0,7);
+    if(m!==lastM){
+      if(lastM!==null) html += '</div>';
+      lastM = m;
+      var p = m.split('-');
+      var sub = rows.filter(function(z){ return (z.k.tanggal||'').slice(0,7)===m; });
+      var net = sub.reduce(function(a,z){ return a+(z.k.jumlah||0); },0);
+      html += '<div style="display:flex; justify-content:space-between; align-items:baseline; padding:14px 2px 6px;"><span style="font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary);">'+(BLN[parseInt(p[1],10)-1]||'')+' '+p[0]+'</span>'+
+        '<span class="mono" style="font-size:11.5px; color:var(--text-2);">'+sub.length+' koreksi &bull; <span class="'+(net<0?'neg':'pos')+'">'+(net<0?'-':'+')+fmt(Math.abs(net))+'</span></span></div><div class="card" style="padding:2px 14px;">';
+    }
+    var d = (k.tanggal||'').split('-');
+    html += '<div class="txn-row v2" style="padding:8px 0;"><div class="txn-body"><div class="txn-top"><span class="txn-title">'+escapeHtml(k.metode)+'</span>'+
+      '<span class="amt mono '+(k.jumlah<0?'neg':'pos')+'">'+(k.jumlah<0?'-':'+')+fmt(Math.abs(k.jumlah))+'</span></div>'+
+      '<div class="txn-bottom"><span class="txn-sub">'+escapeHtml((parseInt(d[2],10)||'')+' \u2022 '+(k.ket?k.ket+' \u2022 ':'')+maskOrFmt(k.saldoSebelum)+' \u2192 '+maskOrFmt(k.saldoAsli))+'</span>'+txnActions('koreksi', r.i)+'</div></div></div>';
+  });
+  if(lastM!==null) html += '</div>';
+  listEl.innerHTML = html || '<div class="card"><div class="empty">Belum ada koreksi saldo.</div></div>';
+  var more = document.getElementById('rkh-more');
+  if(more){
+    if(total>shown.length){ more.style.display = ''; more.textContent = 'Tampilkan lebih banyak ('+(total-shown.length)+' lagi)'; }
+    else more.style.display = 'none';
+  }
 }
 function rekonUpdateDiff(){
   var acc = REKON_OPEN; if(!acc) return;
@@ -12007,11 +12238,13 @@ function rekonSimpan(acc){
   try{ renderDashboard(); }catch(e){}
 }
 function hapusKoreksi(index){
+  if(DATA.koreksi && DATA.koreksi[index] && tbGuard(DATA.koreksi[index].tanggal)) return;
   showConfirm('Hapus koreksi saldo ini? Saldo rekening akan kembali seperti sebelum dikoreksi.', function(){
     DATA.koreksi.splice(index,1);
     saveData();
     toast('Koreksi dihapus');
     if(document.getElementById('view-rekonsiliasi').classList.contains('active')) renderRekonsiliasi();
+    else if(document.getElementById('view-rekon-riwayat').classList.contains('active')) renderRekonRiwayat();
     else if(document.getElementById('view-mutasi-rekening').classList.contains('active')) renderMutasiRekening();
     try{ renderDashboard(); }catch(e){}
   });
@@ -12020,12 +12253,219 @@ function hapusKoreksi(index){
   var v = document.getElementById('view-rekonsiliasi');
   if(!v) return;
   v.addEventListener('click', function(ev){
+    var ct = ev.target.closest('[data-rekon-cat]');
+    if(ct){ var ck2 = ct.getAttribute('data-rekon-cat'); REKON_CAT_OPEN[ck2] = !REKON_CAT_OPEN[ck2]; if(!REKON_CAT_OPEN[ck2] && REKON_OPEN) REKON_OPEN = null; renderRekonsiliasi(); return; }
     var tg = ev.target.closest('[data-rekon-toggle]');
     if(tg){ var a = tg.getAttribute('data-rekon-toggle'); REKON_OPEN = (REKON_OPEN===a) ? null : a; renderRekonsiliasi(); if(REKON_OPEN){ var i = document.getElementById('rekon-input'); if(i){ i.focus(); rekonUpdateDiff(); } } return; }
     var sv = ev.target.closest('#rekon-btn-simpan');
     if(sv){ rekonSimpan(sv.getAttribute('data-rekon-acc')); }
   });
   v.addEventListener('input', function(ev){ if(ev.target.id==='rekon-input') rekonUpdateDiff(); });
+  var h = document.getElementById('view-rekon-riwayat');
+  if(h){
+    h.addEventListener('click', function(ev){
+      var c = ev.target.closest('[data-rkh-acc]');
+      if(c){ RKH_ACC = c.getAttribute('data-rkh-acc'); RKH_LIMIT = 20; renderRekonRiwayat(); return; }
+      if(ev.target.closest('#rkh-more')){ RKH_LIMIT += 20; renderRekonRiwayat(); }
+    });
+  }
+})();
+
+
+/* ============ TUTUP BUKU BULANAN ============ */
+var TB_SEL = '';
+var TB_BLN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function tbNama(ym){ var p = String(ym).split('-'); return (TB_BLN[parseInt(p[1],10)-1]||'')+' '+p[0]; }
+function tbData(){ if(!DATA.tutupBuku || Array.isArray(DATA.tutupBuku)) DATA.tutupBuku = {}; return DATA.tutupBuku; }
+function tbLastClosed(){ var l = Object.keys(tbData()).sort(); return l.length ? l[l.length-1] : ''; }
+function tbAkhir(ym){ var p = ym.split('-'); return lastDayStr(+p[0], +p[1]); }
+function tbNext(ym){ var p = ym.split('-'), y = +p[0], m = +p[1]+1; if(m>12){ m = 1; y++; } return y+'-'+String(m).padStart(2,'0'); }
+function tbPrev(ym){ var p = ym.split('-'), y = +p[0], m = +p[1]-1; if(m<1){ m = 12; y--; } return y+'-'+String(m).padStart(2,'0'); }
+function tbCutoff(){ var l = tbLastClosed(); return l ? tbAkhir(l) : ''; }
+function tbLocked(tgl){ var c = tbCutoff(); return !!(c && tgl && String(tgl).slice(0,10) <= c); }
+function tbGuard(tgl){
+  if(tbLocked(tgl)){ toast('Tanggal '+fmtTglIndo(tgl)+' sudah dikunci (tutup buku sampai '+fmtTglIndo(tbCutoff())+'). Buka kunci di Pengaturan > Tutup Buku bila perlu mengubahnya.'); return true; }
+  return false;
+}
+/* bulan yang boleh ditutup sekarang: pertama kali = bulan lampau mana saja; selanjutnya wajib berurutan */
+function tbOpsi(){
+  var now = todayISO().slice(0,7), last = tbLastClosed(), out = [];
+  if(last){ var n = tbNext(last); if(n < now) out.push(n); return out; }
+  var y = tbPrev(now);
+  for(var i=0; i<24; i++){ out.push(y); y = tbPrev(y); }
+  return out;
+}
+function tbKasTotal(upTo){ var k = 0; ACCOUNTS.forEach(function(a){ k += saldoAkun(a, upTo); }); return k; }
+function tbHitung(ym){
+  var s = ym+'-01', e = tbAkhir(ym);
+  function inR(t){ return t>=s && t<=e; }
+  var r = { ym:ym, awal:s, akhir:e, masuk:0, keluar:0, koreksi:0, nTx:0, tanpaJenis:0, tanpaSumber:0, tagihanJT:0 };
+  DATA.pemasukan.forEach(function(p){ if(inR(p.tanggal)){ r.masuk += p.jumlah||0; r.nTx++; if(!p.sumber) r.tanpaSumber++; } });
+  DATA.pengeluaran.forEach(function(p){ if(inR(p.tanggal)){ r.keluar += p.jumlah||0; r.nTx++; if(!p.jenis) r.tanpaJenis++; } });
+  DATA.belanja.forEach(function(b){ if(inR(b.tanggal)){ r.keluar += b.jumlah||0; r.nTx++; } });
+  (DATA.koreksi||[]).forEach(function(k){ if(inR(k.tanggal)){ r.koreksi += k.jumlah||0; r.nTx++; } });
+  ['transfer','piutang','hutang','titipan','invbeli','invjual','tagihan'].forEach(function(t){ (DATA[t]||[]).forEach(function(x){ if(inR(x.tanggal)) r.nTx++; }); });
+  (DATA.tagihan||[]).forEach(function(t){ if(t.status==='Belum Lunas' && t.jatuhTempo && inR(t.jatuhTempo)) r.tagihanJT++; });
+  r.surplus = r.masuk - r.keluar;
+  r.kasAwal = tbKasTotal(tbAkhir(tbPrev(ym)));
+  r.kasAkhir = tbKasTotal(e);
+  r.lain = (r.kasAkhir - r.kasAwal) - (r.surplus + r.koreksi);
+  var per = {};
+  pengeluaranPerJenis().forEach(function(p){ if(inR(p.tanggal) && p.jenis) per[p.jenis] = (per[p.jenis]||0) + (p.jumlah||0); });
+  r.top = Object.keys(per).map(function(k){ return {k:k, v:per[k]}; }).sort(function(a,b){ return b.v-a.v; }).slice(0,5);
+  /* rekening yang belum dicek (saldo tidak nol, belum direkonsiliasi sejak awal bulan itu) */
+  r.belumDicek = ACCOUNTS.filter(function(a){
+    var rk = (DATA.rekon||{})[a];
+    if(rk && rk.tanggal >= s) return false;
+    return Math.round(saldoAkun(a, e)) !== 0;
+  });
+  var fz = null; try{ fz = fifoRekonsiliasi(); }catch(x){}
+  r.fifoSelisih = fz ? fz.selisih : 0;
+  return r;
+}
+function tbSnapshot(ym){
+  var e = tbAkhir(ym), saldo = {};
+  ACCOUNTS.forEach(function(a){ var v = Math.round(saldoAkun(a, e)); if(v!==0) saldo[a] = v; });
+  var nw = netWorthAt(e);
+  return { saldo:saldo, kas:Math.round(nw.kas), piutang:Math.round(nw.piutang), hutang:Math.round(nw.hutang), titipan:Math.round(nw.titipan), inv:Math.round(nw.inv), bio:Math.round(nw.bio), net:Math.round(nw.net) };
+}
+/* apakah angka periode yang sudah terkunci masih sama dengan saat ditutup? */
+function tbCekIntegritas(){
+  var last = tbLastClosed(); if(!last) return [];
+  var rec = tbData()[last]; if(!rec || !rec.snap) return [];
+  var e = tbAkhir(last), diff = [], names = {};
+  Object.keys(rec.snap.saldo||{}).forEach(function(a){ names[a] = 1; });
+  ACCOUNTS.forEach(function(a){ names[a] = 1; });
+  Object.keys(names).forEach(function(a){
+    var now = Math.round(ACCOUNTS.indexOf(a)>=0 ? saldoAkun(a, e) : 0), was = (rec.snap.saldo||{})[a] || 0;
+    if(Math.abs(now-was) >= 1) diff.push({a:a, was:was, now:now});
+  });
+  return diff;
+}
+function tbTutup(ym){
+  var opsi = tbOpsi();
+  if(opsi.indexOf(ym)<0){ toast('Bulan ini belum bisa ditutup (harus berurutan dan sudah berakhir)'); return; }
+  try{ runRecurringCheck(); }catch(e){} /* catat dulu transaksi berulang yang sudah jatuh tempo, supaya tidak masuk mundur ke periode terkunci */
+  var h = tbHitung(ym);
+  var warn = [];
+  if(h.belumDicek.length) warn.push(h.belumDicek.length+' rekening belum direkonsiliasi');
+  if(h.tanpaJenis || h.tanpaSumber) warn.push((h.tanpaJenis+h.tanpaSumber)+' transaksi tanpa kategori');
+  if(h.tagihanJT) warn.push(h.tagihanJT+' tagihan jatuh tempo belum lunas');
+  if(h.fifoSelisih) warn.push('stok FIFO tidak konsisten');
+  var msg = 'Tutup buku '+tbNama(ym)+'? Semua transaksi sampai '+fmtTglIndo(h.akhir)+' akan dikunci.'+(warn.length ? ' Catatan: '+warn.join(', ')+'.' : '');
+  showConfirm(msg, function(){
+    var d = tbData();
+    d[ym] = { ts:Date.now(), tanggalTutup:todayISO(), masuk:h.masuk, keluar:h.keluar, surplus:h.surplus, koreksi:h.koreksi, lain:h.lain, nTx:h.nTx, kasAwal:h.kasAwal, kasAkhir:h.kasAkhir, snap:tbSnapshot(ym) };
+    saveData();
+    TB_SEL = '';
+    toast('Buku '+tbNama(ym)+' ditutup');
+    renderTutupBuku();
+  }, 'Ya, Tutup Buku');
+}
+function tbBuka(ym){
+  if(ym !== tbLastClosed()){ toast('Hanya bulan terakhir yang bisa dibuka kuncinya'); return; }
+  showConfirm('Buka kunci '+tbNama(ym)+'? Transaksi bulan itu bisa diubah lagi, dan bulan ini harus ditutup ulang.', function(){
+    delete tbData()[ym];
+    saveData();
+    TB_SEL = '';
+    toast('Kunci '+tbNama(ym)+' dibuka');
+    renderTutupBuku();
+  }, 'Ya, Buka Kunci');
+}
+function tbIcons(el){ try{ el.querySelectorAll('[data-icon]').forEach(function(i){ var n = i.getAttribute('data-icon'); if(window.ICONS && ICONS[n]) i.innerHTML = ICONS[n]; }); }catch(e){} }
+function renderTutupBuku(){
+  var elS = document.getElementById('tb-status'); if(!elS) return;
+  var closed = Object.keys(tbData()).sort(), last = closed.length ? closed[closed.length-1] : '';
+  function tile(lb, v, cls){ return '<div style="flex:1; min-width:0; background:var(--primary-dim); border-radius:12px; padding:10px 8px; text-align:center;"><div style="font-size:10.5px; color:var(--text-2); white-space:nowrap;">'+lb+'</div><div class="mono '+(cls||'')+'" style="font-size:14px; font-weight:700; margin-top:2px;">'+v+'</div></div>'; }
+  /* ---- status ---- */
+  var st = '';
+  if(last){
+    var rec = tbData()[last];
+    st += '<div style="display:flex; align-items:center; gap:10px;"><span data-icon="lock" style="color:var(--primary);"></span><span><b style="font-size:15px;">Terkunci sampai '+escapeHtml(fmtTglIndo(tbAkhir(last)))+'</b><span style="display:block; font-size:11.5px; color:var(--text-2);">Saldo awal '+tbNama(tbNext(last))+': <span class="mono">'+maskOrFmt(rec.kasAkhir)+'</span></span></span></div>';
+    var diff = tbCekIntegritas();
+    if(diff.length){
+      st += '<div style="margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(232,90,91,.12); color:var(--text); font-size:12.5px;"><b class="neg">Ada perubahan di periode terkunci.</b> Saldo '+diff.slice(0,3).map(function(d){ return escapeHtml(d.a); }).join(', ')+(diff.length>3?' dan '+(diff.length-3)+' lainnya':'')+' kini berbeda dari saat ditutup. Cek transaksi bertanggal sampai '+escapeHtml(fmtTglIndo(tbAkhir(last)))+', atau buka kunci lalu tutup ulang.</div>';
+    }
+  } else {
+    st += '<div style="display:flex; align-items:center; gap:10px;"><span data-icon="lock" style="opacity:.5;"></span><span><b style="font-size:15px;">Belum ada bulan yang ditutup</b><span style="display:block; font-size:11.5px; color:var(--text-2);">Pilih bulan di bawah. Penutupan pertama juga mengunci semua transaksi sebelumnya.</span></span></div>';
+  }
+  elS.innerHTML = st; tbIcons(elS);
+
+  /* ---- form tutup ---- */
+  var elF = document.getElementById('tb-form');
+  var opsi = tbOpsi();
+  if(!opsi.length){
+    elF.innerHTML = '<div class="empty">'+(last ? tbNama(tbNext(last))+' belum berakhir. Bulan berikutnya bisa ditutup setelah bulannya selesai.' : 'Belum ada bulan yang bisa ditutup.')+'</div>';
+  } else {
+    if(opsi.indexOf(TB_SEL)<0) TB_SEL = opsi[0];
+    var h = tbHitung(TB_SEL);
+    var sel = '<div class="field" style="margin-bottom:12px;"><label>Bulan yang ditutup</label><select id="tb-bulan">'+opsi.map(function(o){ return '<option value="'+o+'"'+(o===TB_SEL?' selected':'')+'>'+tbNama(o)+'</option>'; }).join('')+'</select></div>';
+    var sum = '<div style="display:flex; gap:8px; margin-bottom:10px;">'+tile('Pemasukan', maskOrFmt(h.masuk), 'pos')+tile('Pengeluaran', maskOrFmt(h.keluar), 'neg')+tile('Surplus', (h.surplus<0?'-':'')+maskOrFmt(Math.abs(h.surplus)), h.surplus<0?'neg':'pos')+'</div>';
+    var br = '<div style="font-size:12.5px; color:var(--text-2); line-height:1.7; margin-bottom:12px;">'+
+      'Kas awal bulan <span class="mono" style="float:right; color:var(--text);">'+maskOrFmt(h.kasAwal)+'</span><br>'+
+      'Surplus bulan ini <span class="mono" style="float:right; color:var(--text);">'+(h.surplus<0?'-':'+')+maskOrFmt(Math.abs(h.surplus))+'</span><br>'+
+      (h.koreksi ? 'Koreksi saldo <span class="mono" style="float:right; color:var(--text);">'+(h.koreksi<0?'-':'+')+maskOrFmt(Math.abs(h.koreksi))+'</span><br>' : '')+
+      'Lainnya (piutang, hutang, tagihan, investasi) <span class="mono" style="float:right; color:var(--text);">'+(h.lain<0?'-':'+')+maskOrFmt(Math.abs(h.lain))+'</span><br>'+
+      '<b style="color:var(--text);">Kas akhir bulan</b> <span class="mono" style="float:right; color:var(--text); font-weight:700;">'+maskOrFmt(h.kasAkhir)+'</span><div style="clear:both;"></div></div>';
+    var top = '';
+    if(h.top.length){
+      top = '<div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--primary); margin:4px 0 6px;">Pengeluaran terbesar</div>'+
+        h.top.map(function(t){ return '<div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0;"><span>'+escapeHtml(t.k)+'</span><span class="mono">'+maskOrFmt(t.v)+'</span></div>'; }).join('');
+    }
+    function item(ok, ttl, det, goto){
+      var ic = ok===true ? '<span class="pos" style="font-weight:800;">&#10003;</span>' : '<span style="color:var(--gold-text); font-weight:800;">!</span>';
+      return '<div style="display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--line);'+(goto?' cursor:pointer;" data-goto="'+goto+'" role="button':'')+'"><span style="width:16px; text-align:center; flex-shrink:0;">'+ic+'</span><span style="flex:1; min-width:0;"><span style="font-size:13.5px; font-weight:600;">'+ttl+'</span><span style="display:block; font-size:11.5px; color:var(--text-2);">'+det+'</span></span>'+(goto?'<span style="font-size:18px; color:var(--text-2);">&rsaquo;</span>':'')+'</div>';
+    }
+    var nKat = h.tanpaJenis + h.tanpaSumber;
+    var chk = '<div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--primary); margin:16px 0 2px;">Checklist</div>'+
+      item(!h.belumDicek.length, 'Rekonsiliasi rekening', h.belumDicek.length ? h.belumDicek.length+' rekening belum dicek sejak awal bulan ini' : 'Semua rekening sudah dicek', h.belumDicek.length ? 'rekonsiliasi' : '')+
+      item(!nKat, 'Kategori transaksi', nKat ? nKat+' transaksi belum punya kategori/sumber' : 'Semua transaksi punya kategori', '')+
+      item(!h.tagihanJT, 'Tagihan jatuh tempo', h.tagihanJT ? h.tagihanJT+' tagihan jatuh tempo bulan ini belum lunas' : 'Tidak ada tagihan bulan ini yang menggantung', h.tagihanJT ? 'tagihan' : '')+
+      item(!h.fifoSelisih, 'Stok FIFO', h.fifoSelisih ? 'Selisih '+fmt(Math.abs(h.fifoSelisih))+' pada uji FIFO' : 'Angka stok konsisten', '');
+    elF.innerHTML = sel+sum+br+top+chk+'<button class="btn" id="tb-btn-tutup" style="width:100%; margin-top:14px;">Tutup Buku '+tbNama(TB_SEL)+'</button>'+
+      '<div style="font-size:11.5px; color:var(--text-2); margin-top:8px;">Item bertanda ! tidak menghalangi, tapi sebaiknya dibereskan dulu.</div>';
+  }
+
+  /* ---- riwayat tutup buku ---- */
+  var elH = document.getElementById('tb-hist');
+  if(!closed.length){ elH.innerHTML = '<div class="empty">Belum ada bulan yang ditutup.</div>'; return; }
+  var hh = '';
+  closed.slice().reverse().forEach(function(ym, idx){
+    var r = tbData()[ym], isLast = ym===last;
+    var saldoRows = Object.keys((r.snap&&r.snap.saldo)||{}).sort(function(a,b){ return r.snap.saldo[b]-r.snap.saldo[a]; }).map(function(a){ return '<div style="display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0;"><span>'+escapeHtml(a)+'</span><span class="mono">'+maskOrFmt(r.snap.saldo[a])+'</span></div>'; }).join('');
+    hh += '<details style="padding:10px 0; border-bottom:1px solid var(--line);"><summary style="display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer; list-style:none;">'+
+      '<span><b style="font-size:14.5px;">'+tbNama(ym)+'</b><span style="display:block; font-size:11.5px; color:var(--text-2);">Ditutup '+escapeHtml(fmtTglIndo(r.tanggalTutup))+' &bull; '+r.nTx+' transaksi</span></span>'+
+      '<span class="mono '+(r.surplus<0?'neg':'pos')+'" style="font-weight:700; font-size:13.5px;">'+(r.surplus<0?'-':'+')+maskOrFmt(Math.abs(r.surplus))+'</span></summary>'+
+      '<div style="margin-top:10px; background:var(--primary-dim); border-radius:12px; padding:10px 12px;">'+
+        '<div style="display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0;"><span>Pemasukan</span><span class="mono pos">'+maskOrFmt(r.masuk)+'</span></div>'+
+        '<div style="display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0;"><span>Pengeluaran</span><span class="mono neg">'+maskOrFmt(r.keluar)+'</span></div>'+
+        '<div style="display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0;"><span>Kekayaan bersih</span><span class="mono">'+maskOrFmt(r.snap.net)+'</span></div>'+
+        '<div style="display:flex; justify-content:space-between; font-size:12.5px; padding:2px 0;"><span>Piutang / Hutang</span><span class="mono">'+maskOrFmt(r.snap.piutang)+' / '+maskOrFmt(r.snap.hutang)+'</span></div>'+
+        '<div style="font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--primary); margin:10px 0 4px;">Saldo penutup</div>'+saldoRows+
+      '</div>'+
+      (isLast ? '<button class="btn ghost" data-tb-buka="'+ym+'" style="margin-top:10px; width:100%;">Buka Kunci '+tbNama(ym)+'</button>' : '')+
+      '</details>';
+  });
+  elH.innerHTML = hh;
+}
+(function(){
+  var v = document.getElementById('view-tutup-buku'); if(!v) return;
+  v.addEventListener('click', function(ev){
+    if(ev.target.closest('#tb-btn-tutup')){ tbTutup(TB_SEL); return; }
+    var b = ev.target.closest('[data-tb-buka]'); if(b){ tbBuka(b.getAttribute('data-tb-buka')); }
+  });
+  v.addEventListener('change', function(ev){ if(ev.target.id==='tb-bulan'){ TB_SEL = ev.target.value; renderTutupBuku(); } });
+  /* penjaga: tombol simpan transaksi diblokir bila tanggal yang diisi jatuh di periode terkunci */
+  var IDS = ['tf','pm','pg','pi','ht','tt','bl','ib','ij','tg','sb','ipo'];
+  document.addEventListener('click', function(ev){
+    var b = ev.target.closest && ev.target.closest('button'); if(!b || !tbCutoff()) return;
+    if(!/^btn-(transfer|masuk|keluar|piutang|hutang|titipan|belanja|invbeli|invjual|tagihan|splitbill|ipo-pesan)$/.test(b.id||'')) return;
+    var scope = b.closest('.view'); if(!scope) return;
+    for(var i=0; i<IDS.length; i++){
+      var el = scope.querySelector('#'+IDS[i]+'-tanggal');
+      if(el && el.offsetParent!==null && el.value && tbGuard(el.value)){ ev.stopPropagation(); ev.preventDefault(); return; }
+    }
+  }, true);
 })();
 
 /* ============ MUTASI PER REKENING ============ */
@@ -17413,6 +17853,7 @@ function cancelEdit(){
 function startEdit(type, index){
   var item = DATA[type][index];
   if(!item) return;
+  if(tbGuard(item.tanggal)) return;
   var tSrc = terikatSumber(type, item);
   if(tSrc){ toast('Catatan ini dibuat otomatis dari '+tSrc+'. Ubah lewat halaman '+tSrc+'.'); return; }
   if(type==='pemasukan' && item.dividen && window.dvStartEdit){ dvStartEdit(index); return; }
@@ -17698,6 +18139,7 @@ function renderSampah(){
   el.innerHTML = html + '<div style="text-align:center; padding:12px 0 8px;"><span class="sp-act" style="color:var(--danger);" data-sampah="kosongkan">Kosongkan Tempat Sampah</span></div>';
 }
 function deleteTransaction(type, index){
+  if(DATA[type] && DATA[type][index] && tbGuard(DATA[type][index].tanggal)) return;
   var tSrcD = terikatSumber(type, DATA[type] && DATA[type][index]);
   if(tSrcD){ toast('Catatan ini dibuat otomatis dari '+tSrcD+'. Hapus lewat halaman '+tSrcD+' supaya data tetap sinkron.'); return; }
   var peringatanInv = '';
@@ -22939,7 +23381,7 @@ document.addEventListener('change', function(e){ if(e.target && e.target.id==='g
 /* Desktop: kelompokkan tiap halaman form+daftar jadi kolom kiri (form/filter) & kanan (daftar). Di HP wrapper "display:contents" jadi tidak mengubah tampilan. */
 (function(){
   'use strict';
-  var SKIP = {'view-dashboard':1,'view-riwayat':1,'view-catat':1,'view-laporan':1,'view-pengaturan':1,'view-kelola-kategori':1,'view-coa':1,'view-riwayat-update':1,'view-grafik':1,'view-kesehatan':1,'view-widget':1,'view-insight':1,'view-saldo-rekening':1};
+  var SKIP = {'view-rekon-riwayat':1,'view-tutup-buku':1,'view-dashboard':1,'view-riwayat':1,'view-catat':1,'view-laporan':1,'view-pengaturan':1,'view-kelola-kategori':1,'view-coa':1,'view-tampilan':1,'view-riwayat-update':1,'view-grafik':1,'view-kesehatan':1,'view-widget':1,'view-insight':1,'view-saldo-rekening':1};
   var NARROW = {'view-inventaris':1,'view-asetbio':1};
   /* halaman tanpa kartu daftar: kiri = sampai elemen ini, kanan = sisanya */
   var SPLIT = {'view-atur-budget':'#set-budget', 'view-edit-saldo-awal':'#set-accounts', 'view-analisis-ai':':scope > .card'};
@@ -24246,6 +24688,26 @@ html[data-theme="light"] .fx-orb{opacity:.45;}
 })();
 </script>
 
+<style id="tampilan-page-css">
+#view-pengaturan .set-link{--ac:#2DD4BF; display:flex; align-items:center; gap:14px; padding:14px; margin-bottom:10px; border-radius:18px; border:1px solid var(--line); cursor:pointer; -webkit-tap-highlight-color:transparent;}
+#view-pengaturan .set-link:active{opacity:.7;}
+#view-pengaturan .set-link .sa-chev{width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--muted) 14%,transparent);}
+#view-tampilan .tp-card{padding:16px;}
+#view-tampilan .tp-card h3{display:flex; align-items:center; gap:8px; margin:0 0 4px; font-size:15px;}
+#view-tampilan .tp-def{font-weight:400; font-size:12px; color:var(--text-2);}
+#view-tampilan .set-lbl{font-size:12px; font-weight:600; color:var(--muted); margin:16px 0 7px;}
+#view-tampilan .set-lbl.first{margin-top:10px;}
+#view-tampilan .set-lbl span{font-weight:400; opacity:.8;}
+#view-tampilan .tp-card > #anim-toggle-row{margin-top:10px;}
+#view-tampilan .vpal-row{grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px;}
+#view-tampilan .vpal-opt{flex-direction:column; justify-content:center; align-items:center; gap:6px; padding:9px 2px; text-align:center; font-size:12px;}
+#view-tampilan .tp-more{margin-top:10px;}
+#view-tampilan .tp-more > summary{list-style:none; cursor:pointer; font-size:12px; color:var(--text-2); display:inline-flex; align-items:center; gap:4px; -webkit-tap-highlight-color:transparent;}
+#view-tampilan .tp-more > summary::-webkit-details-marker{display:none;}
+#view-tampilan .tp-more > summary::before{content:"\203A"; display:inline-block; font-size:15px; line-height:1; transition:transform .15s ease;}
+#view-tampilan .tp-more[open] > summary::before{transform:rotate(90deg);}
+#view-tampilan .tp-more .meta{margin-top:6px; font-size:12px; color:var(--text-2); line-height:1.45;}
+</style>
 <style id="set-acc-css">
 /* Pengaturan: bagian bisa dilipat */
 details.set-acc{padding:0 16px; margin-bottom:12px;}
@@ -25449,7 +25911,7 @@ html[data-layout="desktop"] .pf-done[open] > :not(summary){max-width:640px;}
   /* halaman anak -> item menu induk yang disorot */
   var PARENT = {transfer:'catat', masuk:'catat', keluar:'catat', titipan:'catat', belanja:'catat', 'investasi-jual':'investasi-beli', dividen:'investasi-beli',
     splitbill:'catat', patungan:'catat', recurring:'catat', 'inventaris-detail':'inventaris', asetbio:'inventaris', 'stok-barang':'inventaris',
-    'untuk-orang':'catat', 'analisis-pengeluaran':'catat', 'mutasi-rekening':'dashboard', 'edit-saldo-awal':'pengaturan', rekonsiliasi:'pengaturan', sampah:'pengaturan',
+    'untuk-orang':'catat', 'analisis-pengeluaran':'catat', 'mutasi-rekening':'dashboard', 'edit-saldo-awal':'pengaturan', rekonsiliasi:'pengaturan', 'rekon-riwayat':'pengaturan', 'tutup-buku':'pengaturan', sampah:'pengaturan', tampilan:'pengaturan',
     'kelola-kategori':'pengaturan', coa:'pengaturan', 'riwayat-update':'pengaturan'};
   var KEY = 'tk_ffside', last = null;
   function ic(n){ try{ return (window.ICONS && ICONS[n]) || ''; }catch(e){ return ''; } }
@@ -26017,7 +26479,7 @@ html[data-theme="light"] #view-grafik{--vc:#5AC0EE; --vcd:#0369A1;}
 html[data-theme="light"] #view-pengaturan{--vc:#5AC0EE; --vcd:#0369A1;}
 html[data-theme="light"] #view-riwayat-update{--vc:#8B6BFF; --vcd:#5B3FD6;}
 html[data-theme="light"] #view-analisis-ai{--vc:#7048E8; --vcd:#4B2BB5;}
-html[data-theme="light"] #view-rekonsiliasi{--vc:#1C9E97; --vcd:#0F6F69;}
+html[data-theme="light"] #view-rekonsiliasi, html[data-theme="light"] #view-rekon-riwayat, html[data-theme="light"] #view-tutup-buku{--vc:#1C9E97; --vcd:#0F6F69;}
 html[data-theme="light"] #view-sampah{--vc:#D6455F; --vcd:#9E2840;}
 html[data-theme="light"] #view-edit-saldo-awal{--vc:#19B894; --vcd:#0B7A6E;}
 html[data-theme="light"] #view-atur-budget{--vc:#F2994A; --vcd:#B4631A;}
