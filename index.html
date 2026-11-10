@@ -2562,6 +2562,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div class="field"><label>Jumlah</label><input type="text" class="money-input" id="tt-jumlah" placeholder="0" inputmode="numeric"></div>
       <div class="field"><label>Dari Siapa</label><input type="text" id="tt-nama" placeholder="cth: Budi"></div>
       <div class="field"><label>Untuk Apa (opsional)</label><input type="text" id="tt-untuk" placeholder="cth: titip beli tiket, titip arisan"></div>
+      <div class="field"><label>Bagian hasil investasi untuk pemilik titipan (%) (opsional)</label><input type="text" id="tt-bagi" inputmode="decimal" placeholder="kosongkan kalau tidak untuk diinvestasikan"><div class="meta" style="margin-top:4px;">Isi kalau uang ini dititipkan untuk kamu investasikan. Cth 50 = hasil dibagi 50:50, pemilik dapat 50% dari untung (dan menanggung 50% dari rugi). Instrumen dipilih saat mencatat Pembelian Investasi.</div></div>
       <div class="field"><label>Tanggal Rencana Dikembalikan (opsional)</label><input type="date" id="tt-jatuh-tempo"></div>
       <div class="field"><label>Status</label>
         <div class="toggle-row">
@@ -2581,6 +2582,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div class="field"><label>Keterangan (opsional)</label><input type="text" id="tt-ket" maxlength="100" placeholder="cth: titipan arisan RT"></div>
       <button class="btn" id="btn-titipan">Simpan Dana Titipan</button>
     </div>
+    <div id="tt-warn"></div>
     <div class="card"><h3><span class="dot"></span>Daftar Dana Titipan</h3><div id="tt-list"></div></div>
   </main></div>
 
@@ -2700,6 +2702,9 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div class="field"><label>Platform/Sekuritas</label><select id="ib-platform"></select></div>
       <div class="field"><label>Kode/Nama Produk</label><input type="text" id="ib-kode" placeholder="cth: BBCA, Emas Antam, BTC"></div>
       <div class="field"><label>Metode Pembayaran</label><select id="ib-metode"></select></div>
+      <div class="field" id="ib-tt-wrap" style="display:none;"><label>Pakai dana titipan (opsional)</label><select id="ib-titipan"></select>
+        <div id="ib-tt-bagian-wrap" style="display:none; margin-top:8px;"><label style="font-size:12px;">Bagian dari pembelian ini yang uang titipan (Rp)</label><input type="text" class="money-input" id="ib-tt-bagian" placeholder="kosong = seluruh pembelian" inputmode="numeric"></div>
+        <div class="meta" id="ib-tt-hint" style="margin-top:4px;"></div></div>
       <div id="ib-unit-wrap" style="display:none;">
         <div class="field"><label>Jumlah <span id="ib-unit-lbl">unit</span> yang dibeli</label><input type="text" id="ib-unit" inputmode="decimal" placeholder="cth: 5"></div>
         <div class="field"><label>Harga per <span id="ib-harga-lbl">satuan</span> (Rp)</label><input type="text" id="ib-harga" inputmode="decimal" placeholder="0"><div class="meta" id="ib-unit-hint" style="margin-top:4px;"></div></div>
@@ -3308,6 +3313,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="back-row" data-goto="pengaturan"><span data-icon="chevronLeft"></span><span>Kembali ke Pengaturan</span></div>
     <div class="section-title"><span data-icon="checkCircle"></span>Rekonsiliasi Saldo</div>
     <div class="hint">Cocokkan saldo di aplikasi dengan saldo asli. Koreksi hanya mengubah saldo rekening, <b>tidak</b> dihitung sebagai pemasukan/pengeluaran.</div>
+    <div id="rekon-ttwarn"></div>
     <div class="card" id="rekon-summary" style="margin-bottom:12px;"></div>
     <div class="card" id="rekon-histlink" data-goto="rekon-riwayat" style="margin-bottom:12px; padding:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;"></div>
     <div class="card" id="rekon-list" style="padding:4px 14px;"></div>
@@ -5664,7 +5670,7 @@ function proyeksiDanaHitung(){
     var tahan = akunTahan(a), lk = saldoAkun(a) - tahan, tt = titipanAkun(a), ts = goalDisisihkanAkun(a);
     var bs = lk - tt - ts, r = as ? as.est : 0, sg = 0;
     goals.forEach(function(g){ if(g.rek===a) sg += g.sisa; });
-    saldo += lk; held += tahan; titip += tt; tersisih += ts; bebasSebelum += bs;
+    saldo += lk - tt; held += tahan; titip += tt; tersisih += ts; bebasSebelum += bs;
     var kb = null;
     if(as){ var cum = 0; Object.keys(as.bulan).sort().forEach(function(k){ cum += as.bulan[k]; if(kb===null && cum>bs) kb = {bulan:k, kurang:cum-bs}; }); }
     akun.push({ a:a, ikut:ikut, likuid:lk, titip:tt, tersisih:ts, rencana:r, nItem:as?as.n:0, bebasSebelum:bs, bebas:bs-r,
@@ -5684,7 +5690,7 @@ function proyeksiDanaHitung(){
       if(tk===null && cumT>pool) tk = {bulan:k, kurang:cumT-pool};
     });
   }
-  return { saldo:saldo, total:saldo+held+excl, excl:excl, held:held, titip:titip, tersisih:tersisih, rencana:rencana, prio:prio, bulan:bulan, nItem:nItem, nTunda:nTunda,
+  return { saldo:saldo, total:saldo+titip+held+excl, excl:excl, held:held, titip:titip, tersisih:tersisih, rencana:rencana, prio:prio, bulan:bulan, nItem:nItem, nTunda:nTunda,
     goals:goals, sisaTarget:sisaTarget, perBlnTotal:perBlnTotal, nBerTanggal:nBerTanggal,
     akun:akun, tanpa:{ est:tanpa.est, n:tanpa.n, pool:poolAkhir, kurang:Math.max(0, tanpa.est-poolAkhir), kurangBulan:tk },
     bebasSebelum:bebasSebelum, bebas:bebasSebelum-rencana };
@@ -5697,9 +5703,8 @@ function renderProyeksiDana(){
   if(d.goals.length===0 && d.nItem===0){ card.style.display = 'none'; return; }
   card.style.display = '';
   var row = function(l, v, cls){ return '<div class="pj-row"><span class="l">'+l+'</span><span class="v mono '+(cls||'')+'">'+v+'</span></div>'; };
-  var h = row('Dana likuid sekarang', maskOrFmt(d.saldo));
-  if(d.excl+d.held>0) h += '<div class="pj-note" style="margin:-1px 0 4px;">Total saldo '+escapeHtml(maskOrFmt(d.total))+', tidak ikut dihitung '+escapeHtml(maskOrFmt(d.excl+d.held))+' (investasi, mengendap, dll)</div>';
-  if(d.titip>0) h += row('− Dana titipan aktif', maskOrFmt(d.titip));
+  var h = row('Dana likuid milikmu', maskOrFmt(d.saldo));
+  if(d.excl+d.held+d.titip>0) h += '<div class="pj-note" style="margin:-1px 0 4px;">Total saldo '+escapeHtml(maskOrFmt(d.total))+', tidak ikut dihitung '+escapeHtml(maskOrFmt(d.excl+d.held+d.titip))+(d.titip>0 ? ' (termasuk dana titipan '+escapeHtml(maskOrFmt(d.titip))+', uang orang lain)' : ' (investasi, mengendap, dll)')+'</div>';
   if(d.tersisih>0) h += row('− Tersisih untuk target nabung', maskOrFmt(d.tersisih));
   if(d.rencana>0) h += row('− Rencana belanja ('+d.nItem+' item)', maskOrFmt(d.rencana));
   h += '<div class="pj-row pj-total"><span class="l">Saldo bebas setelah rencana</span><span class="v mono" style="color:'+(d.bebas<0?'var(--danger)':'var(--pos)')+';">'+(d.bebas<0 && !saldoHidden?'−':'')+maskOrFmt(Math.abs(d.bebas))+'</span></div>';
@@ -5729,8 +5734,8 @@ function renderProyeksiModal(titleEl, totalEl, listEl, manageBtn){
   var h = '<div class="pj-h">Ringkasan</div>'+row('Total saldo semua rekening', fmt(d.total));
   if(d.excl>0) h += row('− Rekening yang tidak ikut', fmt(d.excl));
   if(d.held>0) h += row('− Mengendap / investasi / IPO tertahan', fmt(d.held));
-  h += row('= Dana likuid sekarang', fmt(d.saldo));
-  if(d.titip>0) h += row('− Dana titipan aktif', fmt(d.titip));
+  if(d.titip>0) h += row('− Dana titipan (uang orang lain)', fmt(d.titip));
+  h += row('= Dana likuid milikmu', fmt(d.saldo));
   if(d.tersisih>0) h += row('− Tersisih untuk target nabung', fmt(d.tersisih));
   h += row('= Saldo bebas sebelum rencana', neg(d.bebasSebelum));
   if(d.rencana>0) h += row('− Rencana belanja', fmt(d.rencana)) + row('= Saldo bebas setelah rencana', neg(d.bebas), d.bebas<0?'neg':'');
@@ -6170,6 +6175,7 @@ function applyDataDefaultsCore(){
 }
 var _saveDataTimer = null;
 function saveData(){
+  try{ ttSinkronBagiHasil(); }catch(e){ console.error(e); }
   if(!CURRENT_USER) return;
   if(IS_GUEST){ clearTimeout(_guestTimer); _guestTimer = setTimeout(guestSaveNow, 400); return; }
   if(!CLOUD_SAFE){ console.warn('saveData diblokir: data server belum berhasil dimuat'); return; }
@@ -7403,6 +7409,7 @@ function go(tab){
   if(tab==='riwayat') renderRiwayat();
   if(tab==='mutasi-rekening') renderMutasiRekening();
   if(tab==='transfer'){ renderTransferList(); refreshTtUi(); if(ttMode.tf==='pindah') refreshTfTitipanPilihan(); }
+  if(tab==='invbeli'){ try{ ibTtRefresh(); }catch(e){ console.error(e); } }
   if(tab==='masuk'){ renderPemasukanList(); refreshTtUi(); }
   if(tab==='keluar') renderPengeluaranList();
   if(tab==='piutang') renderPiutangList();
@@ -7777,7 +7784,7 @@ function settlePiutangAt(idx, cara){
 /* Saat sebuah catatan diedit lewat form, record baru dibuat dari nol. Tautan ke fitur lain (linkId/linkKind/linkGoal, rekurring, IPO, split) harus ikut dibawa,
    kalau tidak catatan turunan (potongan beli aset, biaya admin, hasil panen, setoran target) jadi "yatim" dan tidak ikut terhapus/terupdate. */
 /* Catatan turunan yang angkanya terikat ke sumbernya (aset, panen, stok, target): ubah/hapus lewat sumbernya, bukan langsung dari daftar riwayat. */
-var LINK_KIND_TERIKAT = {'inv-beli':'Inventaris','asetbio-beli':'Aset Biologis','benih-beli':'Benih','inv-jual':'Inventaris','asetbio-jual':'Aset Biologis','inv-jual-rusak':'Inventaris','asetbio-panen':'Aset Biologis (Hasil Panen)','stok-jual':'Stok Barang'};
+var LINK_KIND_TERIKAT = {'inv-beli':'Inventaris','asetbio-beli':'Aset Biologis','benih-beli':'Benih','inv-jual':'Inventaris','asetbio-jual':'Aset Biologis','inv-jual-rusak':'Inventaris','asetbio-panen':'Aset Biologis (Hasil Panen)','stok-jual':'Stok Barang','bagihasil':'Investasi (Bagi Hasil Titipan)'};
 function terikatSumber(type, item){
   if((type!=='pengeluaran' && type!=='pemasukan') || !item || !item.linkKind) return '';
   return LINK_KIND_TERIKAT[item.linkKind] || '';
@@ -7797,7 +7804,17 @@ function removeDerivedFor(linkId){
   var tfLama = DATA.transfer.filter(function(x){ return x.id===linkId; })[0];
   if(tfLama && tfLama.titipanPindah){
     var ttBalik = DATA.titipan.filter(function(t){ return t.id===tfLama.titipanPindah.id; })[0];
-    if(ttBalik) ttBalik.metode = tfLama.titipanPindah.dari;
+    if(ttBalik){
+      ttBalik.metode = tfLama.titipanPindah.dari;
+      /* potongan hasil pecahan digabung lagi ke titipan induknya kalau masih sama-sama aktif, di rekening yang sama, dan asal saldonya sama */
+      if(ttBalik.splitDari){
+        var induk = DATA.titipan.filter(function(t){ return t.id===ttBalik.splitDari; })[0];
+        if(induk && induk.status==='Aktif' && ttBalik.status==='Aktif' && induk.metode===ttBalik.metode && (induk.akunMasuk||induk.metode)===(ttBalik.akunMasuk||ttBalik.metode)){
+          induk.jumlah = (induk.jumlah||0) + (ttBalik.jumlah||0);
+          DATA.titipan = DATA.titipan.filter(function(t){ return t!==ttBalik; });
+        }
+      }
+    }
   }
   DATA.titipan.forEach(function(t){ if(t.linkId===linkId) removeTitipanExpense(t); });
   DATA.titipan = DATA.titipan.filter(function(t){ return t.linkId!==linkId; });
@@ -8440,7 +8457,7 @@ function pindahLokasiTitipan(t, ke){
 function tfTitipanNotice(){
   var dari = (document.getElementById('tf-dari')||{}).value, n = dari ? titipanDiRekening(dari) : [];
   var base = 'Transfer biasa antar rekening milikmu.';
-  return n.length ? base+' ⚠ Di rekening ini ada '+n.length+' dana titipan aktif. Kalau uang titipannya ikut dipindah, pilih "Pindahkan titipan" supaya posisinya ikut berubah.' : base;
+  return n.length ? base+' ⚠ Di rekening ini ada '+n.length+' dana titipan aktif. Kalau uang titipannya ikut dipindah, pilih "Pindahkan titipan" supaya posisinya ikut berubah (boleh sebagian: jumlah transfer menentukan bagian titipan yang pindah).' : base;
 }
 /* Dana titipan dari menu Dana Titipan dulu disimpan tanpa id, jadi pilihan "Pindahkan titipan" di Transfer bernilai kosong.
    Beri id ke semua titipan yang belum punya. Mengembalikan true kalau ada yang diubah. */
@@ -8451,7 +8468,7 @@ function ensureTitipanIds(){
 }
 function titipanDiRekening(acc){
   if(ensureTitipanIds()){ try{ saveData(); }catch(e){} }
-  return DATA.titipan.filter(function(t){ return t.status==='Aktif' && t.metode===acc; });
+  return DATA.titipan.filter(function(t){ return t.status==='Aktif' && t.metode===acc && ttCashPiece(t)>0.5; });
 }
 function refreshTfTitipanPilihan(){
   var sel = document.getElementById('tf-tt-pilih');
@@ -8464,11 +8481,11 @@ function refreshTfTitipanPilihan(){
     return;
   }
   sel.innerHTML = list.map(function(t){
-    return '<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.nama||'Titipan')+' • '+fmt(t.jumlah)+'</option>';
+    return '<option value="'+escapeHtml(t.id)+'">'+escapeHtml(t.nama||'Titipan')+' • '+fmt(ttCashPiece(t))+'</option>';
   }).join('');
   if(dipilihSebelumnya && list.some(function(t){ return t.id===dipilihSebelumnya; })) sel.value = dipilihSebelumnya;
   var tfJml = document.getElementById('tf-jumlah');
-  if(tfJml && !tfJml.value) tfJml.value = formatMoneyValue(list[0].jumlah);
+  if(tfJml && !tfJml.value) tfJml.value = formatMoneyValue(ttCashPiece(list[0]));
 }
 /* ===== Pindah rekening titipan (koreksi posisi, tanpa mengubah saldo) ===== */
 var TT_PINDAH_IDX = null;
@@ -8504,7 +8521,7 @@ document.addEventListener('click', function(e){
    Uang titipan sudah ada di saldo rekening. Saat dijadikan hutang, titipan ditandai "Dijadikan Hutang" (tetap menambah saldo, tidak lagi dihitung
    sebagai titipan aktif) dan dibuat catatan Hutang bertanda tanpaSaldo supaya saldo tidak dobel. Kalau jumlahnya sebagian, titipan dipecah dua. */
 var TT_HUTANG_IDX = null;
-function titipanBisaJadiHutang(t){ return !!t && t.status==='Aktif' && !t.tanpaSaldo && (t.jumlah||0)>0; }
+function titipanBisaJadiHutang(t){ return !!t && t.status==='Aktif' && !t.tanpaSaldo && (t.jumlah||0)>0 && !(ttAdaInv() && ttInvHitung()[t.id]); }
 function tandaiTitipanDikonversi(t, h){ t.status = 'Dijadikan Hutang'; t.hutangId = h.id; t.tanggalKonversi = h.tanggal; }
 function bukaKonversiTitipan(i){
   var t = DATA.titipan[i]; if(!titipanBisaJadiHutang(t)) return;
@@ -8720,6 +8737,7 @@ function renderValasRingkasan(){
   el.innerHTML = h;
 }
 function submitTransfer(){
+  var ttOk = TF_TT_OK; TF_TT_OK = false;
   var dari = document.getElementById('tf-dari').value, ke = document.getElementById('tf-ke').value;
   var vl = null;
   if(tfMode==='valas'){
@@ -8758,7 +8776,17 @@ function submitTransfer(){
     var idPilih = document.getElementById('tf-tt-pilih').value;
     ttPindahItem = DATA.titipan.filter(function(t){ return t.id===idPilih && t.status==='Aktif'; })[0] || null;
     if(!ttPindahItem){ toast('Pilih dana titipan yang mau dipindahkan'); return; }
-    if(jumlah < ttPindahItem.jumlah){ toast('Jumlah transfer minimal '+fmt(ttPindahItem.jumlah)+' (sebesar titipannya)'); return; }
+  }
+  /* Transfer biasa yang mengambil uang pribadi + titipan sekaligus: tanya dulu, jangan sampai titipan terpakai tanpa sadar */
+  if(modeTt==='none' && editState.type!=='transfer' && !ttOk){
+    var ttDi = titipanAkun(dari);
+    if(ttDi>0.5){
+      var priv = saldoAkun(dari) - ttDi, perlu = jumlah + (biaya>0 ? biaya : 0) + (vl ? vl.spread : 0);
+      if(perlu > priv + 0.5){
+        showConfirm('Transfer '+fmt(perlu)+' dari '+accountOptionLabel(dari)+' melebihi uang pribadimu di rekening ini ('+fmt(Math.max(0,priv))+'), karena ada dana titipan '+fmt(ttDi)+' di sana. Berarti '+fmt(perlu-Math.max(0,priv))+' diambil dari dana titipan. Kalau uang titipannya memang ikut dipindah, batalkan lalu pilih "Pindahkan titipan".', function(){ TF_TT_OK = true; submitTransfer(); }, 'Tetap Transfer');
+        return;
+      }
+    }
   }
   /* Saat edit transfer: titipan yang tertaut jangan hilang, ikutkan perubahan rekening/jumlahnya */
   var oldTfEdit = (editState.type==='transfer') ? DATA.transfer[editState.index] : null;
@@ -8776,8 +8804,18 @@ function submitTransfer(){
     DATA.titipan.push({id:genId('tt'), tanggal:record.tanggal, metode:ke, jumlah:jumlah, nama:ttBaruNama, untuk:'Dari transfer '+dari,
       status:'Aktif', metodeBayar:'', jatuhTempo:'', ket:record.ket||'', tanpaSaldo:true, linkId:record.id});
   } else if(modeTt==='pindah' && ttPindahItem){
-    record.titipanPindah = {id:ttPindahItem.id, dari:dari};
-    pindahLokasiTitipan(ttPindahItem, ke);
+    var cashT = ttCashPiece(ttPindahItem);
+    if(jumlah < cashT - 0.5){
+      /* Pindah sebagian: titipan dipecah. Bagian yang pindah jadi catatan titipan sendiri di rekening tujuan (saldo tidak berubah, hanya lokasinya). */
+      var klon = JSON.parse(JSON.stringify(ttPindahItem)); klon.id = genId('tt'); klon.jumlah = jumlah; klon.splitDari = ttPindahItem.id; delete klon.pid; delete klon.tanggalKembali;
+      ttPindahItem.jumlah = ttPindahItem.jumlah - jumlah;
+      DATA.titipan.splice(DATA.titipan.indexOf(ttPindahItem)+1, 0, klon);
+      pindahLokasiTitipan(klon, ke);
+      record.titipanPindah = {id:klon.id, dari:dari, split:true};
+    } else {
+      record.titipanPindah = {id:ttPindahItem.id, dari:dari};
+      pindahLokasiTitipan(ttPindahItem, ke);
+    }
   }
   if(biaya>0){
     var feeRec = {tanggal:record.tanggal, metode:dari, untuk:'Transfer', jenis:'Biaya Admin Transfer',
@@ -9019,6 +9057,27 @@ function submitTitipan(){
     metodeBayar: (status==='Dikembalikan') ? metodeBayarSel.value : '',
     jatuhTempo:document.getElementById('tt-jatuh-tempo').value,
     ket:document.getElementById('tt-ket').value};
+  var bagiRaw = (document.getElementById('tt-bagi').value||'').replace(',','.').trim();
+  if(bagiRaw!==''){
+    var bagiN = parseFloat(bagiRaw);
+    if(!(bagiN>=0 && bagiN<=100)){ toast('Bagian pemilik harus antara 0 dan 100'); return; }
+    record.bagiPemilik = bagiN;
+  }
+  var idEd = (editState.type==='titipan' && DATA.titipan[editState.index]) ? DATA.titipan[editState.index].id : null;
+  var hEd = (idEd && ttAdaInv()) ? ttInvHitung()[idEd] : null;
+  if(hEd){
+    if(!ttIsInv(record)){ toast('Titipan ini sudah dipakai membeli investasi, kolom bagian pemilik tidak boleh dikosongkan'); return; }
+    if(jumlah < hEd.modalBeli - 0.5){ toast('Jumlah tidak boleh di bawah modal yang sudah diinvestasikan ('+fmt(hEd.modalBeli)+')'); return; }
+  }
+  if(ttIsInv(record)) catatPgDipilih = false; /* titipan investasi dikembalikan utuh + bagi hasil, bukan pengeluaran pribadi */
+  if(status==='Dikembalikan' && ttIsInv(record)){
+    var idCek = (editState.type==='titipan' && DATA.titipan[editState.index]) ? DATA.titipan[editState.index].id : null;
+    var hC = idCek ? ttInvHitung()[idCek] : null;
+    if(hC){
+      if(hC.modalTersisa>0.5){ toast('Modal titipan ini masih di investasi ('+fmt(hC.modalTersisa)+'). Jual dulu sebelum dikembalikan.'); return; }
+      record.hasilDibayar = hC.bagianPemilik;
+    }
+  }
   if(editState.type==='titipan'){
     var oldTt = DATA.titipan[editState.index];
     if(oldTt){
@@ -9029,6 +9088,7 @@ function submitTitipan(){
       removeTitipanExpense(oldTt);
     }
     if(status==='Dikembalikan' && !record.tanggalKembali) record.tanggalKembali = todayISO();
+    if(oldTt && oldTt.hasilDibayar && oldTt.status==='Dikembalikan' && status==='Dikembalikan') record.hasilDibayar = oldTt.hasilDibayar;
     if(status==='Dikembalikan' && catatPgDipilih){ record.catatPg = true; record.jenisCatat = jenisCatatDipilih; }
     DATA.titipan[editState.index]=record; addTitipanExpense(record); finishEdit('titipan','Dana titipan diperbarui');
   }
@@ -9039,7 +9099,7 @@ function submitTitipan(){
     toast('Dana titipan '+fmt(jumlah)+' tersimpan');
   }
   saveData();
-  document.getElementById('tt-jumlah').value=''; document.getElementById('tt-nama').value=''; document.getElementById('tt-untuk').value=''; document.getElementById('tt-jatuh-tempo').value=''; document.getElementById('tt-ket').value='';
+  document.getElementById('tt-jumlah').value=''; document.getElementById('tt-nama').value=''; document.getElementById('tt-untuk').value=''; document.getElementById('tt-jatuh-tempo').value=''; document.getElementById('tt-ket').value=''; document.getElementById('tt-bagi').value='';
   metodeBayarSel.dataset.touched = '';
   document.getElementById('tt-catat-pg').checked = false; document.getElementById('tt-catat-detail').style.display = 'none';
   renderTitipanList(); renderPengeluaranList(); renderReminders(); renderDashboard();
@@ -9826,6 +9886,25 @@ function rbInit(){
     else if(act==='hapus-plan' && p) showConfirm('Hapus rencana "'+(p.nama||'')+'"? Belanja yang sudah tercatat tidak ikut terhapus.', function(){ DATA.rencanaBelanja = DATA.rencanaBelanja.filter(function(x){ return x.id!==pid; }); saveData(); renderRencanaBelanja(); });
   });
 }
+/* titipan yang boleh dipakai beli investasi: aktif, punya bagi hasil, dan masih ada uang tunainya di rekening pembayaran */
+function ibTtKandidat(editBagian){
+  var m = document.getElementById('ib-metode').value, ex = editBagian || {};
+  return (DATA.titipan||[]).filter(function(t){ return t.status==='Aktif' && ttIsInv(t) && t.metode===m && (ttCashPiece(t) + (ex[t.id]||0))>0.5; });
+}
+function ibTtRefresh(sel){
+  var wrap = document.getElementById('ib-tt-wrap'); if(!wrap) return;
+  var ex = {}; if(editState.type==='invbeli' && DATA.invbeli[editState.index] && DATA.invbeli[editState.index].titipanId){ var o = DATA.invbeli[editState.index]; ex[o.titipanId] = o.titipanBagian||0; }
+  var cur = sel!==undefined ? sel : document.getElementById('ib-titipan').value;
+  var list = ibTtKandidat(ex), el = document.getElementById('ib-titipan');
+  wrap.style.display = list.length ? 'block' : 'none';
+  el.innerHTML = '<option value="">Uang pribadi saja</option>'+list.map(function(t){ return '<option value="'+escapeHtml(t.id)+'"'+(t.id===cur?' selected':'')+'>'+escapeHtml((t.nama||'Titipan')+' • sisa tunai '+fmt(ttCashPiece(t)+(ex[t.id]||0))+' • hasil '+t.bagiPemilik+'% pemilik')+'</option>'; }).join('');
+  ibTtChange();
+}
+function ibTtChange(){
+  var id = document.getElementById('ib-titipan').value;
+  document.getElementById('ib-tt-bagian-wrap').style.display = id ? 'block' : 'none';
+  document.getElementById('ib-tt-hint').textContent = id ? 'Sisanya (kalau ada) dihitung uang pribadimu. Bisa beberapa kali beli instrumen berbeda dari titipan yang sama.' : '';
+}
 function submitInvBeli(){
   var jumlah = parseMoneyValue(document.getElementById('ib-jumlah').value);
   if(!jumlah || jumlah<=0){ toast('Isi jumlah dulu'); return; }
@@ -9845,6 +9924,17 @@ function submitInvBeli(){
     kode:invNormKode(document.getElementById('ib-kode').value, document.getElementById('ib-instrumen').value), metode:document.getElementById('ib-metode').value,
     jumlah:jumlah, fee:fee, ket:document.getElementById('ib-ket').value};
   if(unitV>0){ record.unit = unitV; if(hargaV>0) record.hargaSatuan = hargaV; }
+  var ttIdB = document.getElementById('ib-titipan').value;
+  if(ttIdB){
+    var tB = ttById(ttIdB), bag = parseMoneyValue(document.getElementById('ib-tt-bagian').value) || jumlah;
+    var oldB = (editState.type==='invbeli' && DATA.invbeli[editState.index]) ? DATA.invbeli[editState.index] : null;
+    var kap = tB ? ttCashPiece(tB) + ((oldB && oldB.titipanId===ttIdB) ? (oldB.titipanBagian||0) : 0) : 0;
+    if(!tB || !ttIsInv(tB)){ toast('Titipan tidak valid'); return; }
+    if(tB.metode!==record.metode){ toast('Titipan ini tersimpan di '+accountOptionLabel(tB.metode)+'. Bayar dari rekening itu, atau pindahkan titipannya dulu.'); return; }
+    if(bag>jumlah+0.5){ toast('Bagian titipan tidak boleh melebihi jumlah pembelian'); return; }
+    if(bag>kap+0.5){ toast('Uang titipan yang tersedia hanya '+fmt(Math.max(0,kap))); return; }
+    record.titipanId = ttIdB; record.titipanBagian = Math.round(bag);
+  }
   removeDerivedFor(record.id);
   if(fee>0){
     var labelBeli = record.instrumen+(record.kode?' '+record.kode:'');
@@ -9855,7 +9945,7 @@ function submitInvBeli(){
   else { DATA.invbeli.push(record); toast('Pembelian '+record.instrumen+' '+fmt(jumlah)+' tersimpan'); }
   saveData();
   document.getElementById('ib-jumlah').value=''; document.getElementById('ib-kode').value=''; document.getElementById('ib-fee').value=''; document.getElementById('ib-ket').value='';
-  document.getElementById('ib-unit').value=''; document.getElementById('ib-harga').value='';
+  document.getElementById('ib-unit').value=''; document.getElementById('ib-harga').value=''; document.getElementById('ib-tt-bagian').value=''; document.getElementById('ib-titipan').value='';
   renderInvBeliList(); renderPengeluaranList(); go('dashboard');
 }
 function submitInvJual(){
@@ -10056,7 +10146,7 @@ function saldoAkun(acc, upToDate){
     if((t.akunMasuk||t.metode)===acc && !t.tanpaSaldo) v += t.jumlah; /* tanpaSaldo = uang sendiri hasil transfer, sudah ada di saldo */
     if(t.status==='Dikembalikan' && !t.catatPg && !(lim && t.tanggalKembali && t.tanggalKembali>lim)){
       var bayarAccTt = t.metodeBayar || t.metode;
-      if(bayarAccTt===acc) v -= t.jumlah;
+      if(bayarAccTt===acc) v -= t.jumlah + (t.hasilDibayar||0);
     }
   });
   DATA.invbeli.forEach(function(s){ if(lim && s.tanggal>lim) return; if(s.metode===acc) v -= s.jumlah; if(s.platform===acc) v += s.jumlah; });
@@ -10231,8 +10321,8 @@ function totalHutang(upToDate){
   return s;
 }
 function totalTitipan(upToDate){
-  var lim = upToDate||null, s=0;
-  DATA.titipan.forEach(function(t){ if(lim && t.tanggal>lim) return; if(t.status==='Aktif' || (lim && t.status==='Dikembalikan' && t.tanggalKembali && t.tanggalKembali>lim) || (lim && t.status==='Dijadikan Hutang' && t.tanggalKonversi && t.tanggalKonversi>lim)) s+=t.jumlah; }); /* sudah dikembalikan tapi belum pada tanggal ini = masih dipegang */
+  var lim = upToDate||null, s=0, H = ttAdaInv() ? ttInvHitung(lim) : null;
+  DATA.titipan.forEach(function(t){ if(lim && t.tanggal>lim) return; if(t.status==='Aktif' || (lim && t.status==='Dikembalikan' && t.tanggalKembali && t.tanggalKembali>lim) || (lim && t.status==='Dijadikan Hutang' && t.tanggalKonversi && t.tanggalKonversi>lim)){ s+=t.jumlah; if(H && H[t.id]) s += H[t.id].bagianPemilik; } }); /* sudah dikembalikan tapi belum pada tanggal ini = masih dipegang; bagian pemilik dari hasil investasi juga kewajiban */
   return s;
 }
 
@@ -10509,9 +10599,106 @@ function isDanaDarurat(acc){
   return !!(info && info.danaDarurat);
 }
 /* Dana titipan aktif dan dana target (tabungan tujuan) yang tersimpan di sebuah rekening: ada di saldo, tapi bukan dana bebas */
+/* ============ DANA TITIPAN: LOKASI & INVESTASI ============
+   Titipan = kewajiban yang punya lokasi. Satu titipan terdiri dari beberapa "potongan" yang bisa ada di rekening berbeda:
+   - potongan tunai di rekening titipan (t.metode) = jumlah - modal yang sudah dibelikan instrumen
+   - potongan investasi di platform tempat instrumen dibeli (modal yang masih dipegang)
+   - potongan hasil jual di rekening tempat uang jual masuk = modal terjual + bagian hasil milik pemilik
+   Titipan "untuk diinvestasikan" ditandai t.bagiPemilik (persen hasil milik pemilik). Pembelian investasi menunjuk titipan lewat
+   invbeli.titipanId + invbeli.titipanBagian. Bagian titipan di tiap instrumen dihitung dari komposisi modal (rata-rata), jadi
+   pembelian bercampur uang pribadi dan titipan tetap adil. Untung/rugi dihitung KOTOR sebelum fee, sama seperti Laporan. */
+function ttIsInv(t){ return !!t && typeof t.bagiPemilik==='number' && t.bagiPemilik>=0 && t.bagiPemilik<=100; }
+function ttById(id){ var r = null; (DATA.titipan||[]).forEach(function(t){ if(t && t.id===id) r = t; }); return r; }
+function ttAdaInv(){ return (DATA.invbeli||[]).some(function(b){ return !!b.titipanId; }); }
+function ttInvHitung(upTo){
+  var lim = upTo || null, out = {}, ev = [];
+  (DATA.invbeli||[]).forEach(function(b, i){ if(lim && b.tanggal>lim) return; ev.push({k:0, s:b, i:i, t:b.tanggal||''}); });
+  (DATA.invjual||[]).forEach(function(b, i){ if(lim && b.tanggal>lim) return; ev.push({k:1, s:b, i:i, t:b.tanggal||''}); });
+  ev.sort(function(a, b){ return a.t<b.t ? -1 : (a.t>b.t ? 1 : ((a.k-b.k) || (a.i-b.i))); }); /* hari yang sama: beli dulu, baru jual */
+  var inst = {};
+  function T(id){ return out[id] || (out[id] = { modalBeli:0, modalTersisa:0, pos:{}, jual:[], hasil:0, bagianPemilik:0, instr:{} }); }
+  ev.forEach(function(e){
+    var x = e.s, key = (x.instrumen||'')+'|'+(x.kode||'')+'|'+(x.platform||''), I = inst[key] || (inst[key] = { tot:0, tt:{} });
+    var plat = x.platform || '', label = (x.instrumen||'')+(x.kode ? ' '+x.kode : '');
+    if(e.k===0){
+      I.tot += x.jumlah||0;
+      if(x.titipanId && x.titipanBagian>0 && ttById(x.titipanId)){
+        I.tt[x.titipanId] = (I.tt[x.titipanId]||0) + x.titipanBagian;
+        var o = T(x.titipanId); o.modalBeli += x.titipanBagian; o.pos[plat] = (o.pos[plat]||0) + x.titipanBagian; o.instr[label] = true;
+      }
+    } else {
+      var modalKeluar = (x.modal!==undefined && x.modal!==null && x.modal!=='') ? x.modal : x.jumlah;
+      modalKeluar = modalKeluar||0;
+      var f = I.tot>0 ? Math.min(1, modalKeluar/I.tot) : 0, gross = (x.jumlah||0) - modalKeluar;
+      Object.keys(I.tt).forEach(function(tid){
+        var m = I.tt[tid]*f; if(!(m>0)) return;
+        var o = T(tid), t = ttById(tid), pct = ttIsInv(t) ? t.bagiPemilik : 0;
+        var porsi = I.tot>0 ? I.tt[tid]/I.tot : 0, hasil = gross*porsi, bp = Math.round(hasil*pct/100);
+        I.tt[tid] -= m; o.pos[plat] = Math.max(0, (o.pos[plat]||0) - m);
+        o.jual.push({ id:x.id, tanggal:x.tanggal, akun:x.metode||'', platform:plat, label:label, modal:m, hasil:hasil, bagianPemilik:bp });
+        o.hasil += hasil; o.bagianPemilik += bp;
+      });
+      I.tot = Math.max(0, I.tot - modalKeluar);
+    }
+  });
+  Object.keys(out).forEach(function(id){ var o = out[id], sm = 0; Object.keys(o.pos).forEach(function(k){ sm += o.pos[k]; }); o.modalTersisa = sm; });
+  return out;
+}
+/* potongan tunai sebuah titipan di rekening titipannya (t.metode) */
+function ttCashPiece(t){
+  var H = ttAdaInv() ? ttInvHitung() : null, h = H && H[t.id];
+  return (t.jumlah||0) - (h ? h.modalBeli : 0);
+}
+/* Akrual bagi hasil: bagian pemilik titipan dari tiap penjualan investasi dicatat sebagai pengeluaran (untung) atau pemasukan (rugi)
+   TANPA metode, jadi tidak mengubah saldo rekening. Keuntungan/kerugian investasi tetap tercatat penuh dari fitur Jual, sehingga
+   laporan hanya menyisakan bagianmu. Dibangun ulang otomatis tiap data disimpan, jadi selalu cocok dengan data pembelian/penjualan terbaru. */
+function ttSinkronBagiHasil(){
+  var H = ttAdaInv() ? ttInvHitung() : {}, wantP = [], wantM = [];
+  Object.keys(H).forEach(function(tid){
+    var t = ttById(tid); if(!t || !ttIsInv(t)) return;
+    H[tid].jual.forEach(function(j){
+      var bp = j.bagianPemilik; if(Math.abs(bp)<1) return;
+      var nm = (t.nama||'pemilik titipan');
+      if(bp>0) wantP.push({ tanggal:j.tanggal, metode:'', untuk:'Investasi', jenis:'Bagi Hasil Titipan', jumlah:bp, akun:'5-700', ket:'Bagi hasil '+t.bagiPemilik+'% untuk '+nm+' dari '+j.label, linkId:j.id, linkKind:'bagihasil', titipanId:tid });
+      else wantM.push({ tanggal:j.tanggal, metode:'', sumber:'Rugi Ditanggung Pemilik Titipan', jumlah:-bp, ket:'Rugi '+j.label+' ditanggung '+t.bagiPemilik+'% oleh '+nm, linkId:j.id, linkKind:'bagihasil', titipanId:tid });
+    });
+  });
+  var curP = (DATA.pengeluaran||[]).filter(function(x){ return x.linkKind==='bagihasil'; });
+  var curM = (DATA.pemasukan||[]).filter(function(x){ return x.linkKind==='bagihasil'; });
+  if(JSON.stringify(curP)===JSON.stringify(wantP) && JSON.stringify(curM)===JSON.stringify(wantM)) return false;
+  DATA.pengeluaran = DATA.pengeluaran.filter(function(x){ return x.linkKind!=='bagihasil'; }).concat(wantP);
+  DATA.pemasukan = DATA.pemasukan.filter(function(x){ return x.linkKind!=='bagihasil'; }).concat(wantM);
+  return true;
+}
+/* rekening yang saldonya lebih kecil dari dana titipan di dalamnya: tanda titipan ikut terpakai atau berpindah tanpa dicatat */
+function titipanKurangAkun(){
+  var r = [];
+  ACCOUNTS.forEach(function(a){
+    var tt = titipanAkun(a); if(!(tt>0.5)) return;
+    var sd = saldoAkun(a); if(tt > sd + 0.5) r.push({ a:a, titip:tt, saldo:sd, selisih:tt-sd });
+  });
+  return r;
+}
+function ttWarnHtml(){
+  var w = titipanKurangAkun(); if(!w.length) return '';
+  return '<div class="card" style="margin-bottom:12px; border:1px solid var(--danger);"><div style="font-size:12.5px; line-height:1.6;"><b style="color:var(--danger);">Dana titipan lebih besar dari saldo rekening</b>'+
+    w.map(function(x){ return '<div style="margin-top:6px;"><b>'+escapeHtml(accountOptionLabel(x.a))+'</b>: titipan '+escapeHtml(maskOrFmt(x.titip))+', saldo '+escapeHtml(maskOrFmt(x.saldo))+' (kurang '+escapeHtml(maskOrFmt(x.selisih))+')</div>'; }).join('')+
+    '<div style="margin-top:8px; color:var(--text-2);">Kemungkinan uang titipan ikut terpakai atau sudah dipindah tanpa dicatat. Pindahkan lokasi titipan lewat Transfer (Pindahkan titipan) atau menu Pindah rekening, atau ganti uangnya.</div></div></div>';
+}
+function ttRenderWarn(){
+  ['tt-warn','rekon-ttwarn'].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ttWarnHtml(); });
+}
+var TF_TT_OK = false, IB_TT_OK = false;
 function titipanAkun(acc){
-  var s = 0;
-  (DATA.titipan||[]).forEach(function(t){ if(t.status==='Aktif' && t.metode===acc) s += (t.jumlah||0); });
+  var s = 0, H = ttAdaInv() ? ttInvHitung() : null;
+  (DATA.titipan||[]).forEach(function(t){
+    if(t.status!=='Aktif') return;
+    var h = H && H[t.id];
+    if(!h){ if(t.metode===acc) s += (t.jumlah||0); return; }
+    if(t.metode===acc) s += (t.jumlah||0) - h.modalBeli;
+    if(h.pos[acc]) s += h.pos[acc];
+    h.jual.forEach(function(j){ if(j.akun===acc) s += j.modal + j.bagianPemilik; });
+  });
   return s;
 }
 function goalDisisihkanAkun(acc){
@@ -10549,7 +10736,7 @@ function ksPengeluaranBulan(year, month){
   return bebanRutin(firstDayStr(year, month), lastDayStr(year, month)); /* Beban rutin (tanpa pembelian aset/stok dan biaya investasi) */
 }
 /* Pemasukan non-rutin: hasil jual aset/stok (harga penuh) dan keuntungan investasi. Tidak dihitung sebagai penghasilan rutin. */
-var PEMASUKAN_NON_RUTIN_RE = /^(Jual |Keuntungan Investasi)/;
+var PEMASUKAN_NON_RUTIN_RE = /^(Jual |Keuntungan Investasi|Rugi Ditanggung Pemilik Titipan)/;
 function isPemasukanNonRutin(x){ return PEMASUKAN_NON_RUTIN_RE.test(String((x && x.sumber)||'')); }
 function ksPemasukanBulan(year, month){
   var start = firstDayStr(year, month), end = lastDayStr(year, month), s = 0;
@@ -12219,6 +12406,7 @@ function rekonStatus(acc){
 }
 function renderRekonsiliasi(){
   if(!document.getElementById('rekon-list')) return;
+  try{ ttRenderWarn(); }catch(e){}
   if(!DATA.koreksi) DATA.koreksi = [];
   if(!DATA.rekon) DATA.rekon = {};
   var accs = ACCOUNTS.slice();
@@ -12636,7 +12824,7 @@ function buildAccountTransactions(acc){
   });
   DATA.titipan.forEach(function(x,i){
     if((x.akunMasuk||x.metode)===acc && !x.tanpaSaldo) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Titipan', label:(x.nama||'-'), sign:1, type:'titipan', index:i, ket:x.ket||''});
-    if(x.status==='Dikembalikan' && !x.catatPg && (x.metodeBayar||x.metode)===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Kembalikan Titipan', label:(x.nama||'-'), sign:-1, type:'titipan', index:i, ket:x.ket||''});
+    if(x.status==='Dikembalikan' && !x.catatPg && (x.metodeBayar||x.metode)===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah+(x.hasilDibayar||0), tipe:'Kembalikan Titipan', label:(x.nama||'-'), sign:-1, type:'titipan', index:i, ket:x.ket||''});
   });
   DATA.invbeli.forEach(function(x,i){
     if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Beli Investasi', label:x.instrumen+' • '+(x.kode||'-'), sign:-1, type:'invbeli', index:i, ket:x.ket||''});
@@ -13719,6 +13907,7 @@ function renderHutangList(){
 function renderTitipanList(){
   var el = document.getElementById('tt-list');
   var f = lfSetup('tt', el, { ph:'cari nama, tujuan, atau keterangan...', aLabel:'Status', aOpts: lfUnique(DATA.titipan.map(function(t){ return t.status; })), bLabel:'Bulan', bOpts: lfMonthOpts(DATA.titipan.map(function(x){ return x.tanggal; })), hasData: DATA.titipan.length>0 }, renderTitipanList);
+  try{ ttRenderWarn(); }catch(e){}
   if(DATA.titipan.length===0){ el.innerHTML = '<div class="empty">Belum ada dana titipan dicatat.</div>'; return; }
   var html = '', shown = 0, sum = 0;
   for(var i=DATA.titipan.length-1; i>=0; i--){
@@ -13729,7 +13918,13 @@ function renderTitipanList(){
     shown++; sum += t.jumlah||0;
     var bayarAccTt = t.metodeBayar || t.metode;
     var lineRek = (t.tanpaSaldo ? 'Disimpan di ' : 'Masuk ke ')+accountOptionLabel(t.metode);
-    var lineKembali = t.status==='Dikembalikan' ? 'Dikembalikan dari '+accountOptionLabel(bayarAccTt) : (t.status==='Dijadikan Hutang' ? 'Dijadikan hutang'+(t.tanggalKonversi ? ' sejak '+fmtTglIndo(t.tanggalKonversi) : '')+'. Pelunasannya dicatat di menu Hutang.' : '');
+    var hT = (ttIsInv(t) && ttAdaInv()) ? ttInvHitung()[t.id] : null, infoInv = '';
+    if(ttIsInv(t)){
+      infoInv = 'Investasi, hasil untuk pemilik '+t.bagiPemilik+'%';
+      if(hT) infoInv += ' • modal masih di investasi '+fmt(hT.modalTersisa)+' • hasil terealisasi '+fmt(Math.round(hT.hasil))+', bagian pemilik '+fmt(hT.bagianPemilik)+(hT.bagianPemilik? ' (kewajiban, ikut dikembalikan)':'');
+      if(t.status==='Dikembalikan' && t.hasilDibayar) infoInv += ' • bagi hasil dibayar '+fmt(t.hasilDibayar);
+    }
+    var lineKembali = (infoInv ? infoInv+'. ' : '') + (t.status==='Dikembalikan' ? 'Dikembalikan dari '+accountOptionLabel(bayarAccTt) : (t.status==='Dijadikan Hutang' ? 'Dijadikan hutang'+(t.tanggalKonversi ? ' sejak '+fmtTglIndo(t.tanggalKonversi) : '')+'. Pelunasannya dicatat di menu Hutang.' : ''));
     var due = (t.status==='Dikembalikan' || t.status==='Dijadikan Hutang') ? '' : lfDueLine(t.jatuhTempo);
     html += loanCard({icon:ICONS.cash, title:t.nama||'-', amount:t.jumlah, status:t.status,
       chips:(t.untuk ? '<span class="badge" style="background:rgba(255,255,255,.06); color:var(--text-2);">'+escapeHtml(t.untuk)+'</span>' : ''),
@@ -17875,7 +18070,7 @@ function renderInvBeliList(){
     shown++; sum += s.jumlah||0;
     html += '<div class="txn-row v2">'+txnLeadBadge('invbeli')+
       '<div class="txn-body"><div class="txn-top"><span class="txn-title">'+escapeHtml(s.kode||s.instrumen||'-')+'</span><span class="badge">'+escapeHtml(s.instrumen||'-')+'</span><span class="amt mono neg">-'+fmt(s.jumlah)+'</span></div>'+
-      '<div class="txn-sub">'+escapeHtml(fmtTglIndo(s.tanggal)+' • '+accountOptionLabel(s.metode)+unitSub(s))+'</div>'+
+      '<div class="txn-sub">'+escapeHtml(fmtTglIndo(s.tanggal)+' • '+accountOptionLabel(s.metode)+unitSub(s)+(s.titipanId && ttById(s.titipanId) ? ' • titipan '+(ttById(s.titipanId).nama||'')+' '+fmt(s.titipanBagian||0) : ''))+'</div>'+
       (s.ket ? '<div class="txn-note">'+escapeHtml(s.ket)+'</div>' : '')+
       '<div class="txn-bottom"><span class="txn-sub" style="color:var(--primary); font-weight:600;">Pembelian Investasi</span>'+txnActions('invbeli',i)+'</div></div></div>';
   }
@@ -18064,6 +18259,7 @@ function startEdit(type, index){
     document.getElementById('tt-untuk').value = item.untuk||'';
     document.getElementById('tt-jatuh-tempo').value = item.jatuhTempo||'';
     document.getElementById('tt-ket').value = item.ket||'';
+    document.getElementById('tt-bagi').value = ttIsInv(item) ? String(item.bagiPemilik) : '';
     var ttBayarSel = document.getElementById('tt-metode-bayar');
     ttBayarSel.value = item.metodeBayar || item.metode;
     ttBayarSel.dataset.touched = '1';
@@ -18103,6 +18299,7 @@ function startEdit(type, index){
     document.getElementById('ib-jumlah').value = formatMoneyValue(item.jumlah);
     document.getElementById('ib-fee').value = item.fee ? formatMoneyValue(item.fee) : '';
     document.getElementById('ib-ket').value = item.ket||'';
+    ibTtRefresh(item.titipanId||''); document.getElementById('ib-tt-bagian').value = item.titipanId ? formatMoneyValue(item.titipanBagian||item.jumlah) : '';
     unitUi('ib'); ['ib-unit','ib-harga'].forEach(function(i){ delete document.getElementById(i).dataset.auto; }); document.getElementById('ib-unit').value = item.unit>0 ? fmtUnitInput(item.unit) : ''; document.getElementById('ib-harga').value = item.hargaSatuan>0 ? fmtUnitInput(item.hargaSatuan) : '';
   } else if(type==='invjual'){
     document.getElementById('ij-tanggal').value = item.tanggal;
@@ -21408,6 +21605,8 @@ function wireEvents(){
   unitUi('ib'); unitUi('ij');
   document.getElementById('ij-jumlah').addEventListener('input', function(){ updateUntungRugi(); unitLink('ij','jumlah'); });
   document.getElementById('ib-instrumen').addEventListener('change', function(){ unitUi('ib'); });
+  document.getElementById('ib-metode').addEventListener('change', function(){ ibTtRefresh(''); });
+  document.getElementById('ib-titipan').addEventListener('change', ibTtChange);
   document.getElementById('ib-unit').addEventListener('input', function(){ unitLink('ib','unit'); });
   document.getElementById('ib-harga').addEventListener('input', function(){ unitLink('ib','harga'); });
   document.getElementById('ib-jumlah').addEventListener('input', function(){ unitLink('ib','jumlah'); });
