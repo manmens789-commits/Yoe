@@ -4073,7 +4073,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="field"><label>Nama rencana</label><input type="text" id="rb-p-nama" maxlength="40" placeholder="cth: Belanja bulanan"></div>
     <div class="field"><label>Rencana belanja tanggal</label><input type="date" id="rb-p-tanggal"></div>
     <div class="field"><label>Sumber dana (opsional)</label><select id="rb-p-metode"></select>
-      <div class="meta" style="margin-top:4px;">Kalau diisi, total rencana dicek terhadap saldo tersedia rekening ini.</div></div>
+      <div class="meta" style="margin-top:4px;">Kalau diisi, total rencana dihitung sebagai beban rekening ini di Proyeksi Dana dan dicek terhadap dana bebasnya (setelah dana titipan, target, dan rencana lain di rekening yang sama).</div></div>
     <div id="rb-plan-err" style="font-size:11.5px; color:var(--danger); min-height:16px; margin-bottom:6px;"></div>
     <div class="modal-actions"><button class="cancel" id="rb-plan-cancel">Batal</button><button class="confirm" id="rb-plan-simpan" style="background:var(--primary);">Simpan</button></div>
   </div>
@@ -4087,6 +4087,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="field"><label>Satuan</label><select id="rb-i-satuan"></select></div>
     <div class="field"><label>Perkiraan harga per satuan (Rp)</label><input type="text" class="money-input" id="rb-i-harga" inputmode="numeric" placeholder="0"><div class="meta" id="rb-i-info" style="margin-top:4px;"></div></div>
     <div class="field"><label>Prioritas</label><select id="rb-i-prio"><option value="wajib">Wajib (kebutuhan pokok)</option><option value="perlu" selected>Perlu (sebaiknya dibeli)</option><option value="boleh">Boleh (bisa ditunda)</option></select></div>
+    <div class="field"><label>Sumber dana item (opsional)</label><select id="rb-i-metode"></select><div class="meta" style="margin-top:4px;">Kosong = ikut sumber dana rencana.</div></div>
     <div id="rb-i-prev" style="font-size:12.5px; color:var(--text-2); margin-bottom:6px;"></div>
     <div id="rb-item-err" style="font-size:11.5px; color:var(--danger); min-height:16px; margin-bottom:6px;"></div>
     <div class="modal-actions"><button class="cancel" id="rb-item-cancel">Batal</button><button class="confirm" id="rb-item-simpan" style="background:var(--primary);">Simpan</button></div>
@@ -5610,21 +5611,38 @@ function showConfirm(message, onConfirm, okLabel){
    Saldo bebas setelah rencana = saldo - dana titipan - dana tersisih untuk target nabung - rencana belanja yang belum dibeli.
    Target nabung (barang baru) dan Rencana Belanja (restok stok yang sudah ada di master) saling terpisah, jadi tidak ada hitungan ganda.
    Dana titipan dan dana target SUDAH ada di dalam saldo rekening, jadi dikurangkan, bukan ditambahkan. */
+function proyeksiAkunIkut(a){
+  var o = (DATA.proyeksiAkun||{})[a];
+  if(o===true || o===false) return o;
+  var k = ACCOUNT_CATEGORY[a] || 'bank';
+  return k!=='investasi' && k!=='pulsa';
+}
+/* bagian saldo yang TIDAK likuid: mengendap, IPO tertahan, dan porsi investasi di rekening hybrid */
+function akunTahan(a){ return saldoMengendapAkun(a) + (isHybridTabunganInvestasi(a) ? nilaiInvestasiAkun(a) : 0); }
+function akunLikuid(a){ return saldoAkun(a) - akunTahan(a); }
+function rbAkunValid(a){ return !!a && ACCOUNTS.indexOf(a)>-1; }
+/* sumber dana sebuah item = sumber dana item sendiri, kalau kosong ikut sumber dana rencananya */
+function rbSumberItem(p, it){ var a = (it && it.metode) || (p && p.metode) || ''; return rbAkunValid(a) ? a : ''; }
+/* pilihan rekening untuk sumber dana belanja: investasi & pulsa tidak ditawarkan (kecuali yang sudah terpilih) */
+function rbAkunPilihan(cur){ return ACCOUNTS.filter(function(a){ var k = ACCOUNT_CATEGORY[a]||'bank'; return (k!=='investasi' && k!=='pulsa') || a===cur; }); }
+/*  Proyeksi Dana per rekening.
+    - Sumber = rekening yang dicentang (proyeksiAkunIkut) + rekening yang dipilih sebagai sumber dana sebuah rencana/item.
+    - Bebas rekening = saldo likuid - dana titipan - dana target (sudah terkumpul) - rencana belanja yang menunjuk rekening itu.
+    - Rencana TANPA sumber dana diambil dari gabungan sisa bebas (yang positif) rekening yang dicentang. */
 function proyeksiDanaHitung(){
   var nowIso = todayISO(), nowM = nowIso.slice(0,7);
-  var saldo = totalSaldo(), titip = 0, tersisih = 0;
-  ACCOUNTS.forEach(function(a){ titip += titipanAkun(a); tersisih += goalDisisihkanAkun(a); });
   var goals = (DATA.goals||[]).filter(function(g){ return !g.dibeli; }).map(function(g){
     var sisa = Math.max(0, (g.target||0)-(g.terkumpul||0)), bln = null, lewat = false;
     if(g.tanggalTarget && sisa>0){
       var dd = (nwParse(g.tanggalTarget)-nwParse(nowIso))/86400000;
       lewat = dd<0; bln = Math.max(1, Math.round(dd/30.4375));
     }
-    return { nama:g.nama||'-', target:g.target||0, terkumpul:g.terkumpul||0, sisa:sisa, tgl:g.tanggalTarget||'', bln:bln, lewat:lewat, perBln:(bln ? Math.ceil(sisa/bln) : null) };
+    return { nama:g.nama||'-', target:g.target||0, terkumpul:g.terkumpul||0, sisa:sisa, tgl:g.tanggalTarget||'', bln:bln, lewat:lewat, perBln:(bln ? Math.ceil(sisa/bln) : null), rek:g.rekeningTujuan||'' };
   });
   var sisaTarget = 0, perBlnTotal = 0, nBerTanggal = 0;
   goals.forEach(function(g){ sisaTarget += g.sisa; if(g.perBln!==null){ perBlnTotal += g.perBln; nBerTanggal++; } });
   var bulan = {}, rencana = 0, prio = {wajib:0, perlu:0, boleh:0}, nTunda = 0, nItem = 0;
+  var asg = {}, tanpa = {est:0, n:0, bulan:{}};
   (DATA.rencanaBelanja||[]).forEach(function(p){
     var bk = rbBulan(p); if(bk<nowM) return; /* rencana bulan lalu yang tidak jadi dibeli tidak ikut diproyeksikan */
     (p.items||[]).forEach(function(it){
@@ -5634,14 +5652,42 @@ function proyeksiDanaHitung(){
       var e = rbEst(it), pr = it.prio||'perlu'; if(!prio.hasOwnProperty(pr)) pr = 'perlu';
       var b = bulan[bk] || (bulan[bk] = {est:0, wajib:0, perlu:0, boleh:0});
       b.est += e; b[pr] += e; prio[pr] += e; rencana += e; nItem++;
+      var src = rbSumberItem(p, it);
+      var o = src ? (asg[src] || (asg[src] = {est:0, n:0, bulan:{}})) : tanpa;
+      o.est += e; o.n++; o.bulan[bk] = (o.bulan[bk]||0) + e;
     });
   });
-  var bebasSebelum = saldo - titip - tersisih;
-  var cum = 0, kurangBulan = null, kurang = 0;
-  Object.keys(bulan).sort().forEach(function(k){ cum += bulan[k].est; if(kurangBulan===null && cum>bebasSebelum){ kurangBulan = k; kurang = cum - bebasSebelum; } });
-  return { saldo:saldo, titip:titip, tersisih:tersisih, rencana:rencana, prio:prio, bulan:bulan, nItem:nItem, nTunda:nTunda,
+  var akun = [], saldo = 0, titip = 0, tersisih = 0, excl = 0, held = 0, bebasSebelum = 0;
+  ACCOUNTS.forEach(function(a){
+    var ikut = proyeksiAkunIkut(a), as = asg[a];
+    if(!ikut && !as){ excl += saldoAkun(a); return; }
+    var tahan = akunTahan(a), lk = saldoAkun(a) - tahan, tt = titipanAkun(a), ts = goalDisisihkanAkun(a);
+    var bs = lk - tt - ts, r = as ? as.est : 0, sg = 0;
+    goals.forEach(function(g){ if(g.rek===a) sg += g.sisa; });
+    saldo += lk; held += tahan; titip += tt; tersisih += ts; bebasSebelum += bs;
+    var kb = null;
+    if(as){ var cum = 0; Object.keys(as.bulan).sort().forEach(function(k){ cum += as.bulan[k]; if(kb===null && cum>bs) kb = {bulan:k, kurang:cum-bs}; }); }
+    akun.push({ a:a, ikut:ikut, likuid:lk, titip:tt, tersisih:ts, rencana:r, nItem:as?as.n:0, bebasSebelum:bs, bebas:bs-r,
+      kurang:(r>0 && r>bs) ? r-bs : 0, kurangBulan:kb, sisaTarget:sg });
+  });
+  /* rencana tanpa sumber dana: diambil dari sisa bebas positif rekening yang dicentang, dihitung bulan demi bulan */
+  var poolAkhir = 0;
+  akun.forEach(function(x){ if(x.ikut) poolAkhir += Math.max(0, x.bebas); });
+  var tk = null;
+  if(tanpa.est>0){
+    var allM = {}; Object.keys(tanpa.bulan).forEach(function(k){ allM[k]=1; }); Object.keys(asg).forEach(function(a){ Object.keys(asg[a].bulan).forEach(function(k){ allM[k]=1; }); });
+    var cumA = {}, cumT = 0;
+    Object.keys(allM).sort().forEach(function(k){
+      var pool = 0;
+      akun.forEach(function(x){ if(asg[x.a] && asg[x.a].bulan[k]) cumA[x.a] = (cumA[x.a]||0) + asg[x.a].bulan[k]; if(x.ikut) pool += Math.max(0, x.bebasSebelum - (cumA[x.a]||0)); });
+      cumT += (tanpa.bulan[k]||0);
+      if(tk===null && cumT>pool) tk = {bulan:k, kurang:cumT-pool};
+    });
+  }
+  return { saldo:saldo, total:saldo+held+excl, excl:excl, held:held, titip:titip, tersisih:tersisih, rencana:rencana, prio:prio, bulan:bulan, nItem:nItem, nTunda:nTunda,
     goals:goals, sisaTarget:sisaTarget, perBlnTotal:perBlnTotal, nBerTanggal:nBerTanggal,
-    bebasSebelum:bebasSebelum, bebas:bebasSebelum-rencana, kurangBulan:kurangBulan, kurang:kurang };
+    akun:akun, tanpa:{ est:tanpa.est, n:tanpa.n, pool:poolAkhir, kurang:Math.max(0, tanpa.est-poolAkhir), kurangBulan:tk },
+    bebasSebelum:bebasSebelum, bebas:bebasSebelum-rencana };
 }
 function renderProyeksiDana(){
   var card = document.getElementById('db-proyeksi-card'), body = document.getElementById('db-proyeksi-body');
@@ -5651,29 +5697,68 @@ function renderProyeksiDana(){
   if(d.goals.length===0 && d.nItem===0){ card.style.display = 'none'; return; }
   card.style.display = '';
   var row = function(l, v, cls){ return '<div class="pj-row"><span class="l">'+l+'</span><span class="v mono '+(cls||'')+'">'+v+'</span></div>'; };
-  var h = row('Saldo sekarang', maskOrFmt(d.saldo));
-  if(d.titip>0) h += row('\u2212 Dana titipan aktif', maskOrFmt(d.titip));
-  if(d.tersisih>0) h += row('\u2212 Tersisih untuk target nabung', maskOrFmt(d.tersisih));
-  if(d.rencana>0) h += row('\u2212 Rencana belanja ('+d.nItem+' item)', maskOrFmt(d.rencana));
-  h += '<div class="pj-row pj-total"><span class="l">Saldo bebas setelah rencana</span><span class="v mono" style="color:'+(d.bebas<0?'var(--danger)':'var(--pos)')+';">'+(d.bebas<0 && !saldoHidden?'\u2212':'')+maskOrFmt(Math.abs(d.bebas))+'</span></div>';
+  var h = row('Dana likuid sekarang', maskOrFmt(d.saldo));
+  if(d.excl+d.held>0) h += '<div class="pj-note" style="margin:-1px 0 4px;">Total saldo '+escapeHtml(maskOrFmt(d.total))+', tidak ikut dihitung '+escapeHtml(maskOrFmt(d.excl+d.held))+' (investasi, mengendap, dll)</div>';
+  if(d.titip>0) h += row('− Dana titipan aktif', maskOrFmt(d.titip));
+  if(d.tersisih>0) h += row('− Tersisih untuk target nabung', maskOrFmt(d.tersisih));
+  if(d.rencana>0) h += row('− Rencana belanja ('+d.nItem+' item)', maskOrFmt(d.rencana));
+  h += '<div class="pj-row pj-total"><span class="l">Saldo bebas setelah rencana</span><span class="v mono" style="color:'+(d.bebas<0?'var(--danger)':'var(--pos)')+';">'+(d.bebas<0 && !saldoHidden?'−':'')+maskOrFmt(Math.abs(d.bebas))+'</span></div>';
   var kebutuhan = d.sisaTarget + d.rencana;
   if(kebutuhan>0){
     h += '<div class="pj-note">Kebutuhan ke depan '+escapeHtml(maskOrFmt(kebutuhan))+' (sisa target '+escapeHtml(maskOrFmt(d.sisaTarget))+' + rencana belanja '+escapeHtml(maskOrFmt(d.rencana))+')'+
       (d.nBerTanggal>0 && d.perBlnTotal>0 ? '. Agar target tercapai tepat waktu, sisihkan sekitar '+escapeHtml(maskOrFmt(d.perBlnTotal))+' per bulan.' : '.')+'</div>';
   }
-  if(d.bebas<0) h += '<div class="pj-warn">Dana belum cukup untuk semua rencana, kurang '+escapeHtml(maskOrFmt(-d.bebas))+'.</div>';
+  var warns = d.akun.filter(function(x){ return x.kurang>0; });
+  warns.slice(0,3).forEach(function(x){
+    h += '<div class="pj-warn">'+escapeHtml(x.a)+': rencana '+escapeHtml(maskOrFmt(x.rencana))+' melebihi dana bebas rekening ini, kurang '+escapeHtml(maskOrFmt(x.kurang))+'.</div>';
+  });
+  if(warns.length>3) h += '<div class="pj-warn">dan '+(warns.length-3)+' rekening lain juga kurang. Lihat Rincian.</div>';
+  if(d.tanpa.kurang>0) h += '<div class="pj-warn">Rencana tanpa sumber dana '+escapeHtml(maskOrFmt(d.tanpa.est))+' melebihi sisa dana bebas rekening yang dihitung ('+escapeHtml(maskOrFmt(d.tanpa.pool))+'), kurang '+escapeHtml(maskOrFmt(d.tanpa.kurang))+'.</div>';
+  else if(d.tanpa.n>0) h += '<div class="pj-note">'+d.tanpa.n+' item ('+escapeHtml(maskOrFmt(d.tanpa.est))+') belum punya sumber dana. Pilih rekeningnya di Rencana Belanja agar proyeksi per rekening akurat.</div>';
+  if(!warns.length && d.tanpa.kurang<=0 && d.bebas<0) h += '<div class="pj-warn">Dana belum cukup untuk semua rencana, kurang '+escapeHtml(maskOrFmt(-d.bebas))+'.</div>';
   body.innerHTML = h;
 }
 function renderProyeksiModal(titleEl, totalEl, listEl, manageBtn){
   var d = proyeksiDanaHitung();
   titleEl.textContent = 'Proyeksi Dana';
-  totalEl.textContent = 'Saldo bebas setelah rencana '+(d.bebas<0?'\u2212':'')+fmt(Math.abs(d.bebas));
+  totalEl.textContent = 'Saldo bebas setelah rencana '+(d.bebas<0?'−':'')+fmt(Math.abs(d.bebas));
   var row = function(l, v, cls){ return '<div class="pj-row"><span class="l">'+l+'</span><span class="v mono '+(cls||'')+'">'+v+'</span></div>'; };
+  var note = function(t){ return '<div class="pj-note" style="margin:-1px 0 4px;">'+t+'</div>'; };
+  var neg = function(v){ return (v<0?'−':'')+fmt(Math.abs(v)); };
   var bln = function(k){ return (typeof btLabel==='function') ? btLabel(k) : k; };
-  var h = '<div class="pj-h">Ringkasan</div>'+row('Saldo sekarang', fmt(d.saldo));
-  if(d.titip>0) h += row('\u2212 Dana titipan aktif', fmt(d.titip));
-  if(d.tersisih>0) h += row('\u2212 Tersisih untuk target nabung', fmt(d.tersisih));
-  h += row('= Saldo bebas sebelum rencana', fmt(d.bebasSebelum));
+  var h = '<div class="pj-h">Ringkasan</div>'+row('Total saldo semua rekening', fmt(d.total));
+  if(d.excl>0) h += row('− Rekening yang tidak ikut', fmt(d.excl));
+  if(d.held>0) h += row('− Mengendap / investasi / IPO tertahan', fmt(d.held));
+  h += row('= Dana likuid sekarang', fmt(d.saldo));
+  if(d.titip>0) h += row('− Dana titipan aktif', fmt(d.titip));
+  if(d.tersisih>0) h += row('− Tersisih untuk target nabung', fmt(d.tersisih));
+  h += row('= Saldo bebas sebelum rencana', neg(d.bebasSebelum));
+  if(d.rencana>0) h += row('− Rencana belanja', fmt(d.rencana)) + row('= Saldo bebas setelah rencana', neg(d.bebas), d.bebas<0?'neg':'');
+
+  /* per rekening sumber dana */
+  h += '<div class="pj-h">Per rekening sumber dana</div>';
+  var ada = d.akun.filter(function(x){ return x.rencana>0 || x.titip>0 || x.tersisih>0 || x.sisaTarget>0; });
+  if(!ada.length) h += '<div class="pj-note">Belum ada rencana atau target yang terkait rekening. Isi Sumber dana di Rencana Belanja dan Rekening tujuan di Target.</div>';
+  ada.forEach(function(x){
+    h += row(escapeHtml(x.a), neg(x.bebas), x.bebas<0?'neg':'');
+    var parts = ['Saldo likuid '+fmt(x.likuid)];
+    if(x.titip>0) parts.push('− titipan '+fmt(x.titip));
+    if(x.tersisih>0) parts.push('− target '+fmt(x.tersisih));
+    if(x.rencana>0) parts.push('− rencana belanja '+fmt(x.rencana)+' ('+x.nItem+' item)');
+    h += note(parts.join(' '));
+    if(x.kurangBulan) h += '<div class="pj-warn">Mulai '+escapeHtml(bln(x.kurangBulan.bulan))+', rencana di rekening ini melebihi dana bebasnya, kurang '+fmt(x.kurangBulan.kurang)+'. Isi saldo, ganti sumber dana, atau tunda item.</div>';
+    if(x.sisaTarget>0) h += note('Sisa target '+fmt(x.sisaTarget)+' belum terkumpul di rekening ini (belum dikurangkan).');
+  });
+  if(d.tanpa.n>0){
+    h += '<div class="pj-h">Rencana tanpa sumber dana</div>'+row(d.tanpa.n+' item', fmt(d.tanpa.est));
+    h += note('Diambil dari sisa dana bebas rekening yang dicentang di bawah (tersedia '+fmt(d.tanpa.pool)+').');
+    if(d.tanpa.kurangBulan) h += '<div class="pj-warn">Mulai '+escapeHtml(bln(d.tanpa.kurangBulan.bulan))+', rencana tanpa sumber dana melebihi dana bebas yang tersedia, kurang '+fmt(d.tanpa.kurangBulan.kurang)+'.</div>';
+  }
+  h += '<div class="pj-h">Rekening yang dihitung</div><div class="pj-note" style="margin-bottom:4px;">Centang rekening yang boleh dipakai untuk rencana tanpa sumber dana. Rekening yang dipilih sebagai sumber dana sebuah rencana otomatis ikut dihitung. Rekening investasi dan pulsa tidak dicentang otomatis.</div>';
+  ACCOUNTS.forEach(function(a){
+    var v = saldoAkun(a); if(Math.round(v)===0) return;
+    h += '<label style="display:flex; align-items:center; gap:10px; padding:5px 0; cursor:pointer;"><input type="checkbox" data-pj-akun="'+escapeHtml(a)+'"'+(proyeksiAkunIkut(a)?' checked':'')+' style="width:18px; height:18px; flex-shrink:0;"><span style="flex:1; min-width:0; font-size:13.5px;">'+escapeHtml(a)+' <span style="font-size:11px; color:var(--text-2);">'+escapeHtml(REK_KAT_LABEL[ACCOUNT_CATEGORY[a]||'bank']||'')+'</span></span><span class="mono" style="font-size:13px;">'+fmt(v)+'</span></label>';
+  });
   /* rencana belanja per bulan + skenario prioritas */
   var keys = Object.keys(d.bulan).sort();
   h += '<div class="pj-h">Rencana belanja per bulan</div>';
@@ -5681,10 +5766,10 @@ function renderProyeksiModal(titleEl, totalEl, listEl, manageBtn){
   keys.forEach(function(k){
     var b = d.bulan[k];
     h += row(escapeHtml(bln(k)), fmt(b.est));
-    h += '<div class="pj-note" style="margin:-1px 0 4px;">Wajib '+fmt(b.wajib)+' \u2022 Perlu '+fmt(b.perlu)+' \u2022 Boleh '+fmt(b.boleh)+'</div>';
+    h += '<div class="pj-note" style="margin:-1px 0 4px;">Wajib '+fmt(b.wajib)+' • Perlu '+fmt(b.perlu)+' • Boleh '+fmt(b.boleh)+'</div>';
   });
   if(keys.length){
-    var sk = function(l, v){ var sisa = d.bebasSebelum - v; return row(l, (sisa<0?'\u2212':'')+fmt(Math.abs(sisa)), ''); };
+    var sk = function(l, v){ var sisa = d.bebasSebelum - v; return row(l, (sisa<0?'−':'')+fmt(Math.abs(sisa)), ''); };
     h += '<div class="pj-h">Saldo bebas bila yang dibeli</div>'+
       sk('Hanya yang wajib', d.prio.wajib)+sk('Wajib + perlu', d.prio.wajib+d.prio.perlu)+sk('Semua rencana', d.rencana);
     if(d.nTunda) h += '<div class="pj-note">'+d.nTunda+' item yang ditunda tidak dihitung.</div>';
@@ -5693,22 +5778,32 @@ function renderProyeksiModal(titleEl, totalEl, listEl, manageBtn){
   h += '<div class="pj-h">Target nabung (barang baru)</div>';
   if(!d.goals.length) h += '<div class="pj-note">Belum ada target nabung aktif.</div>';
   d.goals.forEach(function(g){
-    var ket = fmt(g.terkumpul)+' dari '+fmt(g.target);
-    if(g.sisa<=0) ket += ' \u2022 sudah terkumpul';
-    else if(g.tgl) ket += ' \u2022 '+(g.lewat?'lewat tanggal target ('+fmtTglIndo(g.tgl)+')':'target '+fmtTglIndo(g.tgl))+' \u2022 sekitar '+fmt(g.perBln)+'/bln';
+    var ket = fmt(g.terkumpul)+' dari '+fmt(g.target)+(g.rek ? ' • di '+escapeHtml(g.rek) : '');
+    if(g.sisa<=0) ket += ' • sudah terkumpul';
+    else if(g.tgl) ket += ' • '+(g.lewat?'lewat tanggal target ('+fmtTglIndo(g.tgl)+')':'target '+fmtTglIndo(g.tgl))+' • sekitar '+fmt(g.perBln)+'/bln';
     h += row(escapeHtml(g.nama), 'sisa '+fmt(g.sisa))+'<div class="pj-note" style="margin:-1px 0 4px;">'+ket+'</div>';
   });
   if(d.nBerTanggal>0) h += '<div class="pj-note">Total setoran bulanan agar semua target bertanggal tepat waktu: <b>'+fmt(d.perBlnTotal)+'</b>.</div>';
-  if(d.kurangBulan){
-    h += '<div class="pj-warn">Mulai '+escapeHtml(bln(d.kurangBulan))+', rencana belanja yang menumpuk sudah melebihi saldo bebas, kurang '+fmt(d.kurang)+'. Angka ini belum menghitung pemasukan baru.</div>';
-  } else if(d.rencana>0) {
-    h += '<div class="pj-note">Proyeksi memakai saldo hari ini dan belum menghitung pemasukan atau pengeluaran rutin yang akan datang.</div>';
-  }
+  var adaKurang = d.akun.some(function(x){ return x.kurangBulan; }) || d.tanpa.kurangBulan;
+  if(!adaKurang && d.rencana>0) h += '<div class="pj-note">Proyeksi memakai saldo hari ini dan belum menghitung pemasukan atau pengeluaran rutin yang akan datang.</div>';
   h += '<div><button type="button" class="pj-link" onclick="document.getElementById(\'detail-modal-overlay\').classList.remove(\'show\'); go(\'rencana-belanja\');">Buka Rencana Belanja</button></div>';
   listEl.innerHTML = h;
   manageBtn.textContent = 'Kelola Target';
   manageBtn.setAttribute('data-target', 'goals');
 }
+(function(){
+  var l = document.getElementById('detail-modal-list'); if(!l) return;
+  l.addEventListener('change', function(ev){
+    var c = ev.target.closest && ev.target.closest('[data-pj-akun]'); if(!c) return;
+    if(!DATA.proyeksiAkun) DATA.proyeksiAkun = {};
+    DATA.proyeksiAkun[c.getAttribute('data-pj-akun')] = !!c.checked;
+    saveData();
+    var sc = l.parentElement, y1 = l.scrollTop, y2 = sc ? sc.scrollTop : 0;
+    renderProyeksiModal(document.getElementById('detail-modal-title'), document.getElementById('detail-modal-total'), l, document.getElementById('detail-modal-manage'));
+    l.scrollTop = y1; if(sc) sc.scrollTop = y2;
+    renderProyeksiDana();
+  });
+})();
 function openDetailModal(type){
   var overlay = document.getElementById('detail-modal-overlay');
   var titleEl = document.getElementById('detail-modal-title');
@@ -5957,7 +6052,7 @@ function dataSanitize(){
   });
   ['coaCustom','sampah','patungan','budgetArsip','tempatBeliInventaris','lokasiInventaris'].forEach(function(k){ if(!Array.isArray(DATA[k])) DATA[k] = []; });
   ['kategoriBelanja','untukSiapa','jenisPengeluaran','jenisTagihan','kategoriInventaris','sumberPemasukan'].forEach(function(k){ if(DATA[k]!==undefined && !Array.isArray(DATA[k])) delete DATA[k]; });
-  ['saldoAwal','accountInfo','rekeningAktif','budgetBelanja','lokasiInventarisMaps','akunJenis','akunSumber','rekon','tutupBuku'].forEach(function(k){
+  ['saldoAwal','accountInfo','rekeningAktif','budgetBelanja','lokasiInventarisMaps','akunJenis','akunSumber','rekon','tutupBuku','proyeksiAkun'].forEach(function(k){
     if(DATA[k]!==undefined && (!DATA[k] || typeof DATA[k]!=='object' || Array.isArray(DATA[k]))) DATA[k] = {};
   });
 }
@@ -6022,6 +6117,7 @@ function applyDataDefaultsCore(){
   DATA.titipan.forEach(function(t){ if(t && !t.id) t.id = genId('tt'); });
   if(!DATA.rekon || Array.isArray(DATA.rekon)) DATA.rekon = {};
   if(!DATA.tutupBuku || Array.isArray(DATA.tutupBuku)) DATA.tutupBuku = {};
+  if(!DATA.proyeksiAkun || Array.isArray(DATA.proyeksiAkun)) DATA.proyeksiAkun = {};
   if(!Array.isArray(DATA.sampah)) DATA.sampah = [];
   sampahPurge();
   // Migrasi data lama: piutang yang dulu "diikhlasin" (flag diberikan) dapat cara pelunasan + id, dan pengeluarannya ditautkan
@@ -6160,11 +6256,11 @@ function handleImportFile(file){
     catch(e){ toast('File tidak valid / rusak'); return; }
     var incoming = parsed && parsed.data ? parsed.data : parsed;
     if(!incoming || typeof incoming !== 'object'){ toast('Format file tidak dikenali'); return; }
-    var known = ['saldoAwal', 'akunJenis', 'akunSumber', 'accountsCustom', 'accountInfo', 'budgetBelanja', 'kategoriBelanja', 'itemBelanjaCustom', 'stokAbaikan', 'stokPengaturan', 'untukSiapa', 'jenisPengeluaran', 'jenisTagihan', 'kategoriInventaris', 'tempatBeliInventaris', 'lokasiInventaris', 'lokasiInventarisMaps', 'sumberPemasukan', 'goals', 'recurring', 'transfer', 'pemasukan', 'pengeluaran', 'piutang', 'hutang', 'titipan', 'belanja', 'invbeli', 'invjual', 'tagihan', 'inventaris', 'splitbill', 'stokKeluar', 'asetbio', 'panenAsetBio', 'sampah', 'ipo', 'rencanaBelanja', 'rekeningAktif', 'koreksi', 'rekon', 'tutupBuku', 'coaCustom', 'patungan', 'patunganPool', 'budgetArsip', 'budgetNext', 'saldoArsip', 'arsip', 'benih', 'prefs', 'profil'];
+    var known = ['saldoAwal', 'akunJenis', 'akunSumber', 'accountsCustom', 'accountInfo', 'budgetBelanja', 'kategoriBelanja', 'itemBelanjaCustom', 'stokAbaikan', 'stokPengaturan', 'untukSiapa', 'jenisPengeluaran', 'jenisTagihan', 'kategoriInventaris', 'tempatBeliInventaris', 'lokasiInventaris', 'lokasiInventarisMaps', 'sumberPemasukan', 'goals', 'recurring', 'transfer', 'pemasukan', 'pengeluaran', 'piutang', 'hutang', 'titipan', 'belanja', 'invbeli', 'invjual', 'tagihan', 'inventaris', 'splitbill', 'stokKeluar', 'asetbio', 'panenAsetBio', 'sampah', 'ipo', 'rencanaBelanja', 'rekeningAktif', 'koreksi', 'rekon', 'tutupBuku', 'proyeksiAkun', 'coaCustom', 'patungan', 'patunganPool', 'budgetArsip', 'budgetNext', 'saldoArsip', 'arsip', 'benih', 'prefs', 'profil'];
     var looksValid = known.some(function(k){ return k in incoming; });
     if(!looksValid){ toast('Format file tidak dikenali'); return; }
     showConfirm('Pulihkan data dari file ini? Semua data saat ini di akun ini akan DITIMPA oleh isi backup.', function(){
-      var OBJK = ['saldoAwal','budgetBelanja','accountInfo','rekon','tutupBuku','stokPengaturan','akunJenis','akunSumber','lokasiInventarisMaps','rekeningAktif','prefs','profil','saldoArsip','budgetNext','patunganPool'];
+      var OBJK = ['saldoAwal','budgetBelanja','accountInfo','rekon','tutupBuku','proyeksiAkun','stokPengaturan','akunJenis','akunSumber','lokasiInventarisMaps','rekeningAktif','prefs','profil','saldoArsip','budgetNext','patunganPool'];
       known.forEach(function(k){ if(k in incoming) return; if(['arsip','coaCustom','budgetArsip','patunganPool','prefs','profil','saldoArsip','budgetNext'].indexOf(k)>-1) return; incoming[k] = OBJK.indexOf(k)>-1 ? {} : []; });
       if(!incoming.saldoAwal) incoming.saldoAwal = {};
       if(!incoming.accountsCustom) incoming.accountsCustom = [];
@@ -9418,6 +9514,27 @@ function rbKomitmenLain(p, kat){
   });
   return v;
 }
+/* Cek dana per rekening untuk sebuah rencana: dana bebas rekening (saldo likuid - titipan - target) dikurangi rencana LAIN
+   yang menunjuk rekening yang sama dan jatuh di bulan yang sama atau lebih awal (bulan lalu tidak dihitung). */
+function rbDanaCek(p){
+  var nowM = todayISO().slice(0,7), bl = rbBulan(p), grp = {}, out = [];
+  (p.items||[]).forEach(function(it){
+    if(rbStatus(it)!=='rencana') return;
+    var a = rbSumberItem(p, it); if(!a) return;
+    grp[a] = (grp[a]||0) + rbEst(it);
+  });
+  Object.keys(grp).forEach(function(a){
+    var lain = 0;
+    (DATA.rencanaBelanja||[]).forEach(function(q){
+      if(q.id===p.id) return;
+      var bq = rbBulan(q); if(bq<nowM || bq>bl) return;
+      (q.items||[]).forEach(function(it){ if(rbStatus(it)==='rencana' && rbSumberItem(q, it)===a) lain += rbEst(it); });
+    });
+    var tersedia = akunLikuid(a) - titipanAkun(a) - goalDisisihkanAkun(a) - lain;
+    out.push({ metode:a, est:grp[a], tersedia:tersedia, lain:lain, kurang:Math.max(0, grp[a]-tersedia) });
+  });
+  return out;
+}
 function rbCek(p){
   var h = rbHitung(p), bl = rbBulan(p), y = parseInt(bl.slice(0,4),10), m = parseInt(bl.slice(5,7),10);
   var used = belanjaTerpakaiKategori(firstDayStr(y,m), lastDayStr(y,m)), kat = [];
@@ -9426,24 +9543,30 @@ function rbCek(p){
     var lain = rbKomitmenLain(p,k), sisa = bud - (used[k]||0) - lain;
     kat.push({ kat:k, est:h.perKat[k], budget:bud, terpakai:used[k]||0, lain:lain, sisa:sisa, lewat:h.perKat[k] > Math.max(0,sisa) });
   });
-  var dana = null;
-  if(p.metode && ACCOUNTS.indexOf(p.metode)>-1 && h.est>0){ var tv = saldoTersediaAkun(p.metode); dana = { metode:p.metode, tersedia:tv, kurang:Math.max(0, h.est-tv) }; }
+  var dl = rbDanaCek(p), dana = null;
+  if(dl.length){ var kt = 0; dl.forEach(function(x){ kt += x.kurang; }); dana = { list:dl, kurang:kt }; }
   return { h:h, kat:kat, dana:dana };
 }
 /* Saran tunda: buang dari prioritas terendah dulu (Boleh, lalu Perlu), yang nilainya terbesar duluan. Wajib tidak pernah disarankan. */
 function rbSaran(p, c){
   var needK = {}; c.kat.forEach(function(k){ if(k.lewat) needK[k.kat] = k.est - Math.max(0,k.sisa); });
-  var needD = c.dana ? c.dana.kurang : 0, hemat = 0, pick = {};
+  var needD = {}; if(c.dana) c.dana.list.forEach(function(x){ if(x.kurang>0) needD[x.metode] = x.kurang; });
+  var hemat = 0, pick = {};
   var cand = (p.items||[]).filter(function(it){ return rbStatus(it)==='rencana' && it.prio!=='wajib'; })
     .sort(function(a,b){ return (RB_PRIO[b.prio||'perlu'].o - RB_PRIO[a.prio||'perlu'].o) || (rbEst(b)-rbEst(a)); });
+  function ambil(it){ pick[it.id] = it; hemat += rbEst(it); var a = rbSumberItem(p, it); if(a && needD[a]!==undefined) needD[a] -= rbEst(it); }
   Object.keys(needK).forEach(function(k){
     cand.forEach(function(it){
       if(needK[k]<=0 || pick[it.id] || (it.kategori||'Lainnya')!==k) return;
-      pick[it.id] = it; needK[k] -= rbEst(it); needD -= rbEst(it); hemat += rbEst(it);
+      needK[k] -= rbEst(it); ambil(it);
     });
   });
-  cand.forEach(function(it){ if(needD<=0 || pick[it.id]) return; pick[it.id] = it; needD -= rbEst(it); hemat += rbEst(it); });
-  var still = needD>0; Object.keys(needK).forEach(function(k){ if(needK[k]>0) still = true; });
+  Object.keys(needD).forEach(function(a){
+    cand.forEach(function(it){ if(needD[a]<=0 || pick[it.id] || rbSumberItem(p, it)!==a) return; ambil(it); });
+  });
+  var still = false;
+  Object.keys(needK).forEach(function(k){ if(needK[k]>0) still = true; });
+  Object.keys(needD).forEach(function(a){ if(needD[a]>0) still = true; });
   return { list:Object.keys(pick).map(function(k){ return pick[k]; }), hemat:hemat, belumCukup:still };
 }
 function rbRp(n){ return maskOrFmt(n); }
@@ -9451,7 +9574,7 @@ function rbBtn(act, p, i, label){ return '<button type="button" class="btn ghost
 function rbItemHtml(p, it){
   var st = rbStatus(it), e = rbEst(it), pr = RB_PRIO[it.prio||'perlu'] || RB_PRIO.perlu, b = rbBelanjaDari(it), last = rbHargaTerakhir(it.item);
   var chip = '<span style="font-size:10.5px; font-weight:800; color:'+pr.c+'; border:1px solid currentColor; border-radius:999px; padding:1px 7px; margin-left:6px; white-space:nowrap;">'+pr.l+'</span>';
-  var sub = escapeHtml(String(it.qty))+' '+escapeHtml(it.satuan||'')+' \u00d7 '+fmt(it.harga||0)+(it.kategori ? ' \u2022 '+escapeHtml(it.kategori) : '');
+  var sub = escapeHtml(String(it.qty))+' '+escapeHtml(it.satuan||'')+' \u00d7 '+fmt(it.harga||0)+(it.kategori ? ' \u2022 '+escapeHtml(it.kategori) : '')+((it.metode && it.metode!==p.metode && rbAkunValid(it.metode)) ? ' \u2022 dari '+escapeHtml(it.metode) : '');
   if(st==='rencana' && last && it.harga>0 && last.satuan===it.satuan && last.harga!==it.harga) sub += ' \u2022 terakhir '+fmt(last.harga);
   var h = '<div style="padding:11px 0; border-top:1px solid var(--line);'+(st==='tunda'?' opacity:.65;':'')+'">'+
     '<div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">'+
@@ -9497,10 +9620,10 @@ function rbPlanHtml(p){
       c.kat.forEach(function(k){
         cek += '<div style="font-size:12.5px; line-height:1.55; color:'+(k.lewat?'var(--danger)':'var(--text-2)')+';">'+(k.lewat?'\u26a0\ufe0f ':'\u2713 ')+escapeHtml(k.kat)+': rencana '+rbRp(k.est)+(k.sisa>=0 ? ', sisa budget '+rbRp(k.sisa) : ', budget sudah lewat '+rbRp(-k.sisa))+(k.lain>0 ? ' <span class="meta-sub">(setelah rencana lain '+rbRp(k.lain)+')</span>' : '')+'</div>';
       });
-      if(c.dana) cek += '<div style="font-size:12.5px; line-height:1.55; color:'+(c.dana.kurang>0?'var(--danger)':'var(--text-2)')+';">'+(c.dana.kurang>0?'\u26a0\ufe0f ':'\u2713 ')+escapeHtml(c.dana.metode)+': saldo tersedia '+rbRp(c.dana.tersedia)+(c.dana.kurang>0 ? ', kurang '+rbRp(c.dana.kurang) : ', cukup')+'</div>';
+      if(c.dana) c.dana.list.forEach(function(x){ cek += '<div style="font-size:12.5px; line-height:1.55; color:'+(x.kurang>0?'var(--danger)':'var(--text-2)')+';">'+(x.kurang>0?'\u26a0\ufe0f ':'\u2713 ')+escapeHtml(x.metode)+': butuh '+rbRp(x.est)+', dana bebas '+rbRp(x.tersedia)+(x.lain>0 ? ' <span class="meta-sub">(setelah rencana lain '+rbRp(x.lain)+')</span>' : '')+(x.kurang>0 ? ', kurang '+rbRp(x.kurang) : ', cukup')+'</div>'; });
       var sr = rbSaran(p,c);
       if(sr.list.length) cek += '<div style="font-size:12.5px; line-height:1.55; margin-top:6px;"><b>Saran:</b> tunda '+sr.list.map(function(it){ return escapeHtml(it.item); }).join(', ')+' (hemat '+rbRp(sr.hemat)+')'+(sr.belumCukup ? '. Masih belum cukup, sisanya item Wajib.' : '.')+'</div>';
-      else if(masalah) cek += '<div style="font-size:12.5px; line-height:1.55; margin-top:6px;">Semua sisa item berprioritas Wajib, jadi tidak ada yang disarankan ditunda. Tambah dana atau budget.</div>';
+      else if(masalah) cek += '<div style="font-size:12.5px; line-height:1.55; margin-top:6px;">Tidak ada item yang bisa disarankan ditunda (semuanya berprioritas Wajib atau bukan dari rekening yang kurang). Tambah dana, pindahkan sumber dana, atau ubah rencana lain di rekening yang sama.</div>';
       if(!c.kat.length && !c.dana) cek += '<div class="meta-sub">Atur limit kategori di Atur Limit dan isi sumber dana rencana untuk mengaktifkan pengecekan.</div>';
     }
     if(cek) out += '<div style="margin-top:10px; padding:10px 12px; border-radius:12px; background:var(--ghost-bg,rgba(127,127,127,.08));">'+cek+'</div>';
@@ -9529,7 +9652,7 @@ function rbToast(m){ toast(m); }
 function openRbPlan(id){
   var p = id ? rbPlan(id) : null; _rbPlanEdit = id||null;
   document.getElementById('rb-plan-title').textContent = p ? 'Ubah Rencana' : 'Rencana Baru';
-  fillSelectAccountsWithBlank('rb-p-metode', ACCOUNTS, 'Belum ditentukan');
+  fillSelectAccountsWithBlank('rb-p-metode', rbAkunPilihan(p ? p.metode : ''), 'Belum ditentukan');
   document.getElementById('rb-p-nama').value = p ? (p.nama||'') : '';
   document.getElementById('rb-p-tanggal').value = p ? (p.tanggal||todayISO()) : todayISO();
   document.getElementById('rb-p-metode').value = p && p.metode && ACCOUNTS.indexOf(p.metode)>-1 ? p.metode : '';
@@ -9571,6 +9694,8 @@ function openRbItem(planId, itemId){
   document.getElementById('rb-i-item').value = it ? it.item : items[0];
   document.getElementById('rb-i-qty').value = it ? it.qty : 1;
   document.getElementById('rb-i-prio').value = it ? (it.prio||'perlu') : 'perlu';
+  fillSelectAccountsWithBlank('rb-i-metode', rbAkunPilihan(it ? it.metode : ''), 'Ikut rencana ('+(rbAkunValid(p.metode) ? p.metode : 'belum ditentukan')+')');
+  document.getElementById('rb-i-metode').value = (it && rbAkunValid(it.metode)) ? it.metode : '';
   rbItemPilih(!it);
   if(it){ document.getElementById('rb-i-satuan').value = it.satuan||'Pcs'; document.getElementById('rb-i-harga').value = formatMoneyValue(it.harga||0); rbItemPreview(); }
   document.getElementById('rb-item-err').textContent = '';
@@ -9584,7 +9709,7 @@ function submitRbItem(){
   if(!(harga>0)){ err.textContent = 'Isi perkiraan harga per satuan'; return; }
   var dup = false; (p.items||[]).forEach(function(x){ if(x.item===nama && x.id!==_rbItemEdit && rbStatus(x)!=='dibeli') dup = true; });
   if(dup){ err.textContent = nama+' sudah ada di rencana ini. Edit saja itemnya.'; return; }
-  var rec = { item:nama, kategori:rbKategoriItem(nama), qty:qty, satuan:ipoVal('rb-i-satuan')||'Pcs', harga:harga, prio:ipoVal('rb-i-prio')||'perlu' };
+  var rec = { item:nama, kategori:rbKategoriItem(nama), qty:qty, satuan:ipoVal('rb-i-satuan')||'Pcs', harga:harga, prio:ipoVal('rb-i-prio')||'perlu', metode:ipoVal('rb-i-metode')||'' };
   var it = _rbItemEdit ? rbItem(p,_rbItemEdit) : null;
   if(it){ Object.keys(rec).forEach(function(k){ it[k] = rec[k]; }); }
   else { rec.id = genId('rbi'); rec.tunda = false; p.items.push(rec); }
@@ -9630,7 +9755,7 @@ function rbWA(planId){
 }
 function rbDuplikat(planId){
   var p = rbPlan(planId); if(!p) return;
-  var q = { id:genId('rb'), nama:(p.nama||'Rencana')+' (salinan)', tanggal:todayISO(), metode:p.metode||'', items:(p.items||[]).map(function(it){ return { id:genId('rbi'), item:it.item, kategori:it.kategori, qty:it.qty, satuan:it.satuan, harga:it.harga, prio:it.prio, tunda:false }; }) };
+  var q = { id:genId('rb'), nama:(p.nama||'Rencana')+' (salinan)', tanggal:todayISO(), metode:p.metode||'', items:(p.items||[]).map(function(it){ return { id:genId('rbi'), item:it.item, kategori:it.kategori, qty:it.qty, satuan:it.satuan, harga:it.harga, prio:it.prio, metode:it.metode||'', tunda:false }; }) };
   DATA.rencanaBelanja.push(q); rbOpen[q.id] = true; saveData(); renderRencanaBelanja(); toast('Rencana diduplikat dengan status baru');
 }
 /* ---- beli (tercatat sebagai Belanja Item sungguhan) ---- */
@@ -9646,7 +9771,7 @@ function openRbBeli(planId, itemId){
   document.getElementById('rb-b-tanggal').value = todayISO();
   document.getElementById('rb-b-qty').value = it.qty;
   document.getElementById('rb-b-jumlah').value = formatMoneyValue(rbEst(it));
-  fillRekeningBlankSelect('rb-b-metode', p.metode && ACCOUNTS.indexOf(p.metode)>-1 ? p.metode : '');
+  fillRekeningBlankSelect('rb-b-metode', rbSumberItem(p, it));
   document.getElementById('rb-beli-err').textContent = '';
   rbBeliPreview();
   document.getElementById('rb-beli-modal-overlay').classList.add('show');
