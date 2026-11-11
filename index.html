@@ -534,6 +534,8 @@
   .acc-val{font-size:13.5px; font-weight:600;}
   .acc-empty{text-align:center; padding:18px 10px; color:var(--text-2); font-size:12.5px;}
   .neg{color:var(--danger);}
+  .amt.mut{color:var(--text-2); font-weight:600;}
+  .txn-nonkas{font-size:11px; color:var(--text-2); margin-top:2px;}
   .pos{color:var(--pos);}
   .budget-row{margin-bottom:14px;}
   .budget-row:last-child{margin-bottom:0;}
@@ -4866,7 +4868,7 @@ function jenisColor(j, fallbackIdx){
   return pal[h%pal.length];
 }
 var TYPE_ICON = { transfer:"transfer", pemasukan:"arrowDown", pengeluaran:"arrowUp", piutang:"send", hutang:"receive", titipan:"lock",
-  belanja:"cart", stokpakai:"cart", invbeli:"trendUp", invjual:"dollar", tagihan:"receipt" };
+  belanja:"cart", stokpakai:"box", invbeli:"trendUp", invjual:"dollar", tagihan:"receipt" };
 /* Badge leading di daftar transaksi: merchant -> logo; pengeluaran tanpa merchant -> ikon Jenis; tipe lain -> ikon tipe. */
 var TEL_RE = /^(telephone|telepon|telp|pulsa|paket data|internet)/i;
 function isTelJenis(j){ return TEL_RE.test(String(j||'').trim()); }
@@ -11280,12 +11282,18 @@ function openTodayModal(kind){
       var c = fifoNow.cost[i];
       if(k.tanggal!==t || !(c>0)) return;
       var qtyTxt = (k.qty||0)+(k.satuan?' '+k.satuan:'');
-      list.push({ tanggal:t, jumlah:Math.round(c), tipe:'Pakai Stok', label:(k.item||'-')+' \u2022 '+qtyTxt+' \u2022 '+(k.alasan||'Dipakai'), sign:-1, type:'stokpakai', index:i, ket:k.ket||'' });
+      list.push({ tanggal:t, jumlah:Math.round(c), tipe:'Pakai Stok', label:(k.item||'-')+' \u2022 '+qtyTxt+' \u2022 '+(k.alasan||'Dipakai'), sign:-1, nonKas:true, type:'stokpakai', index:i, ket:k.ket||'' });
     });
     var a = akunTotals(t, t);
     document.getElementById('today-modal-title').textContent = 'Pengeluaran Hari Ini';
-    document.getElementById('today-modal-total').textContent = 'Beban '+maskOrFmt(a.beban)+(a.modal+a.persed>0 ? ' \u2022 + '+maskOrFmt(a.modal+a.persed)+' jadi aset/stok' : '')+(bayarHutang>0 ? ' \u2022 '+L('Bayar hutang ','Debt payments ')+maskOrFmt(bayarHutang) : '')+' \u2022 '+list.length+' transaksi';
-    if(a.pakai>0) note = '<div class="meta-sub" style="margin-top:8px;">Beban juga mencakup pemakaian stok '+maskOrFmt(a.pakai)+' (dihitung dari stok yang dikeluarkan, sudah tampil sebagai baris \"Pakai Stok\" di atas).</div>';
+    var nPakai = list.filter(function(x){ return x.nonKas; }).length, nKas = list.length - nPakai;
+    var ringkas = L('Uang keluar ','Cash out ')+maskOrFmt(a.total)+(a.modal+a.persed>0 ? ' ('+L('termasuk beli stok/aset ','incl. stock/asset purchases ')+maskOrFmt(a.modal+a.persed)+')' : '');
+    ringkas += '<br>'+L('Beban ','Expenses ')+maskOrFmt(a.beban)+(a.pakai>0 ? ' ('+L('termasuk pakai stok ','incl. stock used ')+maskOrFmt(a.pakai)+')' : '');
+    if(bayarHutang>0) ringkas += '<br>'+L('Bayar hutang ','Debt payments ')+maskOrFmt(bayarHutang);
+    ringkas += '<br>'+nKas+' '+L('transaksi','transactions')+(nPakai>0 ? ' + '+nPakai+' '+L('pemakaian stok','stock usage') : '');
+    document.getElementById('today-modal-title').textContent = 'Pengeluaran Hari Ini';
+    document.getElementById('today-modal-total').innerHTML = ringkas;
+    if(a.pakai>0) note = '<div class="meta-sub" style="margin-top:8px;">'+L('Pakai stok memindahkan nilai barang dari persediaan menjadi beban.','Using stock moves the item value from inventory into expenses.')+'</div>';
   }
   var el = document.getElementById('today-modal-list');
   el.innerHTML = list.length ? renderTxnRows(list, true)+note : '<div class="empty">Belum ada '+(kind==='masuk'?'pemasukan':'pengeluaran')+' hari ini.</div>'+note;
@@ -11341,7 +11349,7 @@ function badgeRow(arr){
 function renderTxnRows(list, hideDate){
   var rhtml = '';
   list.forEach(function(t){
-    var sign = t.sign>0 ? '+' : (t.sign<0 ? '-' : '');
+    var sign = t.nonKas ? '' : (t.sign>0 ? '+' : (t.sign<0 ? '-' : ''));
     var parts = String(t.label||'').split(' • ');
     var title = parts.shift() || t.tipe;
     var sub = (hideDate ? [] : [fmtTglIndo(t.tanggal)]).concat(parts);
@@ -11357,7 +11365,8 @@ function renderTxnRows(list, hideDate){
     var badges = ['<span class="badge">'+t.tipe+'</span>'].concat(txnBadges(t));
     rhtml += '<div class="txn-row v2">'+txnLeadBadge(t.type, t.jenis, t.merchant)+
       '<div class="txn-body"><div class="txn-top"><span class="txn-title">'+escapeHtml(title)+'</span>'+badges.join('')+
-      '<span class="amt mono '+(t.sign<0?'neg':(t.sign>0?'pos':''))+'">'+sign+fmt(t.jumlah)+'</span></div>'+
+      '<span class="amt mono '+(t.nonKas?'mut':(t.sign<0?'neg':(t.sign>0?'pos':'')))+'">'+sign+fmt(t.jumlah)+'</span></div>'+
+      (t.nonKas ? '<div class="txn-nonkas">'+L('Bukan uang keluar, saldo rekening tidak berubah','Not cash out, account balance unchanged')+'</div>' : '')+
       (noteTxt ? '<div class="txn-note">'+escapeHtml(noteTxt)+'</div>' : '')+
       '<div class="txn-bottom"><span class="txn-sub">'+escapeHtml(sub.join(' • '))+'</span>'+txnActions(t.type, t.index)+'</div></div></div>';
   });
