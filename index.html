@@ -2004,6 +2004,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
           <div class="pill" data-detail="piutang" style="cursor:pointer;"><div class="l">Piutang berjalan ›</div><div class="v mono" id="db-piutang">Rp0</div></div>
           <div class="pill" data-detail="hutang" title="Hutang & Tagihan belum lunas" style="cursor:pointer;"><div class="l">Hutang & tagihan ›</div><div class="v mono" id="db-hutang">Rp0</div></div>
           <div class="pill" data-detail="titipan" style="cursor:pointer;"><div class="l">Dana Titipan ›</div><div class="v mono" id="db-titipan">Rp0</div></div>
+          <div class="pill" id="db-pj-pill" data-detail="proyeksi" title="Saldo bebas setelah rencana belanja dan target nabung" style="cursor:pointer;"><div class="l">Saldo bebas ›</div><div class="v mono" id="db-pj-val">Rp0</div></div>
         </div>
       </div>
     </div>
@@ -5778,10 +5779,20 @@ function proyeksiDanaHitung(){
 function renderProyeksiDana(){
   var card = document.getElementById('db-proyeksi-card'), body = document.getElementById('db-proyeksi-body');
   if(!card || !body) return;
+  var pjPill = document.getElementById('db-pj-pill'), pjVal = document.getElementById('db-pj-val');
+  if(pjPill) pjPill.classList.remove('on');
   if(window.PTG && PTG.mode()==='patungan'){ card.style.display = 'none'; return; }
   var d = proyeksiDanaHitung();
   if(d.goals.length===0 && d.nItem===0){ card.style.display = 'none'; return; }
   card.style.display = '';
+  if(pjPill && pjVal){
+    pjVal.textContent = (d.bebas<0 && !saldoHidden ? '\u2212' : '') + maskOrFmt(Math.abs(d.bebas));
+    pjVal.style.color = d.bebas<0 ? 'var(--danger)' : '';
+    pjPill.classList.add('on');
+    var sp = document.querySelector('.sub-balances .pill[data-detail="piutang"] .l'), sh = document.querySelector('.sub-balances .pill[data-detail="hutang"] .l');
+    if(sp){ sp.setAttribute('data-short', L('Piutang','Receivables')); }
+    if(sh){ sh.setAttribute('data-short', L('Hutang','Debts')); }
+  }
   var row = function(l, v, cls){ return '<div class="pj-row"><span class="l">'+l+'</span><span class="v mono '+(cls||'')+'">'+v+'</span></div>'; };
   var h = row('Dana likuid milikmu', maskOrFmt(d.saldo));
   if(d.excl+d.held+d.titip>0) h += '<div class="pj-note" style="margin:-1px 0 4px;">Dari total saldo '+escapeHtml(maskOrFmt(d.total))+', '+escapeHtml(maskOrFmt(d.excl+d.held+d.titip))+' tak dihitung'+(d.titip>0 ? ' (titipan '+escapeHtml(maskOrFmt(d.titip))+' = uang orang lain)' : ' (investasi, mengendap, dll)')+'</div>';
@@ -11394,12 +11405,15 @@ function renderDashboard(){
   var elTersedia = document.getElementById('db-tersedia-line');
   if(elTersedia){
     var mengendap = totalSaldoMengendap();
-    if(mengendap > 0){
-      elTersedia.style.display = '';
-      elTersedia.innerHTML = 'Bisa diambil: ' + escapeHtml(String(maskOrFmt(newTotal - mengendap))) + '<span class="tsd-m"> (mengendap ' + escapeHtml(String(maskOrFmt(mengendap))) + ')</span>';
-    } else {
-      elTersedia.style.display = 'none';
-    }
+    var invTot = 0;
+    ACCOUNTS.forEach(function(a){ if((ACCOUNT_CATEGORY[a]||'bank')==='investasi') invTot += saldoAkun(a); });
+    var kasTot = newTotal - invTot;
+    function jtTxt(n){ if(saldoHidden) return String(maskOrFmt(n)); var a = Math.abs(n); return a>=1000000 ? (n<0?'-':'')+'Rp'+(a/1000000).toFixed(2).replace('.',',')+' jt' : fmt(n); }
+    var bisa = newTotal - mengendap;
+    elTersedia.style.display = '';
+    elTersedia.title = 'Bisa diambil: ' + String(maskOrFmt(bisa)) + (mengendap>0 ? ' (mengendap ' + String(maskOrFmt(mengendap)) + ')' : '');
+    elTersedia.innerHTML = escapeHtml(L('Kas ','Cash ') + jtTxt(kasTot) + ' \u2022 ' + L('Investasi ','Investments ') + jtTxt(invTot)) +
+      (mengendap > 0 ? '<span class="tsd-m">' + escapeHtml(L('Bisa diambil ','Available ') + String(maskOrFmt(bisa)) + ' (' + L('mengendap ','held ') + String(maskOrFmt(mengendap)) + ')') + '</span>' : '');
   }
 
   if(window.PTG){ try{ PTG.start(); PTG.renderDash(); }catch(e){ console.error(e); } }
@@ -13394,7 +13408,7 @@ function renderInsight(currentTotal, opt){
     if(w7>0){
       h += '<div class="ins-week"><div class="ins-wh"><span>'+L('7 hari terakhir','Last 7 days')+'</span><b class="mono">'+fmtShort(w7)+'</b></div><div class="ins-wbars">'+
         days.map(function(x){
-          return '<div class="ins-wc'+(x.today?' on':'')+'"><div class="ins-wcol"><i style="height:'+(x.v>0?Math.max(8,Math.round(x.v/dmax*100)):3)+'%"></i></div><em>'+x.d+'</em></div>';
+          return '<div class="ins-wc'+(x.today?' on':'')+'"><div class="ins-wcol">'+(x.today && !(x.v>0) ? '<i class="z" style="height:100%"></i>' : '<i style="height:'+(x.v>0?Math.max(8,Math.round(x.v/dmax*100)):3)+'%"></i>')+'</div><em>'+x.d+'</em></div>';
         }).join('')+'</div></div>';
     }
 
@@ -27360,6 +27374,7 @@ html[data-theme="light"] #db-insight-card{box-shadow:inset 4px 0 0 #7048E8, 0 1p
 .ins-wc{display:flex; flex-direction:column; align-items:center; gap:4px;}
 .ins-wcol{width:100%; height:54px; display:flex; align-items:flex-end;}
 .ins-wcol i{display:block; width:100%; border-radius:6px 6px 3px 3px; background:color-mix(in srgb,var(--c) 38%,transparent);}
+.ins-wcol i.z,.ins-wc.on .ins-wcol i.z{background:transparent; border:1px dashed var(--c); box-shadow:none; box-sizing:border-box;}
 .ins-wc.on .ins-wcol i{background:var(--c); box-shadow:0 3px 10px color-mix(in srgb,var(--c) 45%,transparent);}
 .ins-wc em{font-style:normal; font-size:9.5px; color:var(--text-2); font-weight:600;}
 .ins-wc.on em{color:var(--c); font-weight:800;}
@@ -27420,7 +27435,16 @@ html[data-layout="desktop"] #view-dashboard .balance-panel .balance-num{grid-col
 html[data-layout="desktop"] #view-dashboard .balance-panel #db-tersedia-line{grid-column:1; grid-row:3; margin:0 !important; font-size:11px !important;}
 html[data-layout="desktop"] #view-dashboard .balance-panel .sub-balances{grid-column:2; grid-row:2 / span 2; margin:0; gap:8px; align-self:center;}
 html[data-layout="desktop"] #view-dashboard .balance-panel .sub-balances .pill{padding:5px 10px;}
+#db-pj-pill{display:none !important;}
+html[data-layout="desktop"] .sub-balances:has(#db-pj-pill.on) .pill .l[data-short]{font-size:0 !important;}
+html[data-layout="desktop"] .sub-balances:has(#db-pj-pill.on) .pill .l[data-short]::after{content:attr(data-short) " ›"; font-size:10px;}
+html[data-layout="desktop"] #db-pj-pill.on{display:flex !important;}
 html[data-layout="desktop"] #view-dashboard .balance-panel .sub-balances .pill .l{min-height:0; -webkit-line-clamp:1; margin-bottom:2px;}
+#view-dashboard .balance-panel .sub-balances .pill .l{opacity:.95; font-size:10px; font-weight:700; letter-spacing:.02em;}
+#view-dashboard .balance-panel #db-tersedia-line{opacity:.95 !important;}
+#dc-accounts{scrollbar-width:thin; scrollbar-color:color-mix(in srgb,var(--text) 35%,transparent) transparent;}
+#dc-accounts::-webkit-scrollbar{width:6px;}
+#dc-accounts::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 35%,transparent); border-radius:6px;}
 html[data-layout="desktop"] #view-dashboard .balance-panel .sub-balances .pill .v{font-size:12.5px;}
 /* kolom kiri/kanan: kalau layar sempit (<760px) susun atas-bawah saja */
 
@@ -27630,7 +27654,7 @@ html[data-layout="desktop"] .lf-x{display:grid; grid-template-columns:minmax(0,1
 html[data-layout="desktop"] .lf-x .lf-chips{grid-column:1 / -1;}
 html[data-layout="desktop"] .lf-x .lf-range{grid-column:1 / -1;}
 #db-tersedia-line .tsd-m{display:block; margin-top:1px;}
-html[data-layout="desktop"] #db-tersedia-line .tsd-m{display:inline; margin-top:0;}
+html[data-layout="desktop"] #db-tersedia-line .tsd-m{display:none;}
 #view-dashboard .topbar > .tk-motif{position:absolute !important; inset:0; z-index:1 !important; pointer-events:none; overflow:hidden; border-radius:inherit;
   --tm-ring:#fff; --tm-ring-o:.36; --tm-sun:#fff; --tm-sun-o:.36; --tm-w:#0B3B35; --tm-w1:.06; --tm-w2:.08; --tm-w3:.1;}
 html[data-theme="light"] #view-dashboard .topbar > .tk-motif{--tm-ring-o:.26; --tm-sun-o:.34; --tm-w:#06433E; --tm-w1:.09; --tm-w2:.12; --tm-w3:.15;}
@@ -27869,7 +27893,15 @@ function renderDashCompact(){
 
   /* baris 2: statistik ringkas */
   var tkv = todayKeluarView();
-  h += stat('onclick="openTodayModal(\'keluar\')"', TODAY_MODE==='stok' ? L('Stok dipakai hari ini','Stock used today') : L('Keluar hari ini','Spent today'), maskOrFmt(tkv.value), tkv.sub, 'var(--danger)');
+  var avg7Sub = '';
+  if(!tkv.sub && TODAY_MODE!=='stok' && !saldoHidden){
+    try{
+      var a7 = 0, n7 = new Date();
+      for(var q7=0; q7<7; q7++){ var d7 = new Date(n7.getFullYear(), n7.getMonth(), n7.getDate()-q7); var s7 = isoLokal(d7); a7 += (bebanOperasional(s7, s7)||0); }
+      if(a7>0) avg7Sub = L('rata-rata ','avg ') + 'Rp' + fmtShort(a7/7) + L(' per hari',' per day');
+    }catch(e){}
+  }
+  h += stat('onclick="openTodayModal(\'keluar\')"', TODAY_MODE==='stok' ? L('Stok dipakai hari ini','Stock used today') : L('Keluar hari ini','Spent today'), maskOrFmt(tkv.value), tkv.sub || avg7Sub, 'var(--danger)');
   h += stat('onclick="openTodayModal(\'masuk\')"', L('Masuk hari ini','Income today'), maskOrFmt(todayPemasukanTotal()), '', 'var(--pos)');
   /* Kekayaan Bersih & Kesehatan Finansial: desain kartu lama (titik warna, link, grafik mini / badge skor); posisi di grid tetap */
   function nh(dot, title, link){ return '<div class="dc-nh"><span class="dd" style="background:'+dot+';"></span><span class="t">'+title+'</span><span class="lk">'+link+'<span class="dc-go">'+ICONS.chevronRight+'</span></span></div>'; }
@@ -27924,7 +27956,7 @@ function renderDashCompact(){
     var bc = ins.pct===null ? 'var(--primary)' : (ins.pct===0 ? 'var(--primary)' : (ins.pct>0 ? 'var(--danger)' : 'var(--pos)'));
     var chipT = ins.pct===null ? L('Berjalan','So far') : (ins.pct===0 ? L('Stabil','Steady') : (ins.pct>0 ? L('Naik','Up') : L('Hemat','Saving')));
     var icoK = ins.pct===null ? 'sparkles' : (ins.pct===0 ? 'activity' : (ins.pct>0 ? 'trendUp' : 'trendDown'));
-    var cap = ins.pct===null ? L('Pengeluaran bulan ini','Spending this month') : L('vs periode sama bln lalu','vs same period last mo.');
+    var cap = ins.pct===null ? L('Pengeluaran bulan ini','Spending this month') : L('Pengeluaran vs periode sama bln lalu','Spending vs same period last mo.');
     insC = bc;
     var nowD = new Date(), tp = null;
     try{ tp = insightTopPos(nowD.getFullYear(), nowD.getMonth()+1); }catch(e){}
@@ -27932,7 +27964,7 @@ function renderDashCompact(){
     var w7 = hasWk ? ins.week.reduce(function(a2,x){ return a2+x.v; },0) : 0;
     var wk = hasWk
       ? '<div class="dci-wh"><span>'+L('7 hari terakhir','Last 7 days')+'</span><b>'+fmtShort(w7)+'</b></div><div class="dci-wk">'+ins.week.map(function(x){
-          return '<div class="dci-wc'+(x.today?' on':'')+'" title="'+fmt(x.v)+'"><div class="dci-wcol">'+((x.v>0 && (x.v===ins.wmax || x.today)) ? '<u class="dci-wv">'+fmtShort(x.v)+'</u>' : '')+'<i style="height:'+(x.v>0?Math.max(8,Math.round(x.v/ins.wmax*100)):3)+'%"></i></div><em>'+x.d+'</em></div>';
+          return '<div class="dci-wc'+(x.today?' on':'')+'" title="'+fmt(x.v)+'"><div class="dci-wcol">'+((x.v>0 && (x.v===ins.wmax || x.today)) ? '<u class="dci-wv">'+fmtShort(x.v)+'</u>' : '')+(x.today && !(x.v>0) ? '<i class="z" style="height:100%"></i>' : '<i style="height:'+(x.v>0?Math.max(8,Math.round(x.v/ins.wmax*78)):3)+'%"></i>')+'</div><em>'+x.d+'</em></div>';
         }).join('')+'</div>'
       : '<div class="dci-wempty">'+L('Belum ada pengeluaran dalam 7 hari terakhir.','No spending in the last 7 days.')+'</div>';
     var cmp = '';
@@ -29955,6 +29987,7 @@ html[data-layout="desktop"] #db-compact .dc-insc .dc-ib{container-type:inline-si
 .dci-wcol{flex:1; min-height:0; width:100%; display:flex; align-items:flex-end; overflow:hidden; border-radius:6px; background:color-mix(in srgb,var(--text) 7%,transparent);}
 .dci-wcol i{display:block; width:100%; border-radius:5px 5px 0 0; background:color-mix(in srgb,var(--c) 48%,transparent);}
 .dci-wc.on .dci-wcol i{background:var(--c);}
+.dci-wcol i.z,.dci-wc.on .dci-wcol i.z{background:transparent; border:1px dashed var(--c); border-radius:5px; box-sizing:border-box;}
 .dci-wc em{font-style:normal; font-size:9px; font-weight:700; line-height:1; flex-shrink:0; color:var(--text-2);}
 .dci-wc.on em{color:var(--c);}
 .dci-wempty{flex:1; display:grid; place-items:center; text-align:center; font-size:11px; color:var(--text-2);}
