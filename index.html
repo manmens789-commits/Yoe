@@ -373,22 +373,30 @@
   /* Detail aset: daftar rapi (label kiri, nilai kanan, garis tipis), aman untuk mode gelap & terang */
 
   /* Detail aset v2: kartu nilai (harga beli vs wajar + bar nilai tersisa), lalu info dalam grid 2 kolom berkelompok */
+  #view-inventaris-detail{--invd-box:color-mix(in srgb,var(--text) 8%,var(--surface)); --invd-box-line:color-mix(in srgb,var(--text) 16%,transparent); --invd-box-hi:color-mix(in srgb,var(--text) 6%,transparent);}
+  html[data-theme="light"] #view-inventaris-detail{--invd-box:#FFFFFF; --invd-box-line:color-mix(in srgb,var(--text) 18%,transparent); --invd-box-hi:rgba(255,255,255,.7);}
+  html[data-theme="light"] #view-inventaris-detail .invd-cell, html[data-theme="light"] #view-inventaris-detail .invd-tile.alt{box-shadow:0 1px 2px rgba(23,23,23,.10), 0 4px 10px -6px rgba(23,23,23,.18);}
+  html[data-theme="light"] #view-inventaris-detail .invd-tile:not(.alt){background:#D7EFEA; border-color:rgba(15,157,142,.45);}
+  html[data-theme="light"] #view-inventaris-detail .invd-tile:not(.alt) .v{color:#0B7A6E;}
+  html[data-theme="light"] #view-inventaris-detail .invd-fill{background:#0F9D8E;}
+  html[data-theme="light"] #view-inventaris-detail .invd-maps{color:#0B7A6E; border-color:#0F9D8E;}
+  #view-inventaris-detail .card{border:1px solid color-mix(in srgb,var(--text) 13%,transparent);}
   #view-inventaris-detail .invd-hero{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
   #view-inventaris-detail .invd-hero.one{grid-template-columns:1fr;}
   #view-inventaris-detail .invd-tile{padding:12px 14px; border-radius:14px; background:color-mix(in srgb,var(--primary) 9%,transparent); border:1px solid color-mix(in srgb,var(--primary) 22%,transparent); min-width:0;}
   #view-inventaris-detail .invd-tile .k{font-size:11.5px; font-weight:600; color:var(--text-2);}
   #view-inventaris-detail .invd-tile .v{margin-top:3px; font-size:18px; font-weight:800; color:var(--primary); line-height:1.2; overflow-wrap:anywhere;}
-  #view-inventaris-detail .invd-tile.alt{background:var(--input-bg); border-color:var(--line);}
+  #view-inventaris-detail .invd-tile.alt{background:var(--invd-box); border-color:var(--invd-box-line);}
   #view-inventaris-detail .invd-tile.alt .v{color:var(--text);}
   #view-inventaris-detail .invd-susut{margin-top:12px;}
   #view-inventaris-detail .invd-susut-top{display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--text-2); margin-bottom:6px;}
   #view-inventaris-detail .invd-susut-top b{color:var(--text); font-weight:700;}
-  #view-inventaris-detail .invd-track{height:8px; border-radius:99px; background:var(--input-bg); box-shadow:inset 0 0 0 1px var(--line); overflow:hidden;}
+  #view-inventaris-detail .invd-track{height:8px; border-radius:99px; background:var(--invd-box); box-shadow:inset 0 0 0 1px var(--invd-box-line); overflow:hidden;}
   #view-inventaris-detail .invd-fill{height:100%; border-radius:99px; background:var(--primary);}
   #view-inventaris-detail .invd-susut-note{margin-top:6px; font-size:11.5px; color:var(--text-2); line-height:1.4;}
   #view-inventaris-detail .invd-sec{margin:18px 0 8px; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--text-2);}
-  #view-inventaris-detail .invd-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
-  #view-inventaris-detail .invd-cell{padding:10px 12px; border-radius:12px; background:var(--input-bg); border:1px solid var(--line); min-width:0;}
+  #view-inventaris-detail .invd-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-flow:row dense; gap:10px;}
+  #view-inventaris-detail .invd-cell{padding:12px 14px; border-radius:14px; background:var(--invd-box); border:1px solid var(--invd-box-line); box-shadow:inset 0 1px 0 var(--invd-box-hi); min-width:0; display:flex; flex-direction:column; justify-content:center;}
   #view-inventaris-detail .invd-cell.wide{grid-column:1 / -1;}
   #view-inventaris-detail .invd-cell .k{font-size:11.5px; font-weight:600; color:var(--text-2); line-height:1.3;}
   #view-inventaris-detail .invd-cell .v{margin-top:3px; font-size:14px; font-weight:700; color:var(--text); line-height:1.35; overflow-wrap:anywhere;}
@@ -13787,37 +13795,41 @@ function lfAdd(iso, n){ var d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()
 function lfDayOk(key, tgl){
   var st = LF_DAY[key]; if(!st || st.mode==='all') return true;
   tgl = String(tgl||'').slice(0,10);
-  if(st.mode==='day') return tgl===st.day;
-  if(st.mode==='7') return tgl>=lfAdd(todayISO(),-6) && tgl<=todayISO();
+  if(st.mode==='range') return (!st.from || tgl>=st.from) && (!st.to || tgl<=st.to);
   return true;
 }
 function lfExtra(key, cfg){
   var id = 'lf-'+key, box = document.getElementById(id);
   if(!box) return {c:'all'};
-  var st = LF_DAY[key] || (LF_DAY[key] = {mode:'all', day:todayISO(), synced:''});
+  var st = LF_DAY[key] || (LF_DAY[key] = {mode:'all', from:'', to:'', synced:'|'});
   var ex = document.getElementById(id+'-x');
   if(!ex){
     ex = document.createElement('div'); ex.id = id+'-x'; ex.className = 'lf-x';
     var chips = [['all','Semua'],['today','Hari ini'],['yest','Kemarin'],['7','7 hari']].map(function(c){
       return '<button type="button" class="lf-chip" data-lfday="'+key+':'+c[0]+'">'+c[1]+'</button>'; }).join('');
     ex.innerHTML = (cfg.cOpts ? '<div class="field" style="margin:0 0 10px;"><label>'+cfg.cLabel+'</label><select id="'+id+'-c2" data-lf="'+key+'"></select></div>' : '')+
-      '<div class="field" style="margin:0 0 8px;"><label>Tanggal (harian)</label><div class="lf-dayrow">'+
-      '<button type="button" class="lf-nav" data-lfday="'+key+':prev" aria-label="Hari sebelumnya">&#8249;</button>'+
-      '<input type="date" id="'+id+'-d" data-lf="'+key+'">'+
-      '<button type="button" class="lf-nav" data-lfday="'+key+':next" aria-label="Hari berikutnya">&#8250;</button></div></div>'+
+      '<div class="lf-range">'+
+      '<div class="field" style="margin:0 0 8px;"><label>Dari Tanggal</label><input type="date" id="'+id+'-d1" data-lf="'+key+'"></div>'+
+      '<div class="field" style="margin:0 0 8px;"><label>Sampai Tanggal</label><input type="date" id="'+id+'-d2" data-lf="'+key+'"></div></div>'+
       '<div class="lf-chips">'+chips+'</div>';
     box.insertBefore(ex, document.getElementById(id+'-c'));
   }
-  var inp = document.getElementById(id+'-d');
-  if(inp.value !== st.synced){
-    if(inp.value){ st.mode = 'day'; st.day = inp.value; } else { st.mode = 'all'; }
+  var i1 = document.getElementById(id+'-d1'), i2 = document.getElementById(id+'-d2');
+  if((i1.value+'|'+i2.value) !== st.synced){
+    st.from = i1.value; st.to = i2.value;
+    if(st.from && st.to && st.from>st.to){ var tmp = st.from; st.from = st.to; st.to = tmp; }
+    st.mode = (st.from || st.to) ? 'range' : 'all';
   }
-  inp.value = st.mode==='day' ? st.day : ''; st.synced = inp.value;
+  i1.value = st.mode==='range' ? st.from : ''; i2.value = st.mode==='range' ? st.to : '';
+  st.synced = i1.value+'|'+i2.value;
   var today = todayISO();
   ex.querySelectorAll('.lf-chip').forEach(function(b){
     var m = b.getAttribute('data-lfday').split(':')[1];
-    var on = (m==='all' && st.mode==='all') || (m==='7' && st.mode==='7') ||
-      (m==='today' && st.mode==='day' && st.day===today) || (m==='yest' && st.mode==='day' && st.day===lfAdd(today,-1));
+    var rg = st.mode==='range';
+    var on = (m==='all' && st.mode==='all') ||
+      (m==='today' && rg && st.from===today && st.to===today) ||
+      (m==='yest' && rg && st.from===lfAdd(today,-1) && st.to===lfAdd(today,-1)) ||
+      (m==='7' && rg && st.from===lfAdd(today,-6) && st.to===today);
     b.classList.toggle('on', on);
   });
   var selB = document.getElementById(id+'-b'); if(selB) selB.disabled = st.mode!=='all';
@@ -13834,11 +13846,10 @@ document.addEventListener('click', function(ev){
   var b = ev.target && ev.target.closest ? ev.target.closest('[data-lfday]') : null; if(!b) return;
   var pr = b.getAttribute('data-lfday').split(':'), key = pr[0], act = pr[1], st = LF_DAY[key]; if(!st) return;
   var today = todayISO();
-  if(act==='all'){ st.mode = 'all'; }
-  else if(act==='today'){ st.mode = 'day'; st.day = today; }
-  else if(act==='yest'){ st.mode = 'day'; st.day = lfAdd(today,-1); }
-  else if(act==='7'){ st.mode = '7'; }
-  else { var base = st.mode==='day' ? st.day : today; var nd = lfAdd(base, act==='prev' ? -1 : 1); if(nd>today) nd = today; st.mode = 'day'; st.day = nd; }
+  if(act==='all'){ st.mode = 'all'; st.from = ''; st.to = ''; }
+  else if(act==='today'){ st.mode = 'range'; st.from = today; st.to = today; }
+  else if(act==='yest'){ st.mode = 'range'; st.from = st.to = lfAdd(today,-1); }
+  else if(act==='7'){ st.mode = 'range'; st.from = lfAdd(today,-6); st.to = today; }
   if(LF_RENDER[key]) LF_RENDER[key]();
 });
 document.addEventListener('input', function(ev){ var k = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-lf'); if(k && LF_RENDER[k]) LF_RENDER[k](); });
@@ -16129,6 +16140,10 @@ function renderInventarisDetail(){
   '</div>';
   var rowsEl = document.getElementById('invd-rows');
   if(rowsEl) rowsEl.innerHTML = rowsHtml;
+  if(rowsEl) Array.prototype.forEach.call(rowsEl.querySelectorAll('.invd-grid'), function(g){
+    var n = g.querySelectorAll('.invd-cell:not(.wide)');
+    if(n.length % 2 === 1) n[n.length-1].classList.add('wide');
+  });
 
   var jualCard = document.getElementById('invd-jual-card');
   var jualRowsEl = document.getElementById('invd-jual-rows');
@@ -27601,6 +27616,8 @@ html[data-layout="desktop"] #view-dashboard .topbar h1#db-greeting{display:block
 html[data-layout="desktop"] #view-dashboard .topbar h1#db-greeting .gr-s{display:block; font-size:11.5px; font-weight:600; letter-spacing:.02em; opacity:.8; margin-bottom:2px;}
 html[data-layout="desktop"] #view-dashboard .topbar h1#db-greeting .gr-n{display:block; font-size:17px; font-weight:800; overflow:hidden; text-overflow:ellipsis;}
 html[data-layout="desktop"] #view-dashboard .topbar-greet-row .app-badge{grid-column:2; grid-row:2; align-self:start; justify-self:start; font-size:10px; padding:3px 10px; letter-spacing:.06em; text-transform:uppercase;}
+.lf-range{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 10px;}
+.lf-range input{min-width:0; width:100%;}
 .lf-dayrow{display:flex; gap:8px; align-items:stretch;}
 .lf-dayrow input{flex:1; min-width:0; margin:0;}
 .lf-nav{width:44px; flex-shrink:0; border-radius:12px; border:1px solid var(--line); background:var(--primary-dim); color:var(--text); font-size:22px; line-height:1; cursor:pointer;}
@@ -27611,6 +27628,7 @@ html[data-layout="desktop"] #view-dashboard .topbar-greet-row .app-badge{grid-co
 .item-filter-box select:disabled{opacity:.45;}
 html[data-layout="desktop"] .lf-x{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 12px; align-items:end;}
 html[data-layout="desktop"] .lf-x .lf-chips{grid-column:1 / -1;}
+html[data-layout="desktop"] .lf-x .lf-range{grid-column:1 / -1;}
 #db-tersedia-line .tsd-m{display:block; margin-top:1px;}
 html[data-layout="desktop"] #db-tersedia-line .tsd-m{display:inline; margin-top:0;}
 #view-dashboard .topbar > .tk-motif{position:absolute !important; inset:0; z-index:1 !important; pointer-events:none; overflow:hidden; border-radius:inherit;
@@ -29988,6 +30006,9 @@ html[data-layout="desktop"] #view-pengaturan .pg-t2 details.set-acc > summary{pa
 html[data-layout="desktop"] #view-pengaturan .pg-t2 details.set-acc > .sa-body > .menu-row{padding:5px 8px !important;}
 html[data-layout="desktop"] #view-pengaturan .pg-t2 details.set-acc .sa-ic{width:34px; height:34px;}
 html[data-layout="desktop"] #view-pengaturan .pg-t3 .pg-r{overflow-y:auto; max-height:var(--pgh); scrollbar-width:thin; overscroll-behavior:contain;}
+/* Mode 1 kolom (layar sempit/portrait): beri jarak antara kartu Tampilan & Bahasa dan Keuangan, sama dengan jarak antar kartu lain */
+html[data-layout="desktop"][data-wide-p="1"] #view-pengaturan .pg-l > .set-link{margin-bottom:12px !important;}
+html[data-layout="desktop"][data-wide-p="1"] #view-pengaturan .pg-t1 .pg-l > .set-link{margin-bottom:8px !important;}
 </style>
 <script id="tk-akun-fit-js">
 (function(){
@@ -30058,27 +30079,6 @@ html[data-layout="desktop"] #db-compact .dc-qa .qb .qi svg{width:14px; height:14
 </style>
 <style id="ct-v2">
 /* Catat Transaksi v2: aksi utama besar, grup bertema, warna = arti (merah keluar, hijau masuk, biru netral, kuning rencana, ungu investasi, abu kelola) */
-html:not(#_) #view-catat .catat-grid .qa[data-goto="keluar"]{--a:#D64550 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="hutang"]{--a:#D64550 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="masuk"]{--a:#1E9E62 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="piutang"]{--a:#1E9E62 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="transfer"]{--a:#3F6FE0 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="rencana-belanja"]{--a:#C9820A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="tagihan"]{--a:#C9820A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="recurring"]{--a:#C9820A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="goals"]{--a:#C9820A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="investasi-beli"]{--a:#6E4BD8 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="investasi-jual"]{--a:#6E4BD8 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="dividen"]{--a:#6E4BD8 !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="belanja"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="stok-barang"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="titipan"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="untuk-orang"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="splitbill"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="patungan"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="inventaris"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="asetbio"]{--a:#5F6B7A !important;}
-html:not(#_) #view-catat .catat-grid .qa[data-goto="kesehatan"]{--a:#5F6B7A !important;}
 
 html:not(#_) #view-catat .catat-grp:has(.catat-hero) > .catat-group-title{display:none !important;}
 html:not(#_) #view-catat .catat-grid.grid2{grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:8px !important;}
@@ -30116,6 +30116,33 @@ html[data-layout="desktop"]:not(#_) #view-catat .catat-grp:has([data-goto="piuta
 html[data-layout="desktop"]:not(#_) #view-catat .catat-grp:has([data-goto="kesehatan"]) .catat-grid.grid2{grid-template-columns:minmax(0,320px) !important;}
 html[data-layout="desktop"]:not(#_) #view-catat .catat-grid.catat-hero.grid2{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
 html[data-layout="desktop"]:not(#_) #view-catat .catat-hero .qa, html[data-layout="desktop"]:not(#_) #view-catat .catat-hero .qa:nth-child(3){grid-column:auto; flex-direction:row !important; align-items:center !important; min-height:72px !important; gap:12px !important; padding:14px !important;}
+/* Tile ganjil terakhir (mis. Kesehatan Finansial, Dividen Saham) melebar penuh kiri-kanan; konten Transfer rata tengah */
+html:not([data-layout="desktop"]):not(#_) #view-catat .catat-grid:not(.catat-hero) .qa:last-child:nth-child(odd){grid-column:1 / -1 !important;}
+html:not([data-layout="desktop"]):not(#_) #view-catat .catat-hero .qa:nth-child(3){justify-content:center !important; text-align:center !important;}
+html:not([data-layout="desktop"]):not(#_) #view-catat .catat-hero .qa:nth-child(3) .lb{text-align:center !important; width:auto !important; flex:0 1 auto !important;}
+/* Desktop: grid 6 kolom; tiap grup melebar sesuai jumlah tombolnya sehingga tiap baris terisi penuh (tanpa ruang kosong) */
+@media (min-width:1100px){
+html[data-layout="desktop"]:not(#_) #view-catat main{grid-template-columns:repeat(6,minmax(0,1fr)) !important; grid-auto-flow:row dense !important; align-items:stretch !important;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .back-row{grid-column:1 / -1 !important;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp{grid-column:span 6 !important; --n:6;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.catat-hero){grid-column:1 / -1 !important;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.qa[data-goto="belanja"]){grid-column:span 2 !important; --n:2;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.qa[data-goto="rencana-belanja"]){grid-column:span 4 !important; --n:4;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.qa[data-goto="investasi-beli"]){grid-column:span 3 !important; --n:3;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.qa[data-goto="inventaris"]){grid-column:span 2 !important; --n:2;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.qa[data-goto="kesehatan"]){grid-column:span 1 !important; --n:1;}
+html[data-layout="desktop"]:not(#_) #view-catat main > .catat-grp:has(.qa[data-goto="piutang"]){grid-column:span 6 !important; --n:6;}
+html[data-layout="desktop"]:not(#_) #view-catat .catat-grp:not(:has(.catat-hero)) .catat-grid.grid2{grid-template-columns:repeat(var(--n),minmax(0,1fr)) !important;}
+}
+/* Tombol utama (Pengeluaran, Pemasukan, Transfer): ikon dan tulisan rata tengah */
+html:not(#_) #view-catat .catat-hero .qa, html:not(#_) #view-catat .catat-hero .qa:nth-child(3){align-items:center !important; justify-content:center !important; text-align:center !important;}
+html:not(#_) #view-catat .catat-hero .qa .lb, html:not(#_) #view-catat .catat-hero .qa:nth-child(3) .lb{text-align:center !important; width:auto !important; flex:0 1 auto !important;}
+html:not(#_) #view-catat .catat-hero .qa .ic{margin:0 !important; flex:none !important;}
+html[data-layout="desktop"]:not(#_) #view-catat .catat-hero .qa, html[data-layout="desktop"]:not(#_) #view-catat .catat-hero .qa:nth-child(3){flex-direction:column !important; min-height:100px !important; gap:8px !important;}
+html:not([data-layout="desktop"]):not(#_) #view-catat .catat-hero .qa:nth-child(3){flex-direction:column !important; gap:6px !important; min-height:96px !important;}
+/* Baris menu bertumpuk (mis. Jejak Uang untuk Orang Lain / Analisis Pengeluaran): beri jarak sama di gelap & terang */
+html:not([data-layout="desktop"]) .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .menu-row:not(:last-child){margin-bottom:8px !important;}
+html[data-layout="desktop"] .view:not(#view-dashboard):not(#view-catat):not(#view-widget) .card > .menu-row:not(:last-child){margin-bottom:8px !important;}
 </style>
 <script id="ct-v2-js">
 (function(){
