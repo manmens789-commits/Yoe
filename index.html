@@ -4947,7 +4947,10 @@ var TYPE_ICON = { transfer:"transfer", pemasukan:"arrowDown", pengeluaran:"arrow
 /* Badge leading di daftar transaksi: merchant -> logo; pengeluaran tanpa merchant -> ikon Jenis; tipe lain -> ikon tipe. */
 var TEL_RE = /^(telephone|telepon|telp|pulsa|paket data|internet)/i;
 function isTelJenis(j){ return TEL_RE.test(String(j||'').trim()); }
+/* Biaya admin hanya turunan dari transaksi utama: logo/nama merchant cukup tampil di transaksi utamanya. */
+function isBiayaAdminJenis(j){ return /^Biaya Admin/i.test(String(j||'')); }
 function txnLeadBadge(type, jenis, merchant){
+  if(type==='pengeluaran' && isBiayaAdminJenis(jenis)) merchant = '';
   var m = merchant ? merchantByName(merchant) : null;
   if(!m && type==='pengeluaran' && isTelJenis(jenis)) return '<span class="acc-badge jenis-badge" style="background:'+jenisColor('Telephone')+'">'+(ICONS.phoneSignal||ICONS.phone)+'</span>';
   if(m) return '<span class="acc-badge img-square" style="background:'+m.bg+'"><img src="'+m.img+'" alt="'+escapeHtml(m.nama)+'"></span>';
@@ -9019,7 +9022,6 @@ function submitTransfer(){
   if(biaya>0){
     var feeRec = {tanggal:record.tanggal, metode:dari, untuk:'Transfer', jenis:'Biaya Admin Transfer',
       jumlah:biaya, ket:(pl ? 'Biaya admin Bagi Pulsa ' : 'Biaya admin transfer ')+dari+' → '+ke, linkId:record.id, linkKind:'fee'};
-    if(pl) feeRec.merchant = PULSA_MERCHANT;
     DATA.pengeluaran.push(feeRec);
   }
   if(vl && vl.spread>0){
@@ -9107,7 +9109,7 @@ function submitPengeluaran(){
       var splitRec = {tanggal:tanggal, metode:metode, untuk:untuk, jenis:it.jenis, jumlah:it.jumlah, ket:ket, splitId:splitId};
       var splitOrang = pgBarengForItem(bareng.orang, it.jumlah, bareng.total);
       if(splitOrang.length) splitRec.untukOrang = splitOrang;
-      if(merchantPg) splitRec.merchant = merchantPg;
+      if(merchantPg && !isBiayaAdminJenis(it.jenis)) splitRec.merchant = merchantPg;
       DATA.pengeluaran.push(splitRec);
     });
     if(editState.type==='pengeluaran'){ finishEdit('pengeluaran','Pengeluaran split diperbarui'); }
@@ -9125,7 +9127,7 @@ function submitPengeluaran(){
     }
     var record = {tanggal:tanggal, metode:metode, untuk:untuk,
       jenis:document.getElementById('pg-jenis').value, jumlah:jumlah, ket:ket};
-    if(merchantPg) record.merchant = merchantPg;
+    if(merchantPg && !isBiayaAdminJenis(record.jenis)) record.merchant = merchantPg;
     if(bareng.orang.length) record.untukOrang = bareng.orang;
     var currency = document.getElementById('pg-currency').value;
     if(currency && currency!=='IDR'){
@@ -11555,7 +11557,7 @@ function buildAllTransactions(){
   var all = [];
   DATA.transfer.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Transfer', label:accountOptionLabel(x.dari)+' → '+accountOptionLabel(x.ke), sign:0, type:'transfer', index:i, ket:x.ket||''}); });
   DATA.pemasukan.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Masuk', label:x.sumber+' • '+accountOptionLabel(x.metode), sign:1, type:'pemasukan', index:i, currency:x.currency, jumlahAsli:x.jumlahAsli, ket:x.ket||''}); });
-  DATA.pengeluaran.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant?merchantCanon(x.merchant)+' • ':'')+x.jenis+' • '+accountOptionLabel(x.metode), sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:merchantCanon(x.merchant), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''}); });
+  DATA.pengeluaran.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant && !isBiayaAdminJenis(x.jenis)?merchantCanon(x.merchant)+' • ':'')+x.jenis+' • '+accountOptionLabel(x.metode), sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:(isBiayaAdminJenis(x.jenis)?'':merchantCanon(x.merchant)), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''}); });
   DATA.piutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Piutang', label:(x.nama||'-')+' • '+accountOptionLabel(x.metode), sign:-1, type:'piutang', index:i, ket:x.ket||''}); });
   DATA.hutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Hutang', label:(x.untuk||'-')+' • '+accountOptionLabel(x.metode), sign:(x.tanpaSaldo ? 0 : 1), type:'hutang', index:i, ket:x.ket||''}); });
   DATA.piutang.forEach(function(x,i){ cicilanOf(x).forEach(function(c){ all.push({tanggal:c.tanggal, jumlah:c.jumlah, tipe:'Cicilan Piutang', label:(x.nama||'-')+' • '+accountOptionLabel(c.metode||x.metode), sign:1, type:'piutang', index:i, ket:c.ket||''}); }); });
@@ -13056,7 +13058,7 @@ function buildAccountTransactions(acc){
     if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Masuk', label:x.sumber, sign:1, type:'pemasukan', index:i, currency:x.currency, jumlahAsli:x.jumlahAsli, ket:x.ket||''});
   });
   DATA.pengeluaran.forEach(function(x,i){
-    if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant?merchantCanon(x.merchant)+' • ':'')+x.jenis, sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:merchantCanon(x.merchant), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''});
+    if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant && !isBiayaAdminJenis(x.jenis)?merchantCanon(x.merchant)+' • ':'')+x.jenis, sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:(isBiayaAdminJenis(x.jenis)?'':merchantCanon(x.merchant)), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''});
   });
   DATA.belanja.forEach(function(x,i){
     if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Belanja', label:(x.merchant?merchantCanon(x.merchant)+' • ':'')+x.item, sign:-1, type:'belanja', index:i, merchant:merchantCanon(x.merchant), ket:(x.ket||'')+' '+(x.kategori||'')});
@@ -13909,7 +13911,7 @@ function renderPengeluaranList(){
   var html = '', shown = 0, sum = 0;
   for(var i=DATA.pengeluaran.length-1; i>=0; i--){
     var p = DATA.pengeluaran[i];
-    var mer = merchantCanon(p.merchant);
+    var mer = isBiayaAdminJenis(p.jenis) ? '' : merchantCanon(p.merchant);
     var ak = akunOfPengeluaran(p);
     if(f.a!=='all' && ak!==f.a) continue;
     if(fx.c!=='all' && p.jenis!==fx.c) continue;
