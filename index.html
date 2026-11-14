@@ -5015,21 +5015,8 @@ function merchantFieldHtml(prefix){
    karena ini emang dipotong otomatis sama bank walau di bawah saldo minimal.
    Biaya Admin Transfer TIDAK termasuk — itu tetap kena batas mengendap kayak pengeluaran biasa. */
 var ADMIN_FEE_JENIS = ["Biaya Admin Bank"];
-var ITEM_BELANJA = [
-  ["Hairtonic (Makarizo)","Grooming Spend"],["Sabun Muka (Next Prime)","Grooming Spend"],
-  ["Sunscreen (Hanasui Water Collagen SPF)","Grooming Spend"],["Moisturizer (Implora)","Grooming Spend"],
-  ["Body Exfoliasi (Hanasui Vita Smoothie)","Grooming Spend"],["Face Exfoliasi (Hanasui Probiotic)","Grooming Spend"],
-  ["Handbody (Emeron Lovely)","Grooming Spend"],["Bodyspray (Posh)","Grooming Spend"],
-  ["Deodorant (Rexona)","Grooming Spend"],["Parfum (Gatsby)","Grooming Spend"],
-  ["Pewangi Pakaian (Kispray)","Grooming Spend"],["Minyak Penghangat (Telon)","Medicine Spend"],
-  ["Sanitizer (Antis)","Medicine Spend"],["Pembersih Mulut Kumur (Listerine)","Bathroom Spend"],
-  ["Shampoo (Makarizo Conditioner 1 Renceng)","Bathroom Spend"],["Sabun Cuci Pakaian (Rinso Cair/Bubuk)","Bathroom Spend"],
-  ["Sabun Cuci Piring (Mama Lemon)","Bathroom Spend"],["Pasta Gigi (Ciptadent)","Bathroom Spend"],
-  ["Sikat Gigi (Ciptadent)","Bathroom Spend"],["Sabun (Harmony)","Bathroom Spend"],
-  ["Beras (4kg bebas merk)","Food Spend"],["Kopi (Hitam/Sachet Latte)","Food Spend"],
-  ["Telur (1kg)","Food Spend"],["Galon (bebas merk)","Food Spend"]
-];
-var KATEGORI_BELANJA = ["Grooming Spend","Medicine Spend","Bathroom Spend","Food Spend"];
+var ITEM_BELANJA = [];  /* katalog item belanja/stok: kosong secara default, diisi sendiri oleh pengguna */
+var KATEGORI_BELANJA = [];  /* kategori budget belanja: kosong secara default */
 var KATEGORI_INVENTARIS = ["Elektronik","Perabotan","Kendaraan","Perhiasan","Dokumen","Pakaian","Peralatan","Lainnya"];
 var KONDISI_INVENTARIS = ["Baru","Sangat Baik","Baik","Cukup","Rusak Ringan","Rusak Berat"];
 var SATUAN_BELANJA = [
@@ -6656,7 +6643,7 @@ function renderAuth(){
         '<div class="wz-row"><span class="d bill"></span><b>Internet</b><em>12 hari lagi</em></div>'+
         '<div class="wz-meter"><b>Dana darurat</b><span><i style="width:60%"></i></span></div>'}
     ];
-    html += '<div class="wz-welcome"><div class="wz-hero"><div class="wz-track" id="wz-track">';
+    html += '<div class="wz-welcome"><div class="wz-hero"><span class="wz-mark">'+logoImg+'</span><div class="wz-track" id="wz-track">';
     slides.forEach(function(sl){
       html += '<div class="wz-slide"><p class="wz-cap">'+sl.t+'</p><div class="wz-stage">'+
         '<span class="wz-chip c1">'+sl.c1+'</span><div class="wz-demo">'+sl.demo+'</div><span class="wz-chip c2">'+sl.c2+'</span></div></div>';
@@ -6665,13 +6652,12 @@ function renderAuth(){
     slides.forEach(function(sl,i){ html += '<i'+(i===0?' class="on"':'')+'></i>'; });
     html += '</div></div>'+
       '<div class="wz-sheet">'+
-        '<span class="wz-mark">'+logoImg+'</span>'+
         '<h1 class="wz-title">Selamat datang di Tumbuh Kaya</h1>'+
         '<p class="wz-sub">Catat keuanganmu dengan rapi, dari pemasukan sampai target tabungan.</p>'+
         '<button type="button" class="wz-pill pri" data-auth="google"><svg class="wz-g" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg><span>Lanjut dengan Google</span></button>'+
         '<button type="button" class="wz-pill sec" data-auth="goto-login">Masuk dengan Email</button>'+
-        '<div class="wz-alt wz-reg">Belum punya akun? <span class="lk" data-auth="goto-register">Buat akun baru</span></div>'+
-        '<div class="wz-guest" data-auth="guest"><span>Lanjut tanpa akun</span><small>(Datamu tersimpan di HP ini.)</small></div>'+
+        '<div class="wz-foot"><div class="wz-alt wz-reg">Belum punya akun? <span class="lk" data-auth="goto-register">Buat akun baru</span></div>'+
+        '<div class="wz-guest" data-auth="guest"><span>Lanjut tanpa akun</span> <small>(Datamu tersimpan di HP ini.)</small></div></div>'+
       '</div></div>';
   }
   el.innerHTML = html;
@@ -11519,7 +11505,24 @@ function toggleSaldoVisibility(){
   var btn = document.getElementById('btn-toggle-saldo');
   if(btn) btn.innerHTML = saldoHidden ? ICON_EYE_OFF : ICON_EYE;
   renderDashboard();
+  try{ refreshVisibleView(); }catch(e){}
   if(window.TKMask) TKMask.sync();
+}
+/* Render ulang halaman yang sedang tampil setelah hide/show saldo. Tanpa ini, teks 'Rp••••••' yang sudah ditulis
+   langsung saat render (maskOrFmt) dan class 'neg' yang bergantung saldoHidden tidak ikut berubah sampai pindah halaman. */
+var VIEW_REFRESH = {
+  'saldo-rekening':'renderSaldoRekeningPage','insight':'renderInsightPage','kesehatan':'renderKesehatan','laporan':'renderLaporan','grafik':'renderGrafik',
+  'riwayat':'renderRiwayat','mutasi-rekening':'renderMutasiRekening','transfer':'renderTransferList','masuk':'renderPemasukanList','keluar':'renderPengeluaranList',
+  'piutang':'renderPiutangList','hutang':'renderHutangList','titipan':'renderTitipanList','rencana-belanja':'renderRencanaBelanja','atur-budget':'renderAturBudget',
+  'goals':'renderGoals','tagihan':'renderTagihanList','splitbill':'renderSplitBillList','untuk-orang':'renderUntukOrang','analisis-pengeluaran':'renderAnalisisPengeluaran',
+  'investasi-beli':'renderInvBeliList','investasi-jual':'renderInvJualList','inventaris':'renderInventarisList','inventaris-detail':'renderInventarisDetail','widget':'renderWidgetQuick'
+};
+function refreshVisibleView(){
+  var v = document.querySelector('.view.active'); if(!v) return;
+  var tab = v.id.replace(/^view-/,'');
+  if(tab==='patungan' && window.PTG){ PTG.renderView(); return; }
+  var fn = VIEW_REFRESH[tab];
+  if(fn && typeof window[fn]==='function') window[fn]();
 }
 function greetingText(){
   var h = new Date().getHours();
@@ -11546,6 +11549,7 @@ function renderDashboard(){
   var _ptgMode = !!(window.PTG && PTG.mode()==='patungan');
   if(_ptgMode){ /* mode Patungan: angka diisi PTG.renderDash */ }
   else if(saldoHidden){
+    [elTotal, elPiutang, elHutang, elTitipan].forEach(function(e){ if(e) e._cuTok = (e._cuTok||0)+1; });
     elTotal.textContent = maskOrFmt(newTotal);
     elPiutang.textContent = maskOrFmt(newPiutang);
     elHutang.textContent = maskOrFmt(newHutang);
@@ -24151,14 +24155,17 @@ document.addEventListener('change', function(e){ if(e.target && e.target.id==='g
   /* ---- Mask nominal ---- */
   var EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
   var EYE_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.4 19.4 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a19.5 19.5 0 0 1-3.17 4.19"/><path d="M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-  var RE = /Rp\s?-?\d(?:[\d.,]*\d)?(?:\s?(?:jt|rb|M|K)\b)?/g;
+  var RE = /[-\u2212]?Rp\s?-?\d(?:[\d.,]*\d)?(?:\s?(?:jt|rb|M|K)\b)?|\b(?:USD|EUR|SGD|JPY|MYR|GBP|AUD|CNY|KRW|THB|HKD)\s\d(?:[\d.,]*\d)?/g;
   var NUMONLY = /^\s*-?\d(?:[\d.,]*\d)?\s?(?:jt|rb|M|K)?\s*$/;
   var CHART_SFX = /^\s*-?\d(?:[\d.,]*\d)?\s?(?:jt|rb|M|K)\s*$/;
   var SKIP = 'script,style,textarea,input,#print-area,#struk-modal-overlay';
   var NUMSEL = '.legend-val,.sm-val,.vl,.pr-legend-val';
   var MASK = 'Rp\u2022\u2022\u2022\u2022\u2022\u2022', MASK_N = '\u2022\u2022\u2022\u2022';
   var orig = new WeakMap(), shown = new WeakMap(), fab = null;
-  function hidden(){ try{ return localStorage.getItem('tk-saldo-hidden')==='1'; }catch(e){ return false; } }
+  function hidden(){
+    if(typeof saldoHidden!=='undefined') return !!saldoHidden;
+    try{ return localStorage.getItem('tk-saldo-hidden')==='1'; }catch(e){ return false; }
+  }
   function maskText(n){
     var p = n.parentElement, v = n.nodeValue;
     if(!p || !v) return;
@@ -28334,7 +28341,8 @@ function srWalletInit(list){
 function srWalletLayout(){
   var st = document.getElementById('wl-stack'); if(!st) return;
   var desktop = document.documentElement.getAttribute('data-layout')==='desktop';
-  var H = desktop ? 50 : 46, w = st.clientWidth || st.parentNode.clientWidth || 320, ch = Math.round(w/1.586);
+  var w = Math.min(st.clientWidth || st.parentNode.clientWidth || 320, 380), ch = Math.round(w/1.586), n = SR_ORDER.length, H = desktop ? 60 : 54;
+  if(n>1){ var room = Math.floor((window.innerHeight*(desktop?0.8:0.7) - ch)/(n-1)); H = Math.max(44, Math.min(H, room)); }
   var map = {}; [].slice.call(st.children).forEach(function(e){ map[e.getAttribute('data-wlacc')] = e; });
   st.style.height = ((SR_ORDER.length-1)*H+ch)+'px';
   SR_ORDER.forEach(function(a,pos){ var e = map[a]; if(!e) return; e.style.height = ch+'px'; e.style.top = (pos*H)+'px'; e.style.zIndex = pos+1; var nn = SR_ORDER.length; e.style.transform = 'none'; e.style.setProperty('--wlh', H+'px'); e.style.setProperty('--wlh', H+'px'); });
@@ -30449,13 +30457,15 @@ html[data-theme="light"]:not(#_) #view-catat .catat-hero .qa{background:color-mi
 
 /* ===== Dompet: kartu rekening bertumpuk ===== */
 .wl-wrap{display:grid; grid-template-columns:minmax(0,1fr); gap:14px; margin-top:6px;}
-html[data-layout="desktop"] .wl-wrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start;}
-html[data-layout="desktop"] .wl-col{max-height:none; overflow:visible; padding:2px 4px 6px 2px;}
-html[data-layout="desktop"] .wl-stack{max-width:440px; margin:0 auto;}
+html[data-layout="desktop"] .wl-wrap{grid-template-columns:minmax(0,.45fr) minmax(0,.55fr); gap:24px; align-items:start;}
+html[data-layout="desktop"] .wl-col{max-height:none; overflow:visible; padding:2px 0 6px 0;}
+html[data-layout="desktop"] .wl-stack{max-width:380px; margin:0;}
+.wl-stack{max-width:380px;}
 html[data-layout="desktop"] .wl-det{position:sticky; top:12px;}
 .wl-stack{position:relative;}
 .wl-card{position:absolute; left:0; right:0; border-radius:18px; overflow:hidden; cursor:pointer; background-size:100% 100%; background-position:center; background-repeat:no-repeat; border:1px solid rgba(255,255,255,.16); box-shadow:0 6px 16px rgba(0,0,0,.28); transform-origin:50% 0; transition:top .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1);}
-.wl-card::before{content:""; position:absolute; left:0; right:0; top:0; height:3px; background:rgba(0,0,0,.3); z-index:1; pointer-events:none;}
+.wl-card::before{content:""; position:absolute; left:0; right:0; top:0; height:var(--wlh,56px); background:linear-gradient(to bottom, rgba(0,0,0,.38), rgba(0,0,0,0)); z-index:1; pointer-events:none;}
+.wl-card:hover{filter:brightness(1.06);}
 .wl-card.wl-static::before{display:none;}
 .wl-card.wl-static{transform:none !important; transition:none;}
 @media (prefers-reduced-motion:reduce){.wl-card{transition:none;}}
@@ -30656,6 +30666,31 @@ html[data-layout="desktop"] .wl-det{position:sticky; top:12px;}
 .wl-card:not(.wl-static) .wl-hd{padding:0 8px; gap:6px;}
 .wl-card:not(.wl-static) .wl-hd .acc-badge{width:28px; height:28px;}
 .wl-card:not(.wl-static) .wl-nm, .wl-card:not(.wl-static) .wl-bl{padding:3px 10px; font-size:12.5px;}
+</style>
+<style id="wz-layout">
+/* ===== Tata letak layar sambut: logo di atas, kartu aksi menempel di bawah & muat satu layar ===== */
+.wz-hero{padding-top:max(66px, calc(env(safe-area-inset-top) + 56px)); justify-content:center; min-height:0;}
+.wz-hero > .wz-mark{width:48px; height:48px; border-radius:14px; margin:0 auto 14px; flex:none;}
+.wz-cap{font-size:18px; line-height:1.35; max-width:300px; margin:0 auto 22px; color:var(--text);}
+.wz-slide{padding:6px 26px 28px;}
+.wz-dots{margin-top:0;}
+.wz-sheet{margin:0; padding:18px 18px max(14px, env(safe-area-inset-bottom)); border-radius:28px 28px 0 0; border-bottom:none; box-shadow:0 -12px 32px -20px rgba(0,0,0,.6);}
+.wz-title{font-size:22px; margin-bottom:4px;}
+.wz-sub{font-size:13.5px; margin:0 auto 14px; max-width:300px;}
+.wz-pill{padding:0 16px; height:50px; line-height:50px; margin-bottom:10px; font-size:16px;}
+.wz-pill.pri, .wz-pill.wz-gbtn{height:50px; line-height:normal;}
+.wz-foot{margin-top:2px; padding-top:2px; font-size:13.5px;}
+.wz-foot .wz-alt{margin:0 0 8px; font-size:13.5px;}
+.wz-foot .wz-guest{margin:0; padding:2px 0; font-size:13.5px; color:var(--text-2);}
+.wz-foot .wz-guest span{display:inline; font-size:13.5px; font-weight:600; color:var(--text);}
+.wz-foot .wz-guest small{display:block; font-size:12px; margin-top:2px;}
+@media (max-height:640px){
+  .wz-hero{padding-top:58px;} .wz-hero > .wz-mark{width:40px; height:40px; margin-bottom:8px;}
+  .wz-cap{font-size:16px; margin-bottom:16px;} .wz-sub{display:none;}
+  .wz-demo{min-height:96px; padding:8px 12px; gap:5px;}
+  .wz-slide{padding-bottom:24px;}
+}
+@media (max-height:600px){ .wz-hero > .wz-mark{display:none;} .wz-hero{padding-top:56px;} .wz-cap{margin-bottom:14px;} }
 </style>
 </body>
 </html>
