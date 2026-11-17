@@ -3721,6 +3721,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div class="field"><label>Kode/Nama Produk</label><input type="text" id="rc-kode" maxlength="60" placeholder="cth: Bibit Pasar Uang, Emas Antam"></div>
       </div>
       <div class="field"><label id="rc-metode-label">Rekening/Metode</label><select id="rc-metode"></select></div>
+      <div class="hint" id="rc-sip-hint" style="display:none;">SIP hanya dipotong dari <b>Freshmoney</b> rekening investasi/sekuritas. Kalau Freshmoney Rp0, kurang dari nominal SIP, atau sedang tertahan untuk IPO, pemotongan otomatis pada tanggal itu <b>digagalkan</b> (tidak dicatat) dan kamu diberi tahu.</div>
       <div class="field"><label>Jumlah (Rp)</label><input type="text" class="money-input" id="rc-jumlah" placeholder="0" inputmode="numeric"></div>
       <div class="field"><label>Mulai Tanggal (jatuh tempo pertama)</label><input type="date" id="rc-tanggal-mulai"></div>
       <div class="field"><label>Ulangi Tiap</label><div style="display:flex; gap:10px;"><input type="number" id="rc-interval" min="1" value="1" inputmode="numeric" style="flex:1; min-width:0;"><select id="rc-satuan" style="flex:1.4; min-width:0;"><option value="hari">Hari</option><option value="minggu">Minggu</option><option value="bulan" selected>Bulan</option><option value="tahun">Tahun</option></select></div></div>
@@ -4617,6 +4618,7 @@ function isHybridTabunganInvestasi(acc){
    ini -- nomor versi yang ditampilkan di halaman Pengaturan otomatis ikut ke-update,
    nggak perlu ubah HTML manual. */
 var CHANGELOG = [
+  { versi:"1.12.10", catatan:'SIP / Investasi Berulang kini hanya dipotong dari Freshmoney rekening investasi/sekuritas. Kalau Freshmoney Rp0, kurang dari nominal SIP, atau tertahan untuk IPO, pemotongan otomatis pada tanggal itu digagalkan (tidak dicatat), jatuh tempo dilompati, dan alasannya tampil di kartu transaksi berulang.' },
   { versi:"1.12.9", catatan:'Detail Aset (Inventaris) ditata ulang: Harga Beli dan Estimasi Harga Wajar tampil sebagai kartu nilai dengan bar nilai tersisa, lalu informasi dikelompokkan dalam grid dua kolom (Informasi Umum, Perolehan & Lokasi). Tombol Buka di Maps jadi tombol sendiri. Isi data tidak berubah.' },
   { versi:"1.12.8", catatan:'Kartu Proyeksi Dana di Home dibuat lebih ringkas: catatan saldo dan kebutuhan ke depan dipadatkan jadi satu baris pendek tiap-nya, isi informasinya tetap sama.' },
   { versi:"1.12.7", catatan:'Target Nabung sekarang punya skala prioritas seperti Rencana Belanja: Wajib, Perlu, atau Boleh (bisa ditunda). Prioritas bisa dipilih saat membuat target dan diubah lewat Edit. Target yang masih berjalan diurutkan dari yang Wajib, ringkasan total ada rincian Per Prioritas, dan prioritas juga tampil di Proyeksi Dana. Target lama otomatis dianggap Perlu.' },
@@ -15855,7 +15857,7 @@ function onRecurringTipeChange(){
   var isInv = tipe==='investasi';
   document.getElementById('rc-label-field').style.display = isInv ? 'none' : '';
   document.getElementById('rc-inv-wrap').style.display = isInv ? '' : 'none';
-  document.getElementById('rc-metode-label').textContent = isInv ? 'Rekening Sumber Dana (yang didebet)' : 'Rekening/Metode';
+  document.getElementById('rc-metode-label').textContent = isInv ? 'Rekening Investasi (Freshmoney yang didebet)' : 'Rekening/Metode';
   if(tipe==='tagihan'){ labelEl.textContent='Jenis Tagihan'; fillSelect('rc-label', DATA.jenisTagihan); }
   else if(tipe==='pemasukan'){ labelEl.textContent='Sumber Pemasukan'; fillSelect('rc-label', DATA.sumberPemasukan); }
   if(isInv){
@@ -15866,7 +15868,12 @@ function onRecurringTipeChange(){
     document.getElementById('rc-platform').value = curPl || (plList.indexOf('Bibit')>-1 ? 'Bibit' : (plList[0]||''));
     if(!curIns) document.getElementById('rc-instrumen').value = INSTRUMEN_INVESTASI.indexOf('Reksadana')>-1 ? 'Reksadana' : INSTRUMEN_INVESTASI[0];
   }
-  fillSelectAccounts('rc-metode', ACCOUNTS);
+  var curMet = document.getElementById('rc-metode').value;
+  var metList = isInv ? ACCOUNTS.filter(sipAkunValid) : ACCOUNTS;
+  fillSelectAccounts('rc-metode', metList);
+  if(curMet && metList.indexOf(curMet)>-1) document.getElementById('rc-metode').value = curMet;
+  var hintSip = document.getElementById('rc-sip-hint');
+  if(hintSip) hintSip.style.display = isInv ? '' : 'none';
 }
 function tambahRecurring(){
   var tipe = document.getElementById('rc-tipe').value;
@@ -15882,6 +15889,7 @@ function tambahRecurring(){
   var extra = {};
   if(tipe==='investasi'){
     var insV = document.getElementById('rc-instrumen').value, plV = document.getElementById('rc-platform').value;
+    if(!sipAkunValid(metode)){ toast('Sumber dana SIP harus rekening investasi/sekuritas (Freshmoney)'); return; }
     var kodeV = invNormKode(document.getElementById('rc-kode').value, insV);
     if(!kodeV){ toast('Isi kode/nama produk dulu (cth: Bibit Pasar Uang)'); return; }
     extra = { instrumen:insV, platform:plV, kode:kodeV };
@@ -15955,6 +15963,7 @@ function renderRecurringList(){
         '<div class="rc2-top"><span class="rc2-name">'+escapeHtml(r.label)+'</span><span class="rc2-amt mono">'+(isTagihan?'-':'+')+fmt(r.jumlah)+'</span></div>'+
         '<div class="rc2-meta"><span class="rc2-tag">'+(r.tipe==='investasi'?'Investasi / SIP':(isTagihan?'Tagihan':'Pemasukan'))+'</span><span>'+escapeHtml(r.metode||'-')+'</span>'+(r.tipe==='investasi' && r.platform ? '<span>\u2192 '+escapeHtml(r.platform)+'</span>' : '')+'<span>'+escapeHtml(interval)+'</span></div>'+
         (r.ket ? '<div class="rc2-ket">'+escapeHtml(r.ket)+'</div>' : '')+
+        (r.tipe==='investasi' && r.gagalLog && r.gagalLog.length ? '<div class="rc2-ket" style="color:var(--danger);">\u26A0 Pemotongan '+escapeHtml(r.gagalLog[0].due)+' digagalkan: '+escapeHtml(r.gagalLog[0].alasan)+(r.gagalLog.length>1 ? ' (+'+(r.gagalLog.length-1)+' kegagalan sebelumnya)' : '')+'</div>' : '')+
         '<div class="rc2-due"><span>Berikutnya <b>'+tglTxt+'</b></span><span class="rc2-badge" style="--b:'+badgeC+';">'+badgeTxt+'</span></div>'+
         '<div class="rc2-bar"><i style="width:'+pctRc+'%;"></i></div>'+
         '<div class="rc2-acts">'+
@@ -15965,8 +15974,29 @@ function renderRecurringList(){
   lfCount('rc', shownRc, DATA.recurring.length, 'transaksi berulang');
   el.innerHTML = shownRc ? html : '<div class="empty">Tidak ada transaksi berulang yang cocok.</div>';
 }
+/* ---- SIP / Investasi berulang: sumber dana WAJIB dari Freshmoney rekening investasi/sekuritas ----
+   Freshmoney yang boleh dipotong = Freshmoney - dana IPO tertahan - saldo mengendap.
+   Kalau rekening sumber bukan rekening investasi, atau Freshmoney tersedia Rp0 / kurang dari nominal SIP,
+   pemotongan otomatis DIGAGALKAN (tidak dicatat), jatuh tempo dilompati, dan alasannya disimpan + diberitahukan. */
+function sipAkunValid(acc){
+  if(!acc) return false;
+  return ACCOUNT_CATEGORY[acc]==='investasi' || ACCOUNT_CATEGORY[rootOf(acc)]==='investasi' || isHybridTabunganInvestasi(acc);
+}
+function sipFreshTersedia(acc){
+  var f = freshmoneyAkun(acc) - ipoTertahanAkun(acc) - saldoMengendapAkun(acc);
+  return f>0 ? f : 0;
+}
+/* Return null kalau boleh dipotong, atau teks alasan kalau harus digagalkan */
+function sipAlasanGagal(r){
+  if(!sipAkunValid(r.metode)) return 'sumber dana "'+(r.metode||'-')+'" bukan rekening investasi/sekuritas (SIP harus dipotong dari Freshmoney rekening investasi)';
+  var fresh = sipFreshTersedia(r.metode), ipoT = ipoTertahanAkun(r.metode);
+  if(fresh<=0) return 'Freshmoney di '+r.metode+' Rp0'+(ipoT>0 ? ' (dana IPO tertahan '+fmt(ipoT)+')' : '');
+  if(fresh < r.jumlah) return 'Freshmoney tersedia di '+r.metode+' '+fmt(fresh)+' kurang dari nominal SIP '+fmt(r.jumlah)+(ipoT>0 ? ' (dana IPO tertahan '+fmt(ipoT)+')' : '');
+  return null;
+}
 function runRecurringCheck(){
   var today = todayISO();
+  var gagal = [];
   var generated = [];
   DATA.recurring.forEach(function(r){
     if(!r.aktif) return;
@@ -15983,18 +16013,29 @@ function runRecurringCheck(){
         if(r.tipe==='tagihan'){
           DATA.tagihan.push({ tanggal:due, jenis:r.label, metode:r.metode, jumlah:r.jumlah, status:'Belum Lunas', ket:(r.ket||'')+' (otomatis)', recId:r.id, recDue:due });
         } else if(r.tipe==='investasi'){
+          var alasanGagal = sipAlasanGagal(r);
+          if(alasanGagal){
+            gagal.push(r.label+': '+alasanGagal);
+            if(!Array.isArray(r.gagalLog)) r.gagalLog = [];
+            r.gagalLog.unshift({ due:due, alasan:alasanGagal, dicek:todayISO() });
+            if(r.gagalLog.length>12) r.gagalLog.length = 12;
+          } else
           DATA.invbeli.push({ id:genId('ib'), tanggal:due, instrumen:r.instrumen || INSTRUMEN_INVESTASI[0], platform:r.platform || '', kode:r.kode || r.label, metode:r.metode, jumlah:r.jumlah, fee:0, ket:((r.ket||'SIP')+' (otomatis)'), recId:r.id, recDue:due });
         } else {
           DATA.pemasukan.push({ tanggal:due, sumber:r.label, metode:r.metode, jumlah:r.jumlah, ket:(r.ket||'')+' (otomatis)', recId:r.id, recDue:due });
         }
-        generated.push(r.label+' ('+fmt(r.jumlah)+')');
+        if(!(r.tipe==='investasi' && r.gagalLog && r.gagalLog.length && r.gagalLog[0].due===due && !DATA.invbeli.some(function(x){ return x.recId===r.id && x.recDue===due; }))) generated.push(r.label+' ('+fmt(r.jumlah)+')');
       }
       r.nextDue = addPeriodISO(r.nextDue, r.intervalBulan, r.satuan);
     }
   });
-  if(generated.length>0){
+  if(generated.length>0 || gagal.length>0){
     saveData();
-    toast(generated.length+' transaksi berulang otomatis tercatat: '+generated.slice(0,3).join(', ')+(generated.length>3?', dll':''));
+    if(generated.length>0) toast(generated.length+' transaksi berulang otomatis tercatat: '+generated.slice(0,3).join(', ')+(generated.length>3?', dll':''));
+    if(gagal.length>0){
+      var gMsg = 'SIP DIGAGALKAN ('+gagal.length+'x): '+gagal.slice(0,2).join(' | ')+(gagal.length>2?' | dll':'');
+      if(generated.length>0) setTimeout(function(){ toast(gMsg); }, 3500); else toast(gMsg);
+    }
   }
 }
 
