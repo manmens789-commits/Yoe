@@ -1836,7 +1836,9 @@ html[data-layout="desktop"] #rc-list > :not(.rc2){grid-column:1 / -1;}
 .goal-acc{padding:12px 14px;}
 .goal-acc .goal-sum{display:flex; align-items:center; gap:10px; cursor:pointer; -webkit-tap-highlight-color:transparent;}
 .goal-sum-main{flex:1; min-width:0;}
-.goal-sum-main .goal-name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0;}
+.goal-sum-main .goal-name{display:flex; align-items:center; gap:6px; min-width:0; margin:0;}
+.goal-sum-main .goal-name .gn-t{min-width:0; flex:0 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.goal-sum-main .goal-name .goal-prio-chip{flex:none; margin-left:0 !important;}
 .goal-sum-main .meta{margin-top:2px;}
 .goal-caret::after{content:"\25BE"; display:inline-block; color:var(--text-2); font-size:14px; transition:transform .2s;}
 .goal-acc.open .goal-caret::after{transform:rotate(180deg);}
@@ -3703,16 +3705,22 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   <div class="view" id="view-recurring"><main>
     <div class="back-row" data-goto="catat"><span data-icon="chevronLeft"></span><span>Kembali</span></div>
     <div class="section-title"><span data-icon="repeat"></span>Transaksi Berulang</div>
-    <div class="hint">Tagihan/pemasukan rutin (misal langganan bulanan atau gaji) otomatis tercatat sendiri tiap jatuh tempo, tanpa perlu input manual tiap bulan.</div>
+    <div class="hint">Tagihan, pemasukan, atau pembelian investasi rutin (misal langganan bulanan, gaji, atau autodebet SIP di Bibit) otomatis tercatat sendiri tiap jatuh tempo, tanpa perlu input manual tiap bulan.</div>
     <div class="card">
       <div class="field"><label>Tipe</label>
         <select id="rc-tipe">
           <option value="tagihan">Tagihan (pengeluaran rutin)</option>
           <option value="pemasukan">Pemasukan (rutin)</option>
+          <option value="investasi">Investasi / Autodebet SIP</option>
         </select>
       </div>
-      <div class="field"><label id="rc-label-label">Jenis Tagihan</label><select id="rc-label"></select></div>
-      <div class="field"><label>Rekening/Metode</label><select id="rc-metode"></select></div>
+      <div class="field" id="rc-label-field"><label id="rc-label-label">Jenis Tagihan</label><select id="rc-label"></select></div>
+      <div id="rc-inv-wrap" style="display:none;">
+        <div class="field"><label>Instrumen Investasi</label><select id="rc-instrumen"></select></div>
+        <div class="field"><label>Platform/Sekuritas</label><select id="rc-platform"></select></div>
+        <div class="field"><label>Kode/Nama Produk</label><input type="text" id="rc-kode" maxlength="60" placeholder="cth: Bibit Pasar Uang, Emas Antam"></div>
+      </div>
+      <div class="field"><label id="rc-metode-label">Rekening/Metode</label><select id="rc-metode"></select></div>
       <div class="field"><label>Jumlah (Rp)</label><input type="text" class="money-input" id="rc-jumlah" placeholder="0" inputmode="numeric"></div>
       <div class="field"><label>Mulai Tanggal (jatuh tempo pertama)</label><input type="date" id="rc-tanggal-mulai"></div>
       <div class="field"><label>Ulangi Tiap</label><div style="display:flex; gap:10px;"><input type="number" id="rc-interval" min="1" value="1" inputmode="numeric" style="flex:1; min-width:0;"><select id="rc-satuan" style="flex:1.4; min-width:0;"><option value="hari">Hari</option><option value="minggu">Minggu</option><option value="bulan" selected>Bulan</option><option value="tahun">Tahun</option></select></div></div>
@@ -4432,7 +4440,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
 
 /* ============ DAFTAR ISI KODE DI BAWAH INI (Ctrl+F nama bagiannya buat loncat) ============
    - DATA REFERENSI (samain persis sama template Excel)
-   - SALDO MENGENDAP: hanya berlaku buat rekening BNI, MANDIRI & BRI
+   - SALDO MENGENDAP: hanya berlaku buat rekening berkategori Bank
    - REKENING KUSTOM (bikin ACCOUNTS bisa nambah sebanyak apapun)
    - ICON LIBRARY (line-icon, gaya fintech, warna ikut currentColor)
    - FORMAT NOMINAL (pemisah ribuan)
@@ -4553,12 +4561,12 @@ var ACCOUNT_BADGE = {
   "PayPal": { initial:"P", bg:"#0F319F", img:"data:image/png;base64,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" },
   "triv": { initial:"T", bg:"#0B2A5B", img:"data:image/jpeg;base64,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", shape:"square" }
 };
-/* ============ SALDO MENGENDAP: hanya berlaku buat rekening BNI, MANDIRI & BRI ============ */
-var MENGENDAP_ACCOUNTS = ["Wondr BNI","Livin Mandiri","BRImo"];
+/* ============ SALDO MENGENDAP: hanya berlaku buat rekening berkategori BANK ============
+   E-wallet, tunai, investasi, dan pulsa tidak punya saldo mengendap (nilai lama yang tersimpan di sana diabaikan).
+   Dana IPO tertahan itu hal lain: dihitung terpisah lewat ipoTertahanAkun(), tidak ikut "mengendap". */
 function isMengendapEligible(acc){
-  if(MENGENDAP_ACCOUNTS.indexOf(acc)!==-1) return true;
-  var custom = (DATA.accountsCustom||[]).filter(function(c){ return c.nama===acc; })[0];
-  return !!(custom && custom.induk && MENGENDAP_ACCOUNTS.indexOf(custom.induk)!==-1);
+  var cat = ACCOUNT_CATEGORY[acc] || ACCOUNT_CATEGORY[rootOf(acc)] || 'bank';
+  return cat==='bank';
 }
 /* Badge/logo rekening: kalau rekening custom ini adalah nomor ke-2/ke-3 dst dari rekening
    bawaan (mis. "Rekening 1 (Ridho)" dengan induk "Dana"), tetap pakai logo & warna induknya
@@ -4833,7 +4841,7 @@ function rekeningUsedIn(acc){
     DATA.invjual.some(function(s){ return s.metode===acc || s.platform===acc; }) ||
     (DATA.ipo||[]).some(function(o){ return o.status==='menunggu' && o.platform===acc; }) ||
     DATA.tagihan.some(function(t){ return t.metode===acc || cicilanOf(t).some(function(c){ return c.metode===acc; }); }) ||
-    DATA.recurring.some(function(r){ return r.metode===acc; }) ||
+    DATA.recurring.some(function(r){ return r.metode===acc || r.platform===acc; }) ||
     DATA.goals.some(function(g){ return g.rekeningTujuan===acc; }) ||
     (DATA.koreksi||[]).some(function(k){ return k.metode===acc; }) ||
     (DATA.splitbill||[]).some(function(x){ return x.metode===acc; }) ||
@@ -5688,7 +5696,7 @@ function proyeksiAkunIkut(a){
   return k!=='investasi' && k!=='pulsa';
 }
 /* bagian saldo yang TIDAK likuid: mengendap, IPO tertahan, dan porsi investasi di rekening hybrid */
-function akunTahan(a){ return saldoMengendapAkun(a) + (isHybridTabunganInvestasi(a) ? nilaiInvestasiAkun(a) : 0); }
+function akunTahan(a){ return saldoMengendapAkun(a) + ipoTertahanAkun(a) + (isHybridTabunganInvestasi(a) ? nilaiInvestasiAkun(a) : 0); }
 function akunLikuid(a){ return saldoAkun(a) - akunTahan(a); }
 function rbAkunValid(a){ return !!a && ACCOUNTS.indexOf(a)>-1; }
 /* sumber dana sebuah item = sumber dana item sendiri, kalau kosong ikut sumber dana rencananya */
@@ -10505,7 +10513,6 @@ function totalSaldoMengendap(){
       var info = DATA.accountInfo[a];
       if(info && info.saldoMengendap) s += info.saldoMengendap;
     }
-    s += ipoTertahanAkun(a); /* dana yang ditahan untuk pesanan IPO yang belum dijatah */
   });
   return s;
 }
@@ -10514,10 +10521,11 @@ function totalSaldoMengendap(){
 function saldoMengendapAkun(acc){
   var base = 0;
   if(isMengendapEligible(acc)){ var info = DATA.accountInfo[acc]; base = (info && info.saldoMengendap) || 0; }
-  return base + ipoTertahanAkun(acc);
+  return base;
 }
+/* saldo yang benar-benar bebas dipakai: dikurangi mengendap (bank) dan dana IPO tertahan */
 function saldoTersediaAkun(acc){
-  return saldoAkun(acc) - saldoMengendapAkun(acc);
+  return saldoAkun(acc) - saldoMengendapAkun(acc) - ipoTertahanAkun(acc);
 }
 /* ---- rincian "kantong" khusus rekening kategori investasi (mis. Stockbit) ----
    Nilai Investasi = akumulasi modal instrumen yang masih dipegang di rekening ini
@@ -10538,13 +10546,14 @@ function freshmoneyAkun(acc, upToDate){
    jumlahLamaSameAcc = jumlah transaksi lama yang lagi diedit (kalau metodenya sama),
    biar saldo "sebelum transaksi ini" dihitung benar. Return false kalau kena batas mengendap. */
 function cekBatasMengendapKeluar(acc, jumlahKeluarBaru, jumlahLamaSameAcc){
-  var mengendap = saldoMengendapAkun(acc);
+  var mg = saldoMengendapAkun(acc), ipoT = ipoTertahanAkun(acc), mengendap = mg + ipoT;
   if(mengendap<=0) return true;
   var saldoSekarang = saldoAkun(acc) + (jumlahLamaSameAcc||0);
   var sisaSetelah = saldoSekarang - jumlahKeluarBaru;
   if(sisaSetelah < mengendap){
     var bisaDiambil = Math.max(saldoSekarang - mengendap, 0);
-    toast('Gagal disimpan: saldo mengendap '+fmt(mengendap)+' di '+acc+' gak bisa diambil. Maksimal yang bisa keluar: '+fmt(bisaDiambil)+'. Pilih rekening lain atau kecilkan jumlah.');
+    var sebab = (mg>0 ? 'saldo mengendap '+fmt(mg) : '') + (mg>0 && ipoT>0 ? ' + ' : '') + (ipoT>0 ? 'dana IPO tertahan '+fmt(ipoT) : '');
+    toast('Gagal disimpan: '+sebab+' di '+acc+' gak bisa diambil. Maksimal yang bisa keluar: '+fmt(bisaDiambil)+'. Pilih rekening lain atau kecilkan jumlah.');
     return false;
   }
   return true;
@@ -11049,7 +11058,7 @@ function goalDisisihkanAkun(acc){
    dana titipan aktif, dan dana target tabungan aktif di rekening itu. Ubah rumus ini => ubah AI_METODE.danaDaruratDef */
 function danaDaruratNominal(acc){
   var v = isHybridTabunganInvestasi(acc) ? freshmoneyAkun(acc) : saldoAkun(acc);
-  v -= saldoMengendapAkun(acc);
+  v -= saldoMengendapAkun(acc) + ipoTertahanAkun(acc);
   v -= titipanAkun(acc);
   v -= goalDisisihkanAkun(acc);
   return Math.max(0, v);
@@ -11559,11 +11568,15 @@ function renderDashboard(){
     ACCOUNTS.forEach(function(a){ if((ACCOUNT_CATEGORY[a]||'bank')==='investasi') invTot += saldoAkun(a); });
     var kasTot = newTotal - invTot;
     function jtTxt(n){ if(saldoHidden) return String(maskOrFmt(n)); var a = Math.abs(n); return a>=1000000 ? (n<0?'-':'')+'Rp'+(a/1000000).toFixed(2).replace('.',',')+' jt' : fmt(n); }
-    var bisa = newTotal - mengendap;
+    var ipoT = 0; try{ ipoT = ipoTertahanTotal(); }catch(e){}
+    var bisa = newTotal - mengendap - ipoT;
+    var ketTahan = [];
+    if(mengendap>0) ketTahan.push(L('mengendap ','held ') + String(maskOrFmt(mengendap)));
+    if(ipoT>0) ketTahan.push(L('IPO tertahan ','IPO held ') + String(maskOrFmt(ipoT)));
     elTersedia.style.display = '';
-    elTersedia.title = 'Bisa diambil: ' + String(maskOrFmt(bisa)) + (mengendap>0 ? ' (mengendap ' + String(maskOrFmt(mengendap)) + ')' : '');
+    elTersedia.title = 'Bisa diambil: ' + String(maskOrFmt(bisa)) + (ketTahan.length ? ' (' + ketTahan.join(', ') + ')' : '');
     elTersedia.innerHTML = escapeHtml(L('Kas ','Cash ') + jtTxt(kasTot) + ' \u2022 ' + L('Investasi ','Investments ') + jtTxt(invTot)) +
-      (mengendap > 0 ? '<span class="tsd-m">' + escapeHtml(L('Bisa diambil ','Available ') + String(maskOrFmt(bisa)) + ' (' + L('mengendap ','held ') + String(maskOrFmt(mengendap)) + ')') + '</span>' : '');
+      (ketTahan.length ? '<span class="tsd-m">' + escapeHtml(L('Bisa diambil ','Available ') + String(maskOrFmt(bisa)) + ' (' + ketTahan.join(', ') + ')') + '</span>' : '');
   }
 
   if(window.PTG){ try{ PTG.start(); PTG.renderDash(); }catch(e){ console.error(e); } }
@@ -12372,7 +12385,7 @@ function buildAiPrompt(){
     var catLain = tot-(cat.cash+cat.ewallet+cat.bank+cat.investasi+cat.pulsa); if(Math.abs(catLain)>0.5) L.push(Q('- Lainnya: ','- Other: ')+fmt(catLain));
     L.push('- Total: '+fmt(tot));
     if(titip>0) L.push(Q('- Di dalam total itu ada dana titipan aktif '+fmt(titip)+' yang bukan uang bebasku (milik orang lain atau sudah dialokasikan untuk diserahkan/dibelikan). Saldo bebasku = '+fmt(tot-titip),'- The total includes active held funds of '+fmt(titip)+' that are not my free money (owned by others or already earmarked to hand over/spend). My free balance = '+fmt(tot-titip)));
-    try{ var ipoT = ipoTertahanTotal(); var mg = totalSaldoMengendap() - ipoT; if(ipoT>0) L.push(Q('- Ada dana '+fmt(ipoT)+' yang sedang ditahan untuk pesanan IPO saham yang belum dijatah. Total saldo tidak berubah, tapi dana ini belum bisa dipakai.','- '+fmt(ipoT)+' is held for pending IPO stock orders that have not been allotted yet. The total balance is unchanged, but these funds cannot be used yet.')); if(mg>0) L.push(Q('- Di dalam total itu juga ada saldo mengendap '+fmt(mg)+' (batas minimum di rekening tertentu yang tidak bisa diambil; pengaturan saat ini).'+(titip>0?' Angka ini bisa tumpang tindih dengan dana titipan di atas, jadi jangan langsung dijumlahkan.':''),'- The total also includes locked minimum balances of '+fmt(mg)+' (minimum required in certain accounts and not withdrawable; current setting).'+(titip>0?' This can overlap with the held funds above, so do not simply add them.':''))); }catch(err){}
+    try{ var ipoT = ipoTertahanTotal(); var mg = totalSaldoMengendap(); if(ipoT>0) L.push(Q('- Ada dana '+fmt(ipoT)+' yang sedang ditahan untuk pesanan IPO saham yang belum dijatah. Total saldo tidak berubah, tapi dana ini belum bisa dipakai.','- '+fmt(ipoT)+' is held for pending IPO stock orders that have not been allotted yet. The total balance is unchanged, but these funds cannot be used yet.')); if(mg>0) L.push(Q('- Di dalam total itu juga ada saldo mengendap '+fmt(mg)+' (batas minimum di rekening tertentu yang tidak bisa diambil; pengaturan saat ini).'+(titip>0?' Angka ini bisa tumpang tindih dengan dana titipan di atas, jadi jangan langsung dijumlahkan.':''),'- The total also includes locked minimum balances of '+fmt(mg)+' (minimum required in certain accounts and not withdrawable; current setting).'+(titip>0?' This can overlap with the held funds above, so do not simply add them.':''))); }catch(err){}
     var goalAktif = (DATA.goals||[]).filter(function(g){ return !g.dibeli; }).reduce(function(t,g){ return t+(g.terkumpul||0); },0);
     if(goalAktif>0) L.push(Q('- Di dalam total itu, '+fmt(goalAktif)+' sudah disisihkan untuk target tabungan yang belum dibelanjakan (kondisi saat ini).','- Within that total, '+fmt(goalAktif)+' is already set aside for savings goals not yet purchased (current status).'));
     try{
@@ -15173,7 +15186,7 @@ function refreshFormSelectsAfterCategoryChange(){
   if(curSumber && DATA.sumberPemasukan.indexOf(curSumber)>-1) elSumber.value = curSumber;
   var rcTipe = document.getElementById('rc-tipe');
   if(rcTipe && rcTipe.value==='tagihan') fillSelect('rc-label', DATA.jenisTagihan);
-  else if(rcTipe) fillSelect('rc-label', DATA.sumberPemasukan);
+  else if(rcTipe && rcTipe.value==='pemasukan') fillSelect('rc-label', DATA.sumberPemasukan);
   onJenisChange();
 }
 
@@ -15184,7 +15197,7 @@ var GOAL_PRIO = { wajib:{l:'Wajib', o:0, c:'var(--danger)'}, perlu:{l:'Perlu', o
 function goalPrioOf(g){ return (g && GOAL_PRIO[g.prio]) ? g.prio : 'perlu'; }
 function goalPrioChip(g, mini){
   var k = goalPrioOf(g), pr = GOAL_PRIO[k];
-  return '<span style="font-size:10.5px; font-weight:800; color:'+pr.c+'; border:1px solid currentColor; border-radius:999px; padding:1px 7px; white-space:nowrap;'+(mini?' margin-left:6px;':'')+'">'+pr.l+'</span>';
+  return '<span class="goal-prio-chip" style="font-size:10.5px; font-weight:800; color:'+pr.c+'; border:1px solid currentColor; border-radius:999px; padding:1px 7px; white-space:nowrap;'+(mini?' margin-left:6px;':'')+'">'+pr.l+'</span>';
 }
 var GOAL_OPEN = {};
 function goalKey(g){ return String(g.id || (g.nama||'')+'|'+(g.tanggalTarget||'')); }
@@ -15712,7 +15725,7 @@ function renderGoals(){
     var gk = goalKey(g), gOpen = !!GOAL_OPEN[gk];
     html += '<div class="card goal-card goal-acc'+(gOpen?' open':'')+'" style="--goal-color:'+accent+';">'+
       '<div class="goal-sum" data-goal-toggle="'+escapeHtml(gk)+'" role="button" tabindex="0" aria-expanded="'+gOpen+'">'+
-        '<div class="goal-sum-main"><div class="goal-name">'+escapeHtml(g.nama)+(g.dibeli ? '' : goalPrioChip(g, true))+'</div><div class="meta mono">'+fmt(g.terkumpul)+' / '+fmt(g.target)+(g.tanggalTarget ? ' &bull; '+escapeHtml(g.tanggalTarget) : '')+'</div></div>'+
+        '<div class="goal-sum-main"><div class="goal-name"><span class="gn-t">'+escapeHtml(g.nama)+'</span>'+(g.dibeli ? '' : goalPrioChip(g, true))+'</div><div class="meta mono">'+fmt(g.terkumpul)+' / '+fmt(g.target)+(g.tanggalTarget ? ' &bull; '+escapeHtml(g.tanggalTarget) : '')+'</div></div>'+
         '<span class="goal-pct-chip" style="background:'+color+';">'+pct+'%</span><span class="goal-caret" aria-hidden="true"></span></div>'+
       '<div class="budget-bar-track" style="margin-top:8px;"><div class="budget-bar-fill" style="width:'+pct+'%; background:'+color+';"></div></div>'+
       '<div class="goal-detail"><div class="goal-top">'+
@@ -15839,8 +15852,20 @@ function addMonthsISO(dateStr, n){
 function onRecurringTipeChange(){
   var tipe = document.getElementById('rc-tipe').value;
   var labelEl = document.getElementById('rc-label-label');
+  var isInv = tipe==='investasi';
+  document.getElementById('rc-label-field').style.display = isInv ? 'none' : '';
+  document.getElementById('rc-inv-wrap').style.display = isInv ? '' : 'none';
+  document.getElementById('rc-metode-label').textContent = isInv ? 'Rekening Sumber Dana (yang didebet)' : 'Rekening/Metode';
   if(tipe==='tagihan'){ labelEl.textContent='Jenis Tagihan'; fillSelect('rc-label', DATA.jenisTagihan); }
-  else { labelEl.textContent='Sumber Pemasukan'; fillSelect('rc-label', DATA.sumberPemasukan); }
+  else if(tipe==='pemasukan'){ labelEl.textContent='Sumber Pemasukan'; fillSelect('rc-label', DATA.sumberPemasukan); }
+  if(isInv){
+    var curIns = document.getElementById('rc-instrumen').value, curPl = document.getElementById('rc-platform').value;
+    fillSelect('rc-instrumen', INSTRUMEN_INVESTASI); fillSelect('rc-platform', platformInvestasiList());
+    if(curIns) document.getElementById('rc-instrumen').value = curIns;
+    var plList = platformInvestasiList();
+    document.getElementById('rc-platform').value = curPl || (plList.indexOf('Bibit')>-1 ? 'Bibit' : (plList[0]||''));
+    if(!curIns) document.getElementById('rc-instrumen').value = INSTRUMEN_INVESTASI.indexOf('Reksadana')>-1 ? 'Reksadana' : INSTRUMEN_INVESTASI[0];
+  }
   fillSelectAccounts('rc-metode', ACCOUNTS);
 }
 function tambahRecurring(){
@@ -15854,13 +15879,23 @@ function tambahRecurring(){
   var ket = document.getElementById('rc-ket').value;
   if(!jumlah || jumlah<=0){ toast('Isi jumlah dulu'); return; }
   if(!tanggalMulai){ toast('Isi tanggal mulai dulu'); return; }
-  DATA.recurring.push({
+  var extra = {};
+  if(tipe==='investasi'){
+    var insV = document.getElementById('rc-instrumen').value, plV = document.getElementById('rc-platform').value;
+    var kodeV = invNormKode(document.getElementById('rc-kode').value, insV);
+    if(!kodeV){ toast('Isi kode/nama produk dulu (cth: Bibit Pasar Uang)'); return; }
+    extra = { instrumen:insV, platform:plV, kode:kodeV };
+    label = insV+' '+kodeV;
+  }
+  var recBaru = {
     id:'rc'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
     tipe:tipe, label:label, metode:metode, jumlah:jumlah,
     intervalBulan:interval, satuan:satuan, nextDue:tanggalMulai, aktif:true, ket:ket
-  });
+  };
+  for(var ek in extra) recBaru[ek] = extra[ek];
+  DATA.recurring.push(recBaru);
   saveData();
-  document.getElementById('rc-jumlah').value=''; document.getElementById('rc-tanggal-mulai').value=''; document.getElementById('rc-ket').value=''; document.getElementById('rc-interval').value='1'; document.getElementById('rc-satuan').value='bulan';
+  document.getElementById('rc-jumlah').value=''; document.getElementById('rc-tanggal-mulai').value=''; document.getElementById('rc-ket').value=''; document.getElementById('rc-kode').value=''; document.getElementById('rc-interval').value='1'; document.getElementById('rc-satuan').value='bulan';
   toast('Transaksi berulang "'+label+'" dibuat');
   renderRecurringList();
 }
@@ -15883,14 +15918,14 @@ function hapusRecurring(id){
 function renderRecurringList(){
   var el = document.getElementById('rc-list');
   if(!el) return;
-  var f = lfSetup('rc', el, { ph:'cari nama, rekening, atau keterangan...', aLabel:'Tipe', aOpts:[['pemasukan','Pemasukan'],['tagihan','Tagihan']], bLabel:'Status', bOpts:[['aktif','Aktif'],['dijeda','Dijeda']], hasData: DATA.recurring.length>0 }, renderRecurringList);
+  var f = lfSetup('rc', el, { ph:'cari nama, rekening, atau keterangan...', aLabel:'Tipe', aOpts:[['pemasukan','Pemasukan'],['tagihan','Tagihan'],['investasi','Investasi / SIP']], bLabel:'Status', bOpts:[['aktif','Aktif'],['dijeda','Dijeda']], hasData: DATA.recurring.length>0 }, renderRecurringList);
   if(DATA.recurring.length===0){ el.innerHTML = '<div class="empty">Belum ada transaksi berulang.</div>'; return; }
   var html = '', shownRc = 0;
   DATA.recurring.forEach(function(r){
-    var tipeRc = r.tipe==='tagihan' ? 'tagihan' : 'pemasukan';
+    var tipeRc = r.tipe==='tagihan' ? 'tagihan' : (r.tipe==='investasi' ? 'investasi' : 'pemasukan');
     if(f.a!=='all' && tipeRc!==f.a) return;
     if(f.b!=='all' && (r.aktif?'aktif':'dijeda')!==f.b) return;
-    if(f.q && [r.label, r.metode, r.ket, tipeRc].join(' ').toLowerCase().indexOf(f.q)===-1) return;
+    if(f.q && [r.label, r.metode, r.platform, r.kode, r.ket, tipeRc].join(' ').toLowerCase().indexOf(f.q)===-1) return;
     shownRc++;
     var d = daysUntil(r.nextDue);
     var bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -15901,7 +15936,7 @@ function renderRecurringList(){
     else if(d<0){ dueTxt = 'Terlambat diproses'; dueColor = 'var(--danger)'; }
     else if(d===0){ dueTxt = 'Jatuh tempo hari ini'; dueColor = 'var(--warn)'; }
     else { dueTxt = 'Berikutnya: '+tglTxt+' ('+d+' hari lagi)'; dueColor = 'var(--text-2)'; }
-    var isTagihan = r.tipe==='tagihan';
+    var isTagihan = r.tipe!=='pemasukan'; /* tagihan & investasi = uang keluar */
     var amtColor = isTagihan ? 'var(--danger)' : 'var(--pos)';
     var interval = labelPeriode(r.intervalBulan, r.satuan);
     var nInt = r.intervalBulan || 1, prevD = addPeriodISO(r.nextDue, -nInt, r.satuan);
@@ -15918,7 +15953,7 @@ function renderRecurringList(){
       '<div class="rc2-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icoArrow+'</svg></div>'+
       '<div class="rc2-main">'+
         '<div class="rc2-top"><span class="rc2-name">'+escapeHtml(r.label)+'</span><span class="rc2-amt mono">'+(isTagihan?'-':'+')+fmt(r.jumlah)+'</span></div>'+
-        '<div class="rc2-meta"><span class="rc2-tag">'+(isTagihan?'Tagihan':'Pemasukan')+'</span><span>'+escapeHtml(r.metode||'-')+'</span><span>'+escapeHtml(interval)+'</span></div>'+
+        '<div class="rc2-meta"><span class="rc2-tag">'+(r.tipe==='investasi'?'Investasi / SIP':(isTagihan?'Tagihan':'Pemasukan'))+'</span><span>'+escapeHtml(r.metode||'-')+'</span>'+(r.tipe==='investasi' && r.platform ? '<span>\u2192 '+escapeHtml(r.platform)+'</span>' : '')+'<span>'+escapeHtml(interval)+'</span></div>'+
         (r.ket ? '<div class="rc2-ket">'+escapeHtml(r.ket)+'</div>' : '')+
         '<div class="rc2-due"><span>Berikutnya <b>'+tglTxt+'</b></span><span class="rc2-badge" style="--b:'+badgeC+';">'+badgeTxt+'</span></div>'+
         '<div class="rc2-bar"><i style="width:'+pctRc+'%;"></i></div>'+
@@ -15939,7 +15974,7 @@ function runRecurringCheck(){
     while(r.nextDue <= today && guard < 400){
       guard++;
       /* Sudah pernah dicatat untuk jatuh tempo ini (mis. dari perangkat lain / hasil gabung data)? Lewati, jangan dobel. */
-      var due = r.nextDue, tgtArr = (r.tipe==='tagihan') ? DATA.tagihan : DATA.pemasukan, lblKey = (r.tipe==='tagihan') ? 'jenis' : 'sumber';
+      var due = r.nextDue, tgtArr = (r.tipe==='tagihan') ? DATA.tagihan : (r.tipe==='investasi' ? DATA.invbeli : DATA.pemasukan), lblKey = (r.tipe==='tagihan') ? 'jenis' : (r.tipe==='investasi' ? 'kode' : 'sumber');
       var sudahAda = tgtArr.some(function(x){
         return (x.recId===r.id && x.recDue===due) ||
           (!x.recId && x.tanggal===due && x[lblKey]===r.label && x.jumlah===r.jumlah && x.metode===r.metode && /\(otomatis\)\s*$/.test(x.ket||''));
@@ -15947,6 +15982,8 @@ function runRecurringCheck(){
       if(!sudahAda){
         if(r.tipe==='tagihan'){
           DATA.tagihan.push({ tanggal:due, jenis:r.label, metode:r.metode, jumlah:r.jumlah, status:'Belum Lunas', ket:(r.ket||'')+' (otomatis)', recId:r.id, recDue:due });
+        } else if(r.tipe==='investasi'){
+          DATA.invbeli.push({ id:genId('ib'), tanggal:due, instrumen:r.instrumen || INSTRUMEN_INVESTASI[0], platform:r.platform || '', kode:r.kode || r.label, metode:r.metode, jumlah:r.jumlah, fee:0, ket:((r.ket||'SIP')+' (otomatis)'), recId:r.id, recDue:due });
         } else {
           DATA.pemasukan.push({ tanggal:due, sumber:r.label, metode:r.metode, jumlah:r.jumlah, ket:(r.ket||'')+' (otomatis)', recId:r.id, recDue:due });
         }
@@ -28241,7 +28278,7 @@ function renderInsightPage(){
 function srSetFilter(k){ srFilter = k; renderSaldoRekeningPage(); }
 function renderSaldoRekeningPage(){
   var box = document.getElementById('sr-body'); if(!box) return;
-  var total = totalSaldo(), mengendap = totalSaldoMengendap(), minus = ksSaldoMinus();
+  var total = totalSaldo(), mengendap = totalSaldoMengendap(), minus = ksSaldoMinus(), ipoTahan = 0; try{ ipoTahan = ipoTertahanTotal(); }catch(e){}
   var list = ACCOUNTS.filter(function(a){
     if(isChildAccountEntry(a)) return false;
     return srFilter==='all' || (ACCOUNT_CATEGORY[a]||'bank')===srFilter;
@@ -28252,7 +28289,7 @@ function renderSaldoRekeningPage(){
     if(fc){ srFilter = fc; list = list.filter(function(a){ return (ACCOUNT_CATEGORY[a]||'bank')===fc; }); }
   }
   var sum = '<div class="sr-sum"><div class="sr-s"><span>'+L('Total saldo','Total balance')+'</span><b>'+maskOrFmt(total)+'</b><button type="button" class="sr-eye" onclick="srToggleEye()" aria-label="'+L('Sembunyikan nominal','Hide amounts')+'">'+(saldoHidden ? SR_EYE_OFF : SR_EYE_ON)+'</button></div>'+
-    (mengendap>0 ? '<div class="sr-s"><span>'+L('Bisa diambil','Available')+'</span><b>'+maskOrFmt(total-mengendap)+'</b></div>' : '')+
+    ((mengendap>0 || ipoTahan>0) ? '<div class="sr-s"><span>'+L('Bisa diambil','Available')+'</span><b>'+maskOrFmt(total-mengendap-ipoTahan)+'</b></div>' : '')+
     (minus>0 ? '<div class="sr-s"><span>'+L('Saldo minus','Overdrawn')+'</span><b style="color:var(--danger);">'+maskOrFmt(minus)+'</b></div>' : '')+
     '<div class="sr-s"><span>'+L('Jumlah rekening','Accounts')+'</span><b>'+list.length+'</b></div></div>';
   var chips = '<div class="sr-chips">'+(srv==='kartu' ? ['bank','ewallet','cash','investasi','pulsa'] : ['all','cash','ewallet','bank','investasi','pulsa']).map(function(k){
