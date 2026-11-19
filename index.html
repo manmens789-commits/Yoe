@@ -2260,10 +2260,10 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
       <div class="grid2 catat-grid">
         <div class="qa" data-goto="belanja" title="Belanja & stok"><div class="ic" data-icon="cart"></div><div class="lb">Belanja Item</div></div>
         <div class="qa" data-goto="stok-barang" title="Cek sisa stok"><div class="ic" data-icon="archive"></div><div class="lb">Stok Barang</div></div>
-      </div>
-      <div class="catat-group-title">Rencana & Tagihan</div>
-      <div class="grid2 catat-grid">
         <div class="qa" data-goto="rencana-belanja" title="Susun & cek anggaran"><div class="ic" data-icon="clipboard"></div><div class="lb">Rencana Belanja</div></div>
+      </div>
+      <div class="catat-group-title">Tagihan & Target</div>
+      <div class="grid2 catat-grid">
         <div class="qa" data-goto="tagihan" title="Listrik, internet, dll"><div class="ic" data-icon="receipt"></div><div class="lb">Tagihan</div></div>
         <div class="qa" data-goto="recurring" title="Otomatis berkala"><div class="ic" data-icon="calendar"></div><div class="lb">Transaksi Berulang</div></div>
         <div class="qa" data-goto="goals" title="Tabung untuk tujuan"><div class="ic" data-icon="target"></div><div class="lb">Target Nabung</div></div>
@@ -2274,20 +2274,23 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div class="qa" data-goto="investasi-jual" title="Cairkan investasi"><div class="ic" data-icon="trendDown"></div><div class="lb">Jual Investasi</div></div>
         <div class="qa" data-goto="dividen" title="Penghasilan pasif"><div class="ic" data-icon="pie"></div><div class="lb">Dividen Saham</div></div>
       </div>
-      <div class="catat-group-title">Pinjam, Titip & Patungan</div>
-      <div class="grid2 catat-grid">
-        <div class="qa" data-goto="piutang" title="Uang yang dipinjam orang"><div class="ic" data-icon="send"></div><div class="lb">Piutang</div></div>
-        <div class="qa" data-goto="hutang" title="Uang yang kamu pinjam"><div class="ic" data-icon="receive"></div><div class="lb">Hutang</div></div>
-        <div class="qa" data-goto="titipan" title="Dana milik orang lain"><div class="ic" data-icon="lock"></div><div class="lb">Dana Titipan</div></div>
-        <div class="qa" data-goto="untuk-orang" title="Bayarin orang lain"><div class="ic" data-icon="gift"></div><div class="lb">Uang untuk Orang Lain</div></div>
-        <div class="qa" data-goto="splitbill" title="Bagi tagihan"><div class="ic" data-icon="split"></div><div class="lb">Split Bill</div></div>
-        <div class="qa" data-goto="patungan" title="Urunan bersama"><div class="ic" data-icon="users"></div><div class="lb">Dana Patungan</div></div>
-      </div>
       <div class="catat-group-title">Aset & Pantau</div>
       <div class="grid2 catat-grid">
         <div class="qa" data-goto="inventaris" title="Barang & aset"><div class="ic" data-icon="box"></div><div class="lb">Inventaris Aset</div></div>
         <div class="qa" data-goto="asetbio" title="Ternak & kebun"><div class="ic" data-icon="leaf"></div><div class="lb">Aset Biologis</div></div>
         <div class="qa" data-goto="kesehatan" title="Skor keuangan"><div class="ic" data-icon="activity"></div><div class="lb">Kesehatan Finansial</div></div>
+      </div>
+      <div class="catat-group-title">Pinjam & Titip</div>
+      <div class="grid2 catat-grid">
+        <div class="qa" data-goto="piutang" title="Uang yang dipinjam orang"><div class="ic" data-icon="send"></div><div class="lb">Piutang</div></div>
+        <div class="qa" data-goto="hutang" title="Uang yang kamu pinjam"><div class="ic" data-icon="receive"></div><div class="lb">Hutang</div></div>
+        <div class="qa" data-goto="titipan" title="Dana milik orang lain"><div class="ic" data-icon="lock"></div><div class="lb">Dana Titipan</div></div>
+      </div>
+      <div class="catat-group-title">Bareng Orang</div>
+      <div class="grid2 catat-grid">
+        <div class="qa" data-goto="untuk-orang" title="Bayarin orang lain"><div class="ic" data-icon="gift"></div><div class="lb">Uang untuk Orang Lain</div></div>
+        <div class="qa" data-goto="splitbill" title="Bagi tagihan"><div class="ic" data-icon="split"></div><div class="lb">Split Bill</div></div>
+        <div class="qa" data-goto="patungan" title="Urunan bersama"><div class="ic" data-icon="users"></div><div class="lb">Dana Patungan</div></div>
       </div>
     </main>
   </div>
@@ -2381,7 +2384,20 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="section-title"><span data-icon="arrowUp"></span>Catat Pengeluaran</div>
     <div class="card">
       <div class="field"><label>Tanggal</label><input type="date" id="pg-tanggal"></div>
-      <div class="field"><label>Metode Pembayaran</label><select id="pg-metode"></select></div>
+      <div class="field" id="pg-metode-wrap"><label>Metode Pembayaran</label><select id="pg-metode"></select></div>
+      <div class="field" id="pg-paysplit-field">
+        <label>Bayar Pakai Beberapa Metode (Split)?</label>
+        <div class="toggle-row" style="margin-bottom:0;">
+          <div class="toggle active" data-paysplit="off" id="pg-paysplit-off">Satu Metode</div>
+          <div class="toggle" data-paysplit="on" id="pg-paysplit-on">Split Metode</div>
+        </div>
+        <div id="pg-paysplit-wrap" style="display:none; margin-top:10px;">
+          <div class="meta" style="margin-bottom:8px; line-height:1.5; font-size:12px; color:var(--text-2);">Pilih tiap metode dan nominalnya, mis. makan Rp6.000 = Cash Rp3.000 + Dana Rp3.000. Jumlah total = jumlah semua baris.</div>
+          <div id="pg-paysplit-rows"></div>
+          <button type="button" class="btn ghost" id="pg-paysplit-add-row" style="margin-top:0; margin-bottom:10px;">+ Tambah Metode</button>
+          <div style="display:flex; align-items:center; justify-content:space-between;"><span class="meta">Total Bayar</span><span class="mono" id="pg-paysplit-total" style="font-weight:700; color:var(--text);">Rp0</span></div>
+        </div>
+      </div>
       <div class="field"><label style="display:flex; align-items:center; justify-content:space-between;"><span>Untuk</span><span data-goto="kelola-kategori" data-kk="untukSiapa" style="font-size:11.5px; font-weight:700; color:var(--primary); cursor:pointer;">Kelola Kategori</span></label><select id="pg-untuk"></select></div>
       <div class="field"><label>Mata Uang</label><select id="pg-currency"></select></div>
       <div class="field" id="pg-valas-wrap" style="display:none;"><label>Jumlah Asli (mata uang asing)</label><input type="text" class="money-input" id="pg-jumlah-asli" placeholder="0" inputmode="numeric"></div>
@@ -2731,11 +2747,16 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
   <div class="view" id="view-investasi-beli"><main>
     <div class="section-title"><span data-icon="trendUp"></span>Pembelian Produk Investasi</div>
     <div class="card pf-card" id="pf-card-beli"><h3><span class="dot"></span>Portofolio Saat Ini</h3><div class="pf-hint">Sisa modal tiap produk = total pembelian dikurangi modal yang sudah terjual.</div><div id="pf-list-beli"></div></div>
-    <div class="card" id="ipo-card"><h3><span class="dot"></span>IPO Saham</h3>
-      <div class="pf-hint">Pesan IPO dulu: dananya ditandai tertahan (total saldo tidak berubah). Setelah hasil penjatahan keluar, catat jumlah lot yang didapat. Pembeliannya otomatis tercatat dan sisa dana dilepas.</div>
-      <div id="ipo-summary" style="margin:8px 0 0; font-size:12.5px; color:var(--text-2);"></div>
+    <div class="card ipo-card" id="ipo-card">
+      <div class="ipo-head">
+        <div class="ipo-ico" id="ipo-ico"></div>
+        <div class="ipo-ttl"><h3>IPO Saham</h3><div class="ipo-sub">Pesan dulu, catat hasil penjatahan</div></div>
+        <span class="ipo-badge" id="ipo-badge" style="display:none;"></span>
+      </div>
+      <div class="ipo-info"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><span>Dana ditandai tertahan saat pesan (total saldo tidak berubah). Setelah penjatahan keluar, catat jumlah lot yang didapat. Pembelian otomatis tercatat dan sisa dana dilepas.</span></div>
+      <div id="ipo-summary"></div>
       <div id="ipo-list"></div>
-      <button type="button" class="btn ghost" id="btn-ipo-pesan" style="margin-top:12px;">+ Pesan IPO</button>
+      <button type="button" class="ipo-add" id="btn-ipo-pesan"><span>+</span> Pesan IPO</button>
     </div>
     <div class="card">
       <div class="field"><label>Tanggal</label><input type="date" id="ib-tanggal"></div>
@@ -6643,7 +6664,7 @@ function renderAuth(){
         '<div class="wz-row"><span class="d bill"></span><b>Internet</b><em>12 hari lagi</em></div>'+
         '<div class="wz-meter"><b>Dana darurat</b><span><i style="width:60%"></i></span></div>'}
     ];
-    html += '<div class="wz-welcome"><div class="wz-hero"><span class="wz-mark">'+logoImg+'</span><div class="wz-track" id="wz-track">';
+    html += '<div class="wz-welcome"><div class="wz-hero"><div class="wz-brand"><span class="wz-mark">'+logoImg+'</span><span class="wz-bn"><b>Tumbuh Kaya</b><small>Dompet digital pribadi</small></span></div><div class="wz-track" id="wz-track">';
     slides.forEach(function(sl){
       html += '<div class="wz-slide"><p class="wz-cap">'+sl.t+'</p><div class="wz-stage">'+
         '<span class="wz-chip c1">'+sl.c1+'</span><div class="wz-demo">'+sl.demo+'</div><span class="wz-chip c2">'+sl.c2+'</span></div></div>';
@@ -8127,6 +8148,7 @@ function pgResetSplitRows(){
   pgUpdateSplitTotal();
 }
 function pgSetSplitMode(on){
+  if(on && typeof pgPaySplitMode!=='undefined' && pgPaySplitMode){ pgSetPaySplitMode(false); }
   pgSplitMode = on;
   document.getElementById('pg-jenis-wrap').style.display = on ? 'none' : '';
   document.getElementById('pg-jumlah-wrap').style.display = on ? 'none' : '';
@@ -8136,6 +8158,58 @@ function pgSetSplitMode(on){
   if(on && document.querySelectorAll('#pg-split-rows .split-row').length===0){
     pgAddSplitRow(); pgAddSplitRow();
   }
+}
+/* ============ SPLIT METODE BAYAR (1 pengeluaran dibayar pakai beberapa rekening) ============
+   Disimpan sebagai beberapa record pengeluaran (satu per rekening) dengan splitId sama + splitBayar:true,
+   jadi saldo tiap rekening, laporan, dan riwayat otomatis benar tanpa ubah perhitungan lain. */
+var pgPaySplitMode = false;
+function pgPayDefaultAcc(idx){
+  var cur = (document.getElementById('pg-metode')||{}).value;
+  if(idx===0) return cur;
+  var used = [].slice.call(document.querySelectorAll('#pg-paysplit-rows .paysplit-acc')).map(function(e){ return e.value; });
+  var pool = ACCOUNTS.filter(function(a){ return used.indexOf(a)===-1; });
+  var cash = pool.filter(function(a){ return /cash|tunai/i.test(a); })[0];
+  return cash || pool[0] || cur;
+}
+function pgPayAddRow(acc, jumlah){
+  var c = document.getElementById('pg-paysplit-rows'); if(!c) return;
+  var idx = c.querySelectorAll('.paysplit-row').length;
+  if(!acc) acc = pgPayDefaultAcc(idx);
+  var opts = ACCOUNTS.map(function(a){ return '<option value="'+escapeHtml(a)+'"'+(a===acc?' selected':'')+'>'+escapeHtml(accountOptionLabel(a))+'</option>'; }).join('');
+  var row = document.createElement('div');
+  row.className = 'paysplit-row';
+  row.style.cssText = 'display:flex; gap:8px; margin-bottom:10px; align-items:center;';
+  row.innerHTML = '<select class="paysplit-acc" style="flex:1.4;">'+opts+'</select>'+
+    '<input type="text" class="money-input paysplit-jumlah" placeholder="0" inputmode="numeric" value="'+(jumlah?formatMoneyValue(jumlah):'')+'" style="flex:1;">'+
+    '<span class="icon-btn del pg-paysplit-remove" title="Hapus baris">'+ICONS_INLINE_DEL+'</span>';
+  c.appendChild(row);
+  pgPayUpdateTotal();
+}
+function pgPayUpdateTotal(){
+  var total = 0;
+  document.querySelectorAll('#pg-paysplit-rows .paysplit-jumlah').forEach(function(inp){ total += parseMoneyValue(inp.value); });
+  var el = document.getElementById('pg-paysplit-total'); if(el) el.textContent = fmt(total);
+  return total;
+}
+function pgPayReset(){
+  var c = document.getElementById('pg-paysplit-rows'); if(c) c.innerHTML = '';
+  pgPayUpdateTotal();
+}
+function pgSetPaySplitMode(on){
+  if(on && pgSplitMode){ pgSetSplitMode(false); }
+  pgPaySplitMode = on;
+  document.getElementById('pg-metode-wrap').style.display = on ? 'none' : '';
+  document.getElementById('pg-jumlah-wrap').style.display = on ? 'none' : (pgSplitMode ? 'none' : '');
+  document.getElementById('pg-paysplit-wrap').style.display = on ? '' : 'none';
+  document.getElementById('pg-paysplit-on').classList.toggle('active', on);
+  document.getElementById('pg-paysplit-off').classList.toggle('active', !on);
+  if(on){
+    var cur = document.getElementById('pg-currency');
+    if(cur && cur.value!=='IDR'){ cur.value = 'IDR'; onCurrencyChange('pg'); }
+    var first = parseMoneyValue(document.getElementById('pg-jumlah').value);
+    if(!document.querySelectorAll('#pg-paysplit-rows .paysplit-row').length){ pgPayAddRow(null, first||0); pgPayAddRow(); }
+  }
+  pgBarengUpdateSummary();
 }
 /* ============ PENGELUARAN BARENG ORANG LAIN ============
    Satu transaksi tetap dicatat penuh (uang keluar dari rekening = total), tapi bagian orang lain
@@ -8195,6 +8269,7 @@ function pgBarengLoad(list){
   else pgBarengSetMode(false);
 }
 function pgBarengBaseTotal(){
+  if(pgPaySplitMode) return pgPayUpdateTotal();
   return pgSplitMode ? pgUpdateSplitTotal() : parseMoneyValue((document.getElementById('pg-jumlah')||{}).value);
 }
 /* Hasil: {orang:[{nama,jumlah}], err:'...'|null, total, bagianSaya} */
@@ -9226,7 +9301,36 @@ function submitPengeluaran(){
   var bareng = pgBarengCompute();
   if(bareng.err){ toast(bareng.err); return; }
 
-  if(pgSplitMode){
+  if(pgPaySplitMode){
+    var jenisPay = document.getElementById('pg-jenis').value;
+    var accSum = {}, accOrder = [];
+    document.querySelectorAll('#pg-paysplit-rows .paysplit-row').forEach(function(row){
+      var a = row.querySelector('.paysplit-acc').value;
+      var j = parseMoneyValue(row.querySelector('.paysplit-jumlah').value);
+      if(!(j>0)) return;
+      if(accSum[a]===undefined){ accSum[a] = 0; accOrder.push(a); }
+      accSum[a] += j;
+    });
+    if(accOrder.length<2){ toast('Isi nominal di minimal 2 metode bayar yang berbeda'); return; }
+    var oldPay = (editState.type==='pengeluaran') ? DATA.pengeluaran[editState.index] : null;
+    if(ADMIN_FEE_JENIS.indexOf(jenisPay)===-1){
+      for(var pi=0; pi<accOrder.length; pi++){
+        var oldSame = (oldPay && oldPay.metode===accOrder[pi]) ? (oldPay.jumlah||0) : 0;
+        if(!cekBatasMengendapKeluar(accOrder[pi], accSum[accOrder[pi]], oldSame)) return;
+      }
+    }
+    if(editState.type==='pengeluaran'){ DATA.pengeluaran.splice(editState.index, 1); }
+    var payId = 'sp'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    accOrder.forEach(function(a){
+      var pRec = {tanggal:tanggal, metode:a, untuk:untuk, jenis:jenisPay, jumlah:accSum[a], ket:ket, splitId:payId, splitBayar:true};
+      var pOrang = pgBarengForItem(bareng.orang, accSum[a], bareng.total);
+      if(pOrang.length) pRec.untukOrang = pOrang;
+      if(merchantPg && !isBiayaAdminJenis(jenisPay)) pRec.merchant = merchantPg;
+      DATA.pengeluaran.push(pRec);
+    });
+    if(editState.type==='pengeluaran'){ finishEdit('pengeluaran','Pengeluaran split metode bayar diperbarui'); }
+    else { toast('Pengeluaran '+fmt(bareng.total)+' tersimpan ('+accOrder.length+' metode bayar)'); }
+  } else if(pgSplitMode){
     var rows = document.querySelectorAll('#pg-split-rows .split-row');
     var items = [];
     rows.forEach(function(row){
@@ -9286,7 +9390,7 @@ function submitPengeluaran(){
   document.getElementById('pg-jumlah').value=''; document.getElementById('pg-ket').value=''; setPgMerchant('');
   document.getElementById('pg-jumlah-asli').value=''; document.getElementById('pg-kurs').value='';
   document.getElementById('pg-currency').value='IDR'; onCurrencyChange('pg');
-  pgResetSplitRows(); pgSetSplitMode(false); pgBarengReset(); pgBarengSetMode(false);
+  pgResetSplitRows(); pgSetSplitMode(false); pgPayReset(); pgSetPaySplitMode(false); pgBarengReset(); pgBarengSetMode(false);
   renderPengeluaranList(); go('dashboard');
   if(isNewPg) openStruk('pengeluaran', DATA.pengeluaran.length-1);
 }
@@ -9740,33 +9844,41 @@ function renderIpoCard(){
   var done = list.filter(function(o){ return o.status!=='menunggu'; }).slice(-4).reverse();
   var tot = 0; pend.forEach(function(o){ tot += ipoNilai(o); });
   var sum = document.getElementById('ipo-summary');
-  if(sum) sum.innerHTML = pend.length ? ('Dana tertahan IPO: <b class="mono" style="color:var(--text);">'+maskOrFmt(tot)+'</b> \u2022 '+pend.length+' pesanan menunggu penjatahan') : '';
+  if(sum) sum.innerHTML = pend.length ? ('<div class="ipo-stat"><div><div class="ipo-stat-l">Dana tertahan IPO</div><div class="ipo-stat-v mono">'+maskOrFmt(tot)+'</div></div><span class="ipo-pill"><i></i>'+pend.length+' menunggu</span></div>') : '';
+  var hi = document.getElementById('ipo-ico'); if(hi && !hi.firstChild) hi.innerHTML = ICONS.inv_saham||ICONS.trendUp||'';
+  var bd = document.getElementById('ipo-badge');
+  if(bd){ bd.style.display = pend.length ? '' : 'none'; bd.textContent = pend.length; }
   var h = '';
   pend.forEach(function(o){
-    h += '<div style="padding:12px 0; border-top:1px solid var(--line);">'+
-      '<div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">'+
-        '<div style="min-width:0;"><b>'+escapeHtml(o.kode)+'</b> <span class="meta-sub">\u2022 '+escapeHtml(o.platform||'-')+'</span>'+
-        '<div class="meta-sub" style="margin-top:2px;">'+o.lot+' lot \u00d7 '+fmt(o.harga)+'/lembar \u2022 pesan '+escapeHtml(ipoTglPendek(o.tanggal))+'</div></div>'+
-        '<div class="mono" style="font-weight:700; white-space:nowrap;">'+maskOrFmt(ipoNilai(o))+'</div></div>'+
-      '<div style="display:flex; gap:8px; margin-top:10px;">'+
-        '<button type="button" class="btn ghost" data-ipo-jatah="'+escapeHtml(o.id)+'" style="margin-top:0; width:auto; min-width:0; box-sizing:border-box; flex:1 1 0; padding:10px 8px; font-size:12.5px;">Catat Penjatahan</button>'+
-        '<button type="button" class="btn ghost" data-ipo-batal="'+escapeHtml(o.id)+'" style="margin-top:0; width:auto; min-width:0; box-sizing:border-box; flex:1 1 0; padding:10px 8px; font-size:12.5px;">Batalkan</button>'+
+    var kd = String(o.kode||'').replace(/[^A-Za-z0-9]/g,'');
+    var hue = 0; for(var ci=0; ci<kd.length; ci++){ hue = (hue*31 + kd.charCodeAt(ci)) % 360; }
+    h += '<div class="ipo-tk">'+
+      '<div class="ipo-tk-top">'+
+        '<div class="ipo-av" style="--c:'+jenisColor('Saham')+';">'+(ICONS.inv_saham||ICONS.trendUp||'')+'</div>'+
+        '<div class="ipo-mid"><div class="ipo-kode">'+escapeHtml(o.kode)+' <span class="ipo-chip">'+escapeHtml(o.platform||'-')+'</span></div>'+
+          '<div class="ipo-det">'+o.lot+' lot \u00d7 '+fmt(o.harga)+'/lembar</div></div>'+
+        '<div class="ipo-val"><div class="mono">'+maskOrFmt(ipoNilai(o))+'</div><small>pesan '+escapeHtml(ipoTglPendek(o.tanggal))+'</small></div>'+
+      '</div>'+
+      '<div class="ipo-st"><i></i>Menunggu penjatahan</div>'+
+      '<div class="ipo-act">'+
+        '<button type="button" class="ipo-btn ipo-btn-p" data-ipo-jatah="'+escapeHtml(o.id)+'">Catat Penjatahan</button>'+
+        '<button type="button" class="ipo-btn ipo-btn-d" data-ipo-batal="'+escapeHtml(o.id)+'">Batalkan</button>'+
       '</div></div>';
   });
   if(done.length){
-    h += '<div style="padding-top:10px; border-top:1px solid var(--line); margin-top:'+(pend.length?'0':'10px')+';"><div class="meta-sub" style="margin-bottom:4px;">Riwayat terakhir</div>';
+    h += '<div class="ipo-hist"><div class="ipo-hist-t">Riwayat terakhir</div>';
     done.forEach(function(o){
       var ib = null; if(o.ibId){ (DATA.invbeli||[]).forEach(function(x){ if(x.id===o.ibId) ib = x; }); }
-      var st;
-      if(o.status==='batal') st = 'Dibatalkan, dana dilepas';
-      else if(!(o.lotDapat>0)) st = 'Tidak dapat jatah, dana dilepas';
+      var st, ok = true;
+      if(o.status==='batal'){ st = 'Dibatalkan, dana dilepas'; ok = false; }
+      else if(!(o.lotDapat>0)){ st = 'Tidak dapat jatah, dana dilepas'; ok = false; }
       else if(ib) st = 'Dapat '+(ib.unit>0 ? ib.unit : o.lotDapat)+' dari '+o.lot+' lot \u2022 '+fmt(ib.jumlah);
       else st = 'Dapat '+o.lotDapat+' dari '+o.lot+' lot \u2022 pembelian sudah dihapus dari riwayat';
-      h += '<div style="font-size:12.5px; line-height:1.6;"><b>'+escapeHtml(o.kode)+'</b> <span class="meta-sub">\u2022 '+escapeHtml(st)+'</span></div>';
+      h += '<div class="ipo-hrow"><span class="ipo-hic '+(ok?'ok':'no')+'">'+(ok?'\u2713':'\u2715')+'</span><div><b>'+escapeHtml(o.kode)+'</b><div class="ipo-hs">'+escapeHtml(st)+'</div></div></div>';
     });
     h += '</div>';
   }
-  box.innerHTML = h || '<div class="empty" style="margin-top:8px;">Belum ada pesanan IPO.</div>';
+  box.innerHTML = h || '<div class="ipo-empty">Belum ada pesanan IPO.</div>';
 }
 function ipoPesanPreview(){
   var el = document.getElementById('ipo-pesan-info'); if(!el) return;
@@ -11720,7 +11832,7 @@ function buildAllTransactions(){
   var all = [];
   DATA.transfer.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Transfer', label:accountOptionLabel(x.dari)+' → '+accountOptionLabel(x.ke), sign:0, type:'transfer', index:i, ket:x.ket||''}); });
   DATA.pemasukan.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Masuk', label:x.sumber+' • '+accountOptionLabel(x.metode), sign:1, type:'pemasukan', index:i, currency:x.currency, jumlahAsli:x.jumlahAsli, ket:x.ket||''}); });
-  DATA.pengeluaran.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant && !isBiayaAdminJenis(x.jenis)?merchantCanon(x.merchant)+' • ':'')+x.jenis+' • '+accountOptionLabel(x.metode), sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:(isBiayaAdminJenis(x.jenis)?'':merchantCanon(x.merchant)), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''}); });
+  DATA.pengeluaran.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant && !isBiayaAdminJenis(x.jenis)?merchantCanon(x.merchant)+' • ':'')+x.jenis+' • '+accountOptionLabel(x.metode), sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:(isBiayaAdminJenis(x.jenis)?'':merchantCanon(x.merchant)), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, splitBayar:x.splitBayar, ket:x.ket||''}); });
   DATA.piutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Piutang', label:(x.nama||'-')+' • '+accountOptionLabel(x.metode), sign:-1, type:'piutang', index:i, ket:x.ket||''}); });
   DATA.hutang.forEach(function(x,i){ all.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Hutang', label:(x.untuk||'-')+' • '+accountOptionLabel(x.metode), sign:(x.tanpaSaldo ? 0 : 1), type:'hutang', index:i, ket:x.ket||''}); });
   DATA.piutang.forEach(function(x,i){ cicilanOf(x).forEach(function(c){ all.push({tanggal:c.tanggal, jumlah:c.jumlah, tipe:'Cicilan Piutang', label:(x.nama||'-')+' • '+accountOptionLabel(c.metode||x.metode), sign:1, type:'piutang', index:i, ket:c.ket||''}); }); });
@@ -11738,7 +11850,7 @@ function txnBadges(t){
     arr.push('<span class="badge" style="background:var(--gold-dim); color:var(--gold-text);">'+t.currency+' '+fmtNum(t.jumlahAsli)+'</span>');
   }
   if(t.splitId){
-    arr.push('<span class="badge" style="background:var(--info-dim); color:var(--info);">Split</span>');
+    arr.push('<span class="badge" style="background:var(--info-dim); color:var(--info);">'+(t.splitBayar?'Split Bayar':'Split')+'</span>');
   }
   return arr;
 }
@@ -13221,7 +13333,7 @@ function buildAccountTransactions(acc){
     if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Masuk', label:x.sumber, sign:1, type:'pemasukan', index:i, currency:x.currency, jumlahAsli:x.jumlahAsli, ket:x.ket||''});
   });
   DATA.pengeluaran.forEach(function(x,i){
-    if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant && !isBiayaAdminJenis(x.jenis)?merchantCanon(x.merchant)+' • ':'')+x.jenis, sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:(isBiayaAdminJenis(x.jenis)?'':merchantCanon(x.merchant)), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, ket:x.ket||''});
+    if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Keluar', label:(x.merchant && !isBiayaAdminJenis(x.jenis)?merchantCanon(x.merchant)+' • ':'')+x.jenis, sign:-1, type:'pengeluaran', index:i, jenis:x.jenis, merchant:(isBiayaAdminJenis(x.jenis)?'':merchantCanon(x.merchant)), currency:x.currency, jumlahAsli:x.jumlahAsli, splitId:x.splitId, splitBayar:x.splitBayar, ket:x.ket||''});
   });
   DATA.belanja.forEach(function(x,i){
     if(x.metode===acc) list.push({tanggal:x.tanggal, jumlah:x.jumlah, tipe:'Belanja', label:(x.merchant?merchantCanon(x.merchant)+' • ':'')+x.item, sign:-1, type:'belanja', index:i, merchant:merchantCanon(x.merchant), ket:(x.ket||'')+' '+(x.kategori||'')});
@@ -18780,7 +18892,7 @@ function startEdit(type, index){
       document.getElementById('pm-kurs').value = formatMoneyValue(item.kurs||0);
     }
   } else if(type==='pengeluaran'){
-    pgSetSplitMode(false); pgResetSplitRows();
+    pgSetSplitMode(false); pgResetSplitRows(); pgPayReset(); pgSetPaySplitMode(false);
     pgBarengLoad(item.untukOrang);
     document.getElementById('pg-tanggal').value = item.tanggal;
     document.getElementById('pg-metode').value = item.metode;
@@ -21750,6 +21862,10 @@ function wireEvents(){
     }
     var spt = ev.target.closest('[data-split]');
     if(spt){ pgSetSplitMode(spt.getAttribute('data-split')==='on'); return; }
+    var pspt = ev.target.closest('[data-paysplit]');
+    if(pspt){ pgSetPaySplitMode(pspt.getAttribute('data-paysplit')==='on'); return; }
+    var prmv = ev.target.closest('.pg-paysplit-remove');
+    if(prmv){ var prow = prmv.closest('.paysplit-row'); if(prow) prow.remove(); pgPayUpdateTotal(); pgBarengUpdateSummary(); return; }
     var rmv = ev.target.closest('.pg-split-remove');
     if(rmv){ pgRemoveSplitRow(rmv); return; }
     var gact = ev.target.closest('[data-goal-action]');
@@ -21788,6 +21904,7 @@ function wireEvents(){
   document.body.addEventListener('input', function(ev){
     var el = ev.target;
     if(el.classList && el.classList.contains('split-jumlah')) pgUpdateSplitTotal();
+    if(el.classList && el.classList.contains('paysplit-jumlah')){ pgPayUpdateTotal(); pgBarengUpdateSummary(); }
     if(el.id==='pg-jumlah' || (el.classList && (el.classList.contains('split-jumlah') || el.classList.contains('bareng-nama') || el.classList.contains('bareng-jumlah')))) pgBarengUpdateSummary();
     if(el.id==='pg-jumlah-asli' || el.id==='pg-kurs') recalcValas('pg');
     if(el.id==='pm-jumlah-asli' || el.id==='pm-kurs') recalcValas('pm');
@@ -21795,6 +21912,7 @@ function wireEvents(){
   document.getElementById('pg-currency').addEventListener('change', function(){ onCurrencyChange('pg'); });
   document.getElementById('pm-currency').addEventListener('change', function(){ onCurrencyChange('pm'); });
   document.getElementById('pg-split-add-row').addEventListener('click', function(){ pgAddSplitRow(); });
+  document.getElementById('pg-paysplit-add-row').addEventListener('click', function(){ pgPayAddRow(); });
   document.getElementById('pg-bareng-on').addEventListener('click', function(){ pgBarengSetMode(true); });
   document.getElementById('pg-bareng-off').addEventListener('click', function(){ pgBarengSetMode(false); });
   document.getElementById('pg-bareng-add').addEventListener('click', function(){ pgBarengAddRow(); });
@@ -24408,7 +24526,8 @@ document.addEventListener('change', function(e){ if(e.target && e.target.id==='g
       main.insertBefore(w, t); w.appendChild(t); w.appendChild(g);
     });
   }
-  function init(){ wrapCatat(); document.querySelectorAll('.view').forEach(build); bindRiwayat(); }
+  function subCatat(){ document.querySelectorAll('#view-catat .catat-grid .qa[title]').forEach(function(q){ var l=q.querySelector('.lb'); if(l) l.setAttribute('data-sub', q.getAttribute('title')); }); }
+  function init(){ wrapCatat(); subCatat(); document.querySelectorAll('.view').forEach(build); bindRiwayat(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
@@ -28362,7 +28481,7 @@ function renderSaldoRekeningPage(){
     var rest = list.filter(function(a){ return cardList.indexOf(a)<0; });
     var shown = (cardList.length>SR_MAXC && !SR_ALL) ? cardList.slice(0,SR_MAXC) : cardList;
     var more = cardList.length>SR_MAXC ? '<button type="button" class="sr-chip wl-more" onclick="srToggleAll()">'+(SR_ALL ? L('Ringkas','Show less') : L('Lihat semua','View all')+' ('+cardList.length+')')+'</button>' : '';
-    var restHtml = rest.length ? '<div class="sr-gh" style="margin-top:16px;"><span>'+L('Rekening lainnya','Other accounts')+'<small>'+rest.length+' '+L('rekening','accounts')+'</small></span></div>'+rest.map(function(a){ return rowHtml[a] || ''; }).join('') : '';
+    var restHtml = rest.length ? '<div class="sr-gh" style="margin-top:16px;"><span>'+L('Rekening lainnya','Other accounts')+'<small>'+rest.length+' '+L('rekening','accounts')+'</small></span></div>'+'<div class="sr-rest">'+rest.map(function(a){ return rowHtml[a] || ''; }).join('')+'</div>' : '';
     var stackHtml = shown.length ? srWalletHtml(shown)+more : '';
     if(!shown.length && !rest.length) stackHtml = '<div class="empty">'+L('Belum ada rekening di kategori ini.','No accounts in this category yet.')+'</div>';
     box.innerHTML = sum+chips+toggle+stackHtml+restHtml;
@@ -30844,6 +30963,139 @@ html[data-layout="desktop"] .wl-wrap{grid-template-columns:minmax(0,380px) minma
 .wl-bar{flex:none; width:4px; border-radius:2px; background:var(--wl-ac,var(--primary)); box-shadow:0 0 0 1px color-mix(in srgb,var(--text) 14%,transparent);}
 .wl-pn-balrow .wl-pn-lbl{margin-top:0;}
 .wl-pn .wl-act button.pri{background:var(--wl-ac,var(--primary)); border-color:var(--wl-ac,var(--primary)); color:var(--wl-acfg,var(--bg,#0b0b0b));}
+
+/* ===== Simetri halaman Saldo per Rekening (desktop) ===== */
+html[data-layout="desktop"] #sr-body{display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:16px; align-items:center;}
+html[data-layout="desktop"] #sr-body > *{grid-column:1 / -1;}
+html[data-layout="desktop"] #sr-body > .sr-chips:not(.sr-view){grid-column:1; margin:0 0 12px;}
+html[data-layout="desktop"] #sr-body > .sr-chips.sr-view{grid-column:2; justify-self:end; margin:0 0 12px;}
+html[data-layout="desktop"] .sr-sum{grid-template-columns:repeat(auto-fit,minmax(0,1fr)); gap:14px; margin-bottom:16px;}
+html[data-layout="desktop"] .sr-s{border:1px solid var(--line); padding:12px 16px;}
+html[data-layout="desktop"] .wl-wrap{grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; align-items:stretch;}
+html[data-layout="desktop"] .wl-col{display:flex; align-items:center; justify-content:center; padding:0;}
+html[data-layout="desktop"] .wl-stack{width:100%; max-width:380px; margin:0 auto;}
+html[data-layout="desktop"] .wl-det{position:static;}
+html[data-layout="desktop"] .wl-det > .wl-pn{height:100%; box-sizing:border-box;}
+html[data-layout="desktop"] .wl-wrap{margin-bottom:14px;}
+html[data-layout="desktop"] .sr-rest{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:28px;}
+
+/* ===== Catat Transaksi desktop: 6 grup x 3 menu, 2 grup per baris (simetris) ===== */
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat main{align-items:stretch;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat main > .catat-grp:not(:has(.catat-hero)){grid-column:span 3 !important; --n:3; display:flex; flex-direction:column;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat main > .catat-grp:not(:has(.catat-hero)) .catat-grid{flex:1; align-content:stretch; grid-auto-rows:1fr;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grp:has([data-goto="splitbill"]){--g:var(--g-pinjam);}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grp:has([data-goto="rencana-belanja"]){--g:var(--g-aset);}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grp .catat-grid .qa{min-height:92px !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grp .catat-grid .qa .lb[data-sub]::after{content:attr(data-sub); display:block !important;}
+
+/* ===== Tile menu Catat: ikon + keterangan memenuhi satu kotak (desktop & HP) ===== */
+html:not(#_):not(#__) #view-catat .catat-grid .qa{display:flex !important; flex-direction:row !important; align-items:stretch !important; justify-content:flex-start !important; gap:12px !important; text-align:left !important; aspect-ratio:auto !important; min-height:72px !important; padding:8px 12px 8px 8px !important; overflow:hidden;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .ic{flex:none !important; align-self:stretch !important; width:56px !important; height:auto !important; min-height:56px; margin:0 !important; border-radius:14px !important; display:grid !important; place-items:center !important; animation:none !important;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .ic svg{width:28px !important; height:28px !important;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .lb{flex:1 !important; min-width:0 !important; align-self:center !important; width:auto !important; min-height:0 !important; display:block !important; text-align:left !important; font-size:14px !important; font-weight:800; line-height:1.25;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .lb[data-sub]::after{content:attr(data-sub); display:block !important; margin-top:3px; font-size:11px; font-weight:500; line-height:1.3; color:var(--text-2); white-space:normal;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa::after{display:none !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa{padding-right:36px !important; min-height:76px !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa::after{display:grid !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa .ic{width:60px !important;}
+
+html:not(#_):not(#__) #view-catat .catat-grid .qa{gap:10px !important; padding:7px 10px 7px 7px !important;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .ic{width:48px !important; min-height:48px;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .ic svg{width:24px !important; height:24px !important;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa .lb{font-size:13.5px !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa{padding-right:30px !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa .ic{width:52px !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa::after{right:8px !important; width:20px !important; height:20px !important; margin-top:-10px !important; font-size:15px !important;}
+
+html:not(#_):not(#__) #view-catat .catat-grid .qa .ic{align-self:center !important; width:52px !important; height:52px !important; min-height:0 !important; aspect-ratio:1 / 1 !important; border-radius:14px !important;}
+html[data-layout="desktop"]:not(#_):not(#__) #view-catat .catat-grid .qa .ic{width:56px !important; height:56px !important;}
+html:not(#_):not(#__) #view-catat .catat-grid .qa{align-items:center !important; min-height:72px !important;}
+
+/* ===== Kartu IPO Saham ===== */
+.ipo-card{position:relative; overflow:hidden;}
+.ipo-card::before{content:""; position:absolute; inset:0 0 auto 0; height:150px; background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--primary) 14%,transparent),transparent 70%); pointer-events:none;}
+.ipo-card > *{position:relative;}
+.ipo-head{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+.ipo-ico{width:44px; height:44px; flex:none; border-radius:14px; display:grid; place-items:center; color:var(--on-primary); background:linear-gradient(140deg,var(--primary-2),var(--primary)); box-shadow:0 8px 18px -8px var(--primary);}
+.ipo-ttl{flex:1; min-width:0;}
+.ipo-ttl h3{margin:0 !important; padding:0 !important; font-size:17px; line-height:1.2;}
+.ipo-ttl h3::before,.ipo-ttl h3 .dot{display:none !important;}
+.ipo-sub{font-size:12px; color:var(--text-2); margin-top:2px;}
+.ipo-badge{min-width:26px; height:26px; padding:0 8px; border-radius:13px; display:grid; place-items:center; font-weight:800; font-size:13px; background:var(--primary); color:var(--on-primary);}
+.ipo-info{display:flex; gap:9px; align-items:flex-start; padding:10px 12px; border-radius:12px; font-size:12px; line-height:1.5; color:var(--text-2); background:color-mix(in srgb,var(--primary) 9%,transparent); border:1px solid color-mix(in srgb,var(--primary) 22%,transparent);}
+.ipo-info svg{flex:none; margin-top:1px; color:var(--primary);}
+.ipo-stat{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding:14px 16px; border-radius:14px; background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 20%,var(--surface)),color-mix(in srgb,var(--primary) 6%,var(--surface))); border:1px solid color-mix(in srgb,var(--primary) 30%,transparent);}
+.ipo-stat-l{font-size:11.5px; color:var(--text-2); letter-spacing:.2px;}
+.ipo-stat-v{font-size:22px; font-weight:800; color:var(--text); margin-top:2px;}
+.ipo-pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:11.5px; font-weight:700; color:var(--text); background:color-mix(in srgb,var(--warn) 18%,transparent); border:1px solid color-mix(in srgb,var(--warn) 40%,transparent); white-space:nowrap;}
+.ipo-pill i,.ipo-st i{width:7px; height:7px; border-radius:50%; background:var(--warn); animation:ipoPulse 1.8s ease-in-out infinite;}
+@keyframes ipoPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 60%,transparent);}50%{box-shadow:0 0 0 5px transparent;}}
+.ipo-tk{margin-top:12px; padding:14px; border-radius:16px; background:color-mix(in srgb,var(--text) 4%,var(--surface)); border:1px solid color-mix(in srgb,var(--text) 10%,transparent);}
+.ipo-tk-top{display:flex; align-items:center; gap:12px;}
+.ipo-av{width:46px; height:46px; flex:none; border-radius:14px; display:grid; place-items:center; font-weight:800; font-size:15px; color:#fff; background:linear-gradient(140deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 75%,#000)); box-shadow:0 8px 16px -8px var(--c);}
+.ipo-av svg,.ipo-ico svg{width:24px; height:24px; stroke:currentColor;}
+.ipo-av{color:#fff;}
+.ipo-mid{flex:1; min-width:0;}
+.ipo-kode{font-weight:800; font-size:16px; color:var(--text); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.ipo-chip{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:999px; color:var(--text-2); background:color-mix(in srgb,var(--text) 9%,transparent);}
+.ipo-det{font-size:12px; color:var(--text-2); margin-top:3px;}
+.ipo-val{text-align:right; flex:none;}
+.ipo-val .mono{font-weight:800; font-size:15px; color:var(--text); white-space:nowrap;}
+.ipo-val small{display:block; font-size:11px; color:var(--text-2); margin-top:3px;}
+.ipo-st{display:inline-flex; align-items:center; gap:7px; margin-top:12px; font-size:11.5px; font-weight:700; color:var(--warn-text);}
+.ipo-act{display:flex; gap:8px; margin-top:12px;}
+.ipo-btn{flex:1 1 0; min-width:0; box-sizing:border-box; padding:12px 8px; border-radius:12px; font:inherit; font-size:13px; font-weight:800; cursor:pointer; border:1px solid transparent; transition:transform .15s ease, filter .15s ease;}
+.ipo-btn:active{transform:scale(.97);}
+.ipo-btn-p{background:linear-gradient(140deg,var(--primary-2),var(--primary)); color:var(--on-primary); box-shadow:0 8px 16px -10px var(--primary);}
+.ipo-btn-d{background:color-mix(in srgb,var(--danger) 10%,transparent); color:var(--danger); border-color:color-mix(in srgb,var(--danger) 35%,transparent);}
+.ipo-add{width:100%; margin-top:14px; padding:13px; border-radius:14px; font:inherit; font-size:14px; font-weight:800; cursor:pointer; color:var(--primary); background:transparent; border:1.5px dashed color-mix(in srgb,var(--primary) 55%,transparent); display:flex; align-items:center; justify-content:center; gap:8px;}
+.ipo-add span{font-size:18px; line-height:1;}
+.ipo-add:active{background:color-mix(in srgb,var(--primary) 10%,transparent);}
+.ipo-empty{margin-top:12px; padding:18px; text-align:center; font-size:12.5px; color:var(--text-2); border-radius:14px; background:color-mix(in srgb,var(--text) 4%,transparent);}
+.ipo-hist{margin-top:14px; padding-top:12px; border-top:1px solid color-mix(in srgb,var(--text) 10%,transparent);}
+.ipo-hist-t{font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text-2); margin-bottom:8px;}
+.ipo-hrow{display:flex; align-items:center; gap:10px; padding:6px 0; font-size:13px; color:var(--text);}
+.ipo-hs{font-size:11.5px; color:var(--text-2); margin-top:1px;}
+.ipo-hic{width:24px; height:24px; flex:none; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:800;}
+.ipo-hic.ok{background:color-mix(in srgb,var(--primary) 20%,transparent); color:var(--primary);}
+.ipo-hic.no{background:color-mix(in srgb,var(--danger) 16%,transparent); color:var(--danger);}
+
+/* ===== Layar sambut: rapi & simetris (HP + desktop) ===== */
+#screen-auth #auth-inner .wz-brand{display:flex; align-items:center; justify-content:center; gap:12px; margin:0 auto 18px; flex:none;}
+#screen-auth #auth-inner .wz-brand .wz-mark{width:46px; height:46px; margin:0; border-radius:14px;}
+#screen-auth #auth-inner .wz-bn{display:flex; flex-direction:column; text-align:left; line-height:1.15;}
+#screen-auth #auth-inner .wz-bn b{font-family:var(--font-disp); font-size:19px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
+#screen-auth #auth-inner .wz-bn small{font-size:11.5px; color:var(--text-2); margin-top:3px; letter-spacing:.3px;}
+#screen-auth #auth-inner .wz-cap{font-weight:700; font-size:20px; line-height:1.3; letter-spacing:-.01em; max-width:320px;}
+#screen-auth #auth-inner .wz-stage{width:min(290px,76%);}
+#screen-auth #auth-inner .wz-chip.c1{left:-16px; top:-18px;}
+#screen-auth #auth-inner .wz-chip.c2{right:-16px; bottom:-18px;}
+#screen-auth #auth-inner .wz-demo{border-radius:22px; box-shadow:0 22px 44px -26px rgba(0,0,0,.45);}
+#screen-auth #auth-inner .wz-sheet{box-shadow:0 -14px 36px -22px rgba(0,0,0,.55);}
+#screen-auth #auth-inner .wz-pill.pri{background:linear-gradient(135deg,color-mix(in srgb,var(--text) 92%,var(--primary)),var(--text)); box-shadow:0 12px 24px -14px rgba(0,0,0,.6);}
+#screen-auth #auth-inner .wz-pill.sec{background:color-mix(in srgb,var(--text) 4%,transparent);}
+@media (min-width:900px){
+  #screen-auth.wz-on .auth-fx .coin, #screen-auth.wz-on .auth-fx .grid{opacity:.45;}
+  #screen-auth #auth-inner.wz{max-width:1180px !important; width:100% !important; margin:0 auto; padding:0 48px; box-sizing:border-box;}
+  #screen-auth #auth-inner .wz-welcome{display:grid; grid-template-columns:minmax(0,1fr) 440px; align-items:center; column-gap:72px; min-height:100dvh; padding:48px 0 64px; box-sizing:border-box;}
+  #screen-auth #auth-inner .wz-hero{padding:0; min-height:0; align-items:flex-start; justify-content:center;}
+  #screen-auth #auth-inner .wz-brand{justify-content:flex-start; margin:0 0 34px;}
+  #screen-auth #auth-inner .wz-brand .wz-mark{width:56px; height:56px; border-radius:17px;}
+  #screen-auth #auth-inner .wz-bn b{font-size:23px;}
+  #screen-auth #auth-inner .wz-track{width:100%;}
+  #screen-auth #auth-inner .wz-slide{padding:34px 48px 40px 36px; text-align:left;}
+  #screen-auth #auth-inner .wz-track{margin:-34px -48px -40px -36px; width:calc(100% + 84px);}
+  #screen-auth #auth-inner .wz-cap{font-size:38px; line-height:1.18; max-width:520px; margin:0 0 40px; color:var(--text);}
+  #screen-auth #auth-inner .wz-stage{width:min(380px,100%); margin:0;}
+  #screen-auth #auth-inner .wz-chip.c1{left:-24px; top:-22px;}
+  #screen-auth #auth-inner .wz-chip.c2{right:-24px; bottom:-22px;}
+  #screen-auth #auth-inner .wz-dots{justify-content:flex-start; margin:14px 0 0 0;}
+  #screen-auth #auth-inner .wz-sheet{margin:0; padding:36px 32px 26px; border-radius:30px; border:1px solid var(--line); box-shadow:0 40px 80px -40px rgba(0,0,0,.55);}
+  #screen-auth #auth-inner .wz-title{font-size:24px; margin-bottom:8px; white-space:nowrap;}
+  #screen-auth #auth-inner .wz-sub{font-size:15px; margin-bottom:22px;}
+  #screen-auth #auth-inner .wz-pill{height:54px; font-size:16.5px; margin-bottom:12px;}
+  #screen-auth #auth-inner .wz-foot{margin-top:10px; font-size:14px;}
+}
 </style>
 </body>
 </html>
