@@ -3095,7 +3095,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
         <div class="field"><label>Isi laporan PDF</label>
           <select id="exp-mode">
             <option value="lengkap">Lengkap (semua bagian)</option>
-            <option value="ringkas">Ringkas (1–2 halaman)</option>
+            <option value="ringkas">Ringkas (1\u20132 halaman)</option>
           </select>
         </div>
         <label style="display:flex; gap:8px; align-items:center; margin:-4px 0 12px; font-size:13px;"><input type="checkbox" id="exp-anon"> Samarkan nama orang (hutang, piutang, titipan, target)</label>
@@ -3506,8 +3506,7 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
     <div class="section-title" style="margin-top:22px;"><span data-icon="cart"></span>Tambah Item Belanja</div>
     <div class="hint">Item ini akan muncul di dropdown "Item" pada halaman Belanja Item. Semua item (termasuk item bawaan aplikasi) bisa kamu edit nama & kategorinya, atau hapus, lewat daftar di bawah.</div>
     <div class="card">
-      <div class="field"><label>Nama Barang</label><input type="text" id="item-baru-barang" placeholder="cth: Tissue" autocomplete="off"></div>
-      <div class="field"><label>Merk (opsional)</label><input type="text" id="item-baru-merk" placeholder="cth: Paseo" autocomplete="off"></div>
+      <div class="field"><label>Nama Item</label><input type="text" id="item-baru-nama" placeholder="cth: Tissue (Paseo)"></div>
       <div class="field"><label>Kategori</label><select id="item-baru-kategori"></select></div>
       <button class="btn" id="btn-tambah-item">Tambah Item</button>
     </div>
@@ -3979,7 +3978,6 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
           <option value="">Pilih alasan</option>
           <option value="Dijual">Dijual</option>
           <option value="Mati / Rusak">Mati / Rusak</option>
-          <option value="Gagal Panen">Gagal Panen</option>
           <option value="Tidak Produktif Lagi">Tidak Produktif Lagi</option>
           <option value="Diberikan / Hibah">Diberikan / Hibah</option>
           <option value="Lainnya">Lainnya</option>
@@ -3998,15 +3996,6 @@ html #view-dividen#view-dividen#view-dividen #dv-list .txn-row.v2{border-left:4p
           <div class="field"><label>Pembeli / Penghutang (opsional)</label><input type="text" id="keluar-asetbio-piutang-nama" placeholder="cth: Budi"></div>
           <div class="field"><label>Jatuh Tempo (opsional)</label><input type="date" id="keluar-asetbio-piutang-jatuh-tempo"></div>
           <div style="font-size:11.5px; color:var(--text-2); margin:-6px 0 12px;">Aset akan tercatat keluar/terjual, tapi uangnya belum masuk saldo — otomatis dicatat sebagai Piutang sampai kamu tandai lunas.</div>
-        </div>
-      </div>
-      <div id="keluar-asetbio-gagal-wrap" style="display:none;">
-        <div class="field"><label>Jumlah yang Gagal Panen</label>
-          <div style="display:flex; gap:8px;">
-            <input type="number" id="keluar-asetbio-gagal-qty" inputmode="decimal" min="0" step="any" placeholder="cth: 50" style="flex:1; margin:0;">
-            <input type="text" id="keluar-asetbio-gagal-satuan" list="keluar-asetbio-gagal-satuan-list" placeholder="ekor / kg / pohon" autocomplete="off" style="flex:1; margin:0;">
-            <datalist id="keluar-asetbio-gagal-satuan-list"><option value="ekor"><option value="kg"><option value="butir"><option value="buah"><option value="pohon"><option value="ikat"><option value="liter"></datalist>
-          </div>
         </div>
       </div>
       <div class="field" style="margin-bottom:6px;"><label>Keterangan (opsional)</label><input type="text" id="keluar-asetbio-ket" maxlength="100" placeholder="cth: dijual ke tetangga"></div>
@@ -14628,17 +14617,6 @@ function hapusKategoriBelanja(kat){
   });
 }
 var ITM_COLLAPSED = {};
-/* Nama item disimpan sebagai satu teks "Barang (Merk)" karena dipakai sebagai kunci di belanja/stok. */
-function gabungNamaItem(barang, merk){
-  barang = (barang||'').trim(); merk = (merk||'').trim();
-  return merk ? (barang+' ('+merk+')') : barang;
-}
-function pecahNamaItem(x){
-  if(x && (x.barang!==undefined || x.merk!==undefined)) return { barang:x.barang||'', merk:x.merk||'' };
-  var t = String((x&&x.item)||'');
-  var m = t.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
-  return m ? { barang:m[1].trim(), merk:m[2].trim() } : { barang:t.trim(), merk:'' };
-}
 function renderItemBelanjaCustomList(){
   var wrap = document.getElementById('item-kustom-wrap');
   if(!wrap) return;
@@ -14716,25 +14694,23 @@ function startEditItemBelanja(idx){
     return '<option value="'+escapeHtml(k)+'"'+(k===x.kategori?' selected':'')+'>'+escapeHtml(k)+'</option>';
   }).join('');
   row.innerHTML = '<div style="display:flex; flex-direction:column; gap:8px; flex:1;">'+
-    '<input type="text" class="ib-edit-barang" value="'+escapeHtml(pecahNamaItem(x).barang)+'" placeholder="Nama barang" style="margin:0;">'+
-    '<input type="text" class="ib-edit-merk" value="'+escapeHtml(pecahNamaItem(x).merk)+'" placeholder="Merk (opsional)" style="margin:0;">'+
+    '<input type="text" class="ib-edit-nama" value="'+escapeHtml(x.item)+'" style="margin:0;">'+
     '<div style="display:flex; gap:8px; align-items:center;">'+
       '<select class="ib-edit-kategori" style="margin:0; flex:1;">'+optsHtml+'</select>'+
       '<button type="button" class="btn" data-ib-save="1" style="width:auto; margin-top:0; padding:0 14px; height:40px; flex-shrink:0;">Simpan</button>'+
     '</div></div>';
   row.querySelector('[data-ib-save]').addEventListener('click', function(){
-    var barangBaru = row.querySelector('.ib-edit-barang').value;
-    var merkBaru = row.querySelector('.ib-edit-merk').value;
+    var namaBaru = row.querySelector('.ib-edit-nama').value;
     var katBaru = row.querySelector('.ib-edit-kategori').value;
-    simpanEditItemBelanja(idx, gabungNamaItem(barangBaru, merkBaru), katBaru, barangBaru.trim(), merkBaru.trim());
+    simpanEditItemBelanja(idx, namaBaru, katBaru);
   });
 }
-function simpanEditItemBelanja(idx, namaBaruRaw, katBaru, barangBaru, merkBaru){
+function simpanEditItemBelanja(idx, namaBaruRaw, katBaru){
   var list = DATA.itemBelanjaCustom||[];
   var x = list[idx];
   if(!x) return;
   var namaBaru = (namaBaruRaw||'').trim();
-  if(!namaBaru || !(barangBaru||'').length){ toast('Nama barang tidak boleh kosong'); return; }
+  if(!namaBaru){ toast('Nama item tidak boleh kosong'); return; }
   var dup = list.some(function(y, i){ return i!==idx && y.item.toLowerCase()===namaBaru.toLowerCase(); });
   if(dup){ toast('Nama item ini sudah ada'); return; }
   var namaLama = x.item;
@@ -14743,8 +14719,6 @@ function simpanEditItemBelanja(idx, namaBaruRaw, katBaru, barangBaru, merkBaru){
     (DATA.stokKeluar||[]).forEach(function(k){ if(k.item===namaLama) k.item = namaBaru; });
   }
   x.item = namaBaru;
-  x.barang = barangBaru;
-  x.merk = merkBaru;
   x.kategori = katBaru;
   DATA.belanja.forEach(function(b){ if(b.item===namaBaru) b.kategori = katBaru; });
   saveData();
@@ -14776,21 +14750,17 @@ function hapusItemBelanjaCustom(idx){
   });
 }
 function tambahItemBelanjaCustom(){
-  var barangInput = document.getElementById('item-baru-barang');
-  var merkInput = document.getElementById('item-baru-merk');
+  var namaInput = document.getElementById('item-baru-nama');
   var katSelect = document.getElementById('item-baru-kategori');
-  var barang = (barangInput.value||'').trim();
-  var merk = (merkInput.value||'').trim();
-  var nama = gabungNamaItem(barang, merk);
+  var nama = (namaInput.value||'').trim();
   var kat = katSelect.value;
-  if(!barang){ toast('Isi nama barang dulu'); return; }
+  if(!nama){ toast('Isi nama item dulu'); return; }
   if(!kat){ toast('Pilih kategori dulu'); return; }
   var sudahAda = allItemBelanja().some(function(x){ return x[0].toLowerCase()===nama.toLowerCase(); });
   if(sudahAda){ toast('Item ini sudah ada'); return; }
-  DATA.itemBelanjaCustom.push({ item:nama, barang:barang, merk:merk, kategori:kat });
+  DATA.itemBelanjaCustom.push({ item:nama, kategori:kat });
   saveData();
-  barangInput.value = '';
-  merkInput.value = '';
+  namaInput.value = '';
   fillSelect('bl-item', allItemBelanja().map(function(x){return x[0];}));
   onItemChange();
   renderItemBelanjaCustomList();
@@ -17098,9 +17068,6 @@ function bukaKeluarkanAsetBio(id){
   KELUAR_ASETBIO_ID = id;
   document.getElementById('keluar-asetbio-alasan').value = '';
   document.getElementById('keluar-asetbio-harga').value = '';
-  document.getElementById('keluar-asetbio-gagal-qty').value = '';
-  document.getElementById('keluar-asetbio-gagal-satuan').value = '';
-  document.getElementById('keluar-asetbio-gagal-wrap').style.display = 'none';
   document.getElementById('keluar-asetbio-ket').value = '';
   document.getElementById('keluar-asetbio-piutang-nama').value = '';
   document.getElementById('keluar-asetbio-piutang-jatuh-tempo').value = '';
@@ -17118,7 +17085,6 @@ function tutupKeluarkanAsetBio(){
 function keluarAsetBioOnAlasanChange(){
   var alasan = document.getElementById('keluar-asetbio-alasan').value;
   document.getElementById('keluar-asetbio-jual-wrap').style.display = (alasan==='Dijual') ? '' : 'none';
-  document.getElementById('keluar-asetbio-gagal-wrap').style.display = (alasan==='Gagal Panen') ? '' : 'none';
 }
 function simpanKeluarkanAsetBio(){
   var err = document.getElementById('keluar-asetbio-err');
@@ -17134,21 +17100,10 @@ function simpanKeluarkanAsetBio(){
     akun = document.getElementById('keluar-asetbio-rekening').value;
     if(!harga || !akun){ err.textContent = 'Isi harga jual & rekening penerimaan'; return; }
   }
-  var gagalQty = 0, gagalSatuan = '';
-  if(alasan==='Gagal Panen'){
-    gagalQty = parseFloat(document.getElementById('keluar-asetbio-gagal-qty').value) || 0;
-    gagalSatuan = (document.getElementById('keluar-asetbio-gagal-satuan').value||'').trim();
-    if(!(gagalQty>0)){ err.textContent = 'Isi jumlah yang gagal panen'; return; }
-    if(!gagalSatuan){ err.textContent = 'Isi satuannya juga (ekor, kg, pohon, ...)'; return; }
-  }
   item.dikeluarkan = true;
   item.tanggalKeluar = todayISO();
   item.alasanKeluar = alasan;
   item.ketKeluar = ket;
-  if(alasan==='Gagal Panen'){
-    item.jumlahGagal = gagalQty;
-    item.satuanGagal = gagalSatuan;
-  }
   if(alasan==='Dijual'){
     item.hargaJual = harga;
     item.rekeningJual = akun;
@@ -17637,7 +17592,7 @@ function renderAsetBioList(){
         '</div>'+
         (x.catatan ? '<div class="inv-sub">'+escapeHtml(x.catatan)+'</div>' : '')+
         kvHtml+
-        (x.dikeluarkan ? '<div class="inv-meta">Dikeluarkan '+(x.tanggalKeluar||'-')+' • '+escapeHtml(x.alasanKeluar||'-')+(x.jumlahGagal?' • Gagal '+x.jumlahGagal+' '+escapeHtml(x.satuanGagal||''):'')+(x.ketKeluar?' • '+escapeHtml(x.ketKeluar):'')+(x.hargaJual?' • Terjual '+fmt(x.hargaJual)+(x.statusPembayaran==='Piutang'?' (belum diterima)':''):'')+'</div>' : '')+
+        (x.dikeluarkan ? '<div class="inv-meta">Dikeluarkan '+(x.tanggalKeluar||'-')+' • '+escapeHtml(x.alasanKeluar||'-')+(x.ketKeluar?' • '+escapeHtml(x.ketKeluar):'')+(x.hargaJual?' • Terjual '+fmt(x.hargaJual)+(x.statusPembayaran==='Piutang'?' (belum diterima)':''):'')+'</div>' : '')+
         '<div style="display:flex; gap:14px; margin-top:8px; flex-wrap:wrap;">'+actionsHtml+'</div>'+
       '</div>'+
     '</div>';
@@ -21772,7 +21727,6 @@ function wireEvents(){
     if(el){
       var kkTarget = el.getAttribute('data-kk');
       if(kkTarget) kkFilter = kkTarget;
-      else if(el.getAttribute('data-goto')==='kelola-kategori') kkFilter = 'all';  /* masuk lewat menu Atur = tampilkan semua, bukan sisa pilihan pintasan sebelumnya */
       if(el.getAttribute('data-nwopen')){ var nwSel = document.getElementById('lp-chart-pilih'); if(nwSel) nwSel.value = 'networth'; }
       go(el.getAttribute('data-goto')); return;
     }
@@ -23698,10 +23652,6 @@ if(document.readyState==='loading'){
   for(var kA1 in XA1) if(!(kA1 in D)) D[kA1]=XA1[kA1];
   var XA2 = {"Seberapa banyak pemasukan rutin yang tersisa setelah beban. Pembelian aset dan investasi tidak dihitung sebagai beban, jadi ikut terhitung sebagai sisa.":"How much of your regular income is left after expenses. Asset and investment purchases are not counted as expenses, so they count as money left over.","Investasi dihitung sebesar modalnya (untung/rugi yang belum terealisasi belum masuk). Semua tagihan yang belum lunas dihitung sebagai hutang, sedangkan Skor Kesehatan hanya menghitung yang sudah lewat jatuh tempo.":"Investments are valued at their cost (unrealized gains/losses are not included). All unpaid bills are counted as debt, whereas the Health Score only counts those already past due.","baru":"new","Ada penjualan investasi titipan ini di bulan yang sudah ditutup bukunya, jadi persentase bagi hasil tidak bisa diubah.": "This entrusted investment has a sale in a month that is already closed, so the profit-sharing percentage cannot be changed.", "Bagian titipan tidak boleh melebihi jumlah pembelian": "The entrusted portion cannot exceed the purchase amount", "Belum ada bulan yang bisa ditutup.": "No month can be closed yet.", "Belum ada dividen dicatat untuk saham ini.": "No dividends recorded for this stock yet.", "Belum ada item. Tambah dulu lewat Atur Limit.": "No items yet. Add some first via Set Limits.", "Belum ada koreksi": "No corrections yet", "Belum ada pengeluaran dalam 7 hari terakhir.": "No spending in the last 7 days.", "Belum ada pengeluaran di periode ini": "No spending in this period", "Belum ada rencana belanja. Tekan Buat Rencana untuk mulai.": "No shopping plans yet. Press Create Plan to start.", "Belum ada rencana yang menunggu bulan ini.": "No plans pending this month.", "Bukan uang keluar, saldo rekening tidak berubah": "Not money out, the account balance does not change", "Bulan ini belum bisa ditutup (harus berurutan dan sudah berakhir)": "This month cannot be closed yet (must be in order and already ended)", "Cakupan dana darurat memakai metode yang sama dengan Skor Kesehatan Keuangan, jadi tidak ikut berubah mengikuti rentang tanggal laporan.": "Emergency fund coverage uses the same method as the Financial Health Score, so it does not change with the report date range.", "Catat dulu pembelian saham di menu Pembelian Investasi (instrumen Saham, kolom Kode wajib diisi) supaya muncul di sini.": "First record the stock purchase in the Investment Purchase menu (Stock instrument, the Code field is required) so it appears here.", "Gagal mengunduh cadangan": "Failed to download the backup", "Hanya bulan terakhir yang bisa dibuka kuncinya": "Only the latest month can be unlocked", "Hanya yang wajib": "Only the must-haves", "Isi harga IPO per lembar": "Enter the IPO price per share", "Isi jumlah lot yang dipesan": "Enter the number of lots ordered", "Isi jumlah yang dialihkan": "Enter the amount diverted", "Isi jumlah yang dibeli": "Enter the quantity bought", "Isi jumlah yang direncanakan": "Enter the planned quantity", "Isi nama rencana dulu": "Enter a plan name first", "Isi perkiraan harga per satuan": "Enter the estimated price per unit", "Isi total bayar": "Enter the total paid", "Kartu Proyeksi Dana di Home dibuat lebih ringkas: catatan saldo dan kebutuhan ke depan dipadatkan jadi satu baris pendek tiap-nya, isi informasinya tetap sama.": "The Funds Projection card on Home is more compact: the balance and upcoming-needs notes are condensed into one short line each, with the same information.", "Kuat (6 bulan atau lebih)": "Strong (6 months or more)", "Merchant baru di Tagihan: PLN dan PDAM (Tirta Dharma). Pilih lewat Merchant / Aplikasi di form Tagihan, logonya tampil di riwayat tagihan. Keduanya khusus Tagihan, tidak muncul di daftar merchant Pengeluaran.": "New merchants in Bills: PLN and PDAM (Tirta Dharma). Choose them via Merchant / App in the Bills form, and their logos show in the bill history. Both are Bills-only and do not appear in the Spending merchant list.", "Mode offline. Kamu tetap bisa mencatat transaksi": "Offline mode. You can still record transactions", "PENGHASILAN PASIF (DIVIDEN SAHAM) - sudah termasuk di Total Pemasukan": "PASSIVE INCOME (STOCK DIVIDENDS) - already included in Total Income", "Pakai stok memindahkan nilai barang dari persediaan menjadi beban.": "Using stock moves the item's value from inventory to expense.", "Pilih tanggal rencana belanja": "Choose the shopping plan date", "Proyeksi dana gagal": "Funds projection failed", "Rencana diduplikat dengan status baru": "Plan duplicated with a new status", "Sebagian rentang berada di tahun yang sudah diarsipkan, jadi saldo awal atau akhir berupa perkiraan.": "Part of the range is in an archived year, so the opening or closing balance is an estimate.", "Selisih lain (Dana Patungan, data lama, pembulatan)": "Other differences (Shared Funds, old data, rounding)", "Seluruh perubahan saldo terjelaskan oleh komponen di atas.": "The entire balance change is explained by the components above.", "Semua rekening sudah dicek": "All accounts have been checked", "Semua stok habis sudah ada di rencana.": "All out-of-stock items are already in a plan.", "Sisanya (kalau ada) dihitung uang pribadimu. Bisa beberapa kali beli instrumen berbeda dari titipan yang sama.": "The rest (if any) is counted as your personal money. You can buy different instruments several times from the same entrusted funds.", "Sudah dijual (dividen cum date masih bisa dicatat)": "Already sold (cum-date dividends can still be recorded)", "Tidak ada dana titipan aktif di rekening ini": "No active entrusted funds in this account", "Tidak ada item kategori ini di rencana mana pun.": "There are no items of this category in any plan.", "Tidak ada item yang perlu dibeli": "No items need to be bought", "Tidak ada koneksi. Perubahan disimpan di HP dan dikirim otomatis nanti": "No connection. Changes are saved on your phone and sent automatically later", "Tidak ada rekomendasi baru dari stok": "No new recommendations from stock", "Tidak ada tagihan bulan ini yang menggantung": "No pending bills this month", "Tidak dapat jatah, dana dilepas": "No allotment, funds released", "Titipan ini punya penjualan investasi di bulan yang sudah ditutup bukunya, jadi tidak bisa dihapus.": "This entrusted fund has an investment sale in a month that is already closed, so it cannot be deleted.", "Titipan ini sudah dijadikan hutang. Ubah lewat catatan Hutang-nya.": "This entrusted fund has been turned into a debt. Edit it through its Debt record.", "Titipan ini sudah dipakai membeli investasi, kolom bagian pemilik tidak boleh dikosongkan": "This entrusted fund has been used to buy investments, so the owner's share field cannot be left empty", "Total saldo semua rekening": "Total balance of all accounts", "rekening bertanda dana darurat": "accounts marked as emergency fund", "saldo likuid non-investasi, belum ada rekening bertanda dana darurat": "non-investment liquid balance, no account marked as emergency fund yet", "stok FIFO tidak konsisten": "FIFO stock is inconsistent", "sudah tidak dimiliki": "no longer owned", "− Dana titipan (uang orang lain)": "− Entrusted funds (other people's money)", "− Rekening yang tidak ikut": "− Excluded accounts", "- Tidak ada barang yang perlu dibeli saat ini": "- No items need to be bought right now", "- Tidak ada investasi yang masih dimiliki": "- No investments are still owned", "- Hutang, piutang, tagihan belum lunas, dan dana titipan memakai status saat ini, bukan status pada akhir periode.": "- Debts, receivables, unpaid bills, and entrusted funds use the current status, not the status at the end of the period.", "- Pembelian investasi hanya memindahkan uang ke rekening investasi, bukan pengeluaran.": "- Investment purchases only move money to the investment account, they are not spending.", " Skor masih sementara karena belum ada 3 bulan penuh data.": " The score is still provisional because there are not yet 3 full months of data.", " belum berakhir. Bulan berikutnya bisa ditutup setelah bulannya selesai.": " has not ended yet. The next month can be closed once that month is over.", " dari rencana ini?": " from this plan?", " sudah ada di rencana ini. Edit saja itemnya.": " is already in this plan. Just edit the item.", " rekening belum dicek sejak awal bulan ini": " accounts not checked since the start of this month", " rekening belum direkonsiliasi": " accounts not reconciled", " tagihan jatuh tempo bulan ini belum lunas": " bills due this month are not yet paid", " item ditambahkan dari rekomendasi stok": " items added from stock recommendations", " kategori masih dalam limit": " categories still within limit"};
   for(var kA2 in XA2) if(!(kA2 in D)) D[kA2]=XA2[kA2];
-  /* ===== Terjemahan tambahan (tahap 4: perluasan cakupan) ===== */
-  var XA3 = {"Saldo bebas ›": "Free balance ›", "Saldo bebas setelah rencana": "Free balance after plans", "Saldo bebas setelah rencana belanja dan target nabung": "Free balance after shopping plans and savings goals", "Rencana Belanja": "Shopping Plans", "Susun & cek anggaran": "Build & check the budget", "Listrik, internet, dll": "Electricity, internet, etc.", "Penghasilan pasif": "Passive income", "Urunan bersama": "Shared contributions", "Ternak & kebun": "Livestock & garden", "Animasi dashboard": "Dashboard animation", "Dashboard ringkas": "Compact dashboard", "Animasi: Hidup": "Animation: On", "Kelompokkan berdasarkan": "Group by", "Cara kerjanya": "How it works", "1. Susun.": "1. Build.", "2. Beri prioritas.": "2. Set priorities.", "3. Cek.": "3. Check.", "4. Belanja.": "4. Shop.", "IPO Saham": "Stock IPO", "+ Pesan IPO": "+ Place IPO Order", "Pesan IPO Saham": "Place Stock IPO Order", "Kode saham": "Stock code", "Pesan": "Place Order", "Hasil Penjatahan IPO": "IPO Allotment Result", "Pesanan IPO": "IPO order", "Batalkan pesanan IPO": "Cancel IPO order", "satuan": "unit", "Khusus": "Special", "Saham (bonus)": "Stock (bonus)", "Cara Hitung": "Calculation Method", "Kepemilikan saat cum date": "Holdings on cum date", "Ringkas (1–2 halaman)": "Brief (1–2 pages)", "Palet warna": "Color palette", "Palet": "Palette", "Penjelasan": "Explanation", "Merk": "Brand", "Merk (opsional)": "Brand (optional)", "Nama barang": "Item name", "Instrumen Investasi (saham, emas, dll)": "Investment Instrument (stocks, gold, etc.)", "Prioritas": "Priority", "Wajib (kebutuhan pokok)": "Must (basic needs)", "Perlu (sebaiknya tercapai)": "Need (should be achieved)", "Perlu (sebaiknya dibeli)": "Need (should be bought)", "Investasi / Autodebet SIP": "Investment / SIP Autodebit", "SIP hanya dipotong dari": "SIP is only deducted from the", "rekening investasi/sekuritas. Kalau Freshmoney Rp0, kurang dari nominal SIP, atau sedang tertahan untuk IPO, pemotongan otomatis pada tanggal itu": "investment/brokerage account. If Freshmoney is Rp0, less than the SIP amount, or held for an IPO, the automatic deduction on that date is", "digagalkan": "cancelled", "(tidak dicatat) dan kamu diberi tahu.": "(not recorded) and you will be notified.", "Filter Status": "Filter by Status", "Arsip": "Archive", "Jumlah yang Gagal Panen": "Failed Harvest Quantity", "→ Kesehatan,": "→ Health,", "→ Perawatan Diri,": "→ Personal Care,", "Kartu ›": "Cards ›", "Login Google butuh internet. Coba lagi setelah online.": "Google sign-in needs internet. Try again once you are online.", "Hapus foto sampul?": "Remove the cover photo?", "Ditandai sudah diganti": "Marked as replaced", "Bagian pemilik harus antara 0 dan 100": "The owner's share must be between 0 and 100", "Daftar disalin": "List copied", "Titipan tidak valid": "Invalid held fund", "Nama barang tidak boleh kosong": "Item name cannot be empty", "Isi nama barang dulu": "Enter the item name first", "Isi jumlah yang gagal panen": "Enter the failed harvest quantity", "Pilih item dulu": "Choose an item first", "Pilih platform/sekuritas dulu": "Choose a platform/broker first", "Isi jumlah lot yang didapat (0 kalau tidak dapat)": "Enter the lots received (0 if none)", "Sumber dana SIP harus rekening investasi/sekuritas (Freshmoney)": "The SIP funding source must be an investment/brokerage account (Freshmoney)", "Isi kode/nama produk dulu (cth: Bibit Pasar Uang)": "Enter the product code/name first (e.g. Bibit Money Market)", "Memproses…": "Processing…", "Kelola Target": "Manage Goals", "Perbarui Dividen": "Update Dividend", "Edit Dividen": "Edit Dividend"};
-  for(var kA3 in XA3) if(!(kA3 in D)) D[kA3]=XA3[kA3];
-  RXC = ([["^Pesanan IPO (.+) dibatalkan$", "IPO order $1 cancelled"], ["^Pesanan IPO (.+) dicatat, dana (.+) ditahan$", "IPO order $1 recorded, $2 held"], ["^Batalkan pesanan IPO (.+)\\? Dana (.+) dilepas kembali dan tidak ada pembelian yang dicatat\\.$", "Cancel IPO order $1? The $2 funds are released back and no purchase is recorded."], ["^Hapus rencana \"(.+)\"\\? Belanja yang sudah tercatat tidak ikut terhapus\\.$", "Delete plan \"$1\"? Purchases already recorded are not deleted."], ["^Uang titipan yang tersedia hanya (.+)$", "The available held funds are only $1"], ["^Jumlah tidak boleh di bawah modal yang sudah diinvestasikan \\((.+)\\)$", "Amount cannot be below the capital already invested ($1)"], ["^Modal titipan ini masih di investasi \\((.+)\\)\\. Jual dulu sebelum dikembalikan\\.$", "This held capital is still invested ($1). Sell it first before returning."], ["^Lot yang didapat tidak boleh lebih dari yang dipesan \\((.+) lot\\)$", "Lots received cannot exceed lots ordered ($1 lots)"], ["^Tanggal penjatahan tidak boleh sebelum tanggal pesan \\((.+)\\)$", "Allotment date cannot be before the order date ($1)"], ["^Catatan ini dibuat otomatis dari (.+)\\. Ubah lewat halaman (.+)\\.$", "This record was created automatically from $1. Edit it on the $2 page."], ["^Catatan ini dibuat otomatis dari (.+)\\. Hapus lewat halaman (.+) supaya data tetap sinkron\\.$", "This record was created automatically from $1. Delete it on the $2 page so the data stays in sync."], ["^Total: (\\d+) item( \u2022 .+)?$", "Total: $1 items$2"], ["^Dikeluarkan (\\d{4}-\\d{2}-\\d{2})$", "Removed $1"], ["^Gagal (\\d[\\d.,]*) (.+)$", "$1 $2 failed"]].map(function(a){ return [new RegExp(a[0]), a[1]]; })).concat(RXC);
   var COA11 = [["5-100", "Beban Makan & Minum", "Food & Drink Expenses"], ["5-200", "Beban Transportasi", "Transportation Expenses"], ["5-300", "Beban Tagihan & Langganan", "Bills & Subscriptions Expenses"], ["5-300", "Beban Bills & Langganan", "Bills & Subscriptions Expenses"], ["5-400", "Beban Kebutuhan Rumah & Pribadi", "Household & Personal Needs Expenses"], ["5-450", "Beban Pemakaian Stok", "Stock Usage Expenses"], ["5-500", "Beban Sosial & Donasi", "Social & Donation Expenses"], ["5-600", "Beban Admin & Biaya Keuangan", "Admin & Financial Expenses"], ["5-700", "Kerugian", "Losses"], ["5-900", "Beban Lain-lain", "Other Expenses"], ["1-200", "Inventaris (Aset Tetap)", "Inventory (Fixed Assets)"], ["1-300", "Aset Biologis", "Biological Assets"], ["1-400", "Persediaan (Stok Habis Pakai)", "Supplies (Consumable Stock)"], ["1-500", "Investasi", "Investments"], ["4-100", "Pendapatan Gaji & Rutin", "Salary & Regular Income"], ["4-200", "Pendapatan Usaha & Sampingan", "Business & Side Income"], ["4-300", "Pendapatan Penjualan Aset & Stok", "Asset & Stock Sales Income"], ["4-400", "Pendapatan Investasi", "Investment Income"], ["4-900", "Pendapatan Lain-lain", "Other Income"]];
   COA11.forEach(function(a){
     var k=a[0], n=a[1], e=a[2], c;
